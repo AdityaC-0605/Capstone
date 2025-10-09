@@ -1,0 +1,20 @@
+{
+  "experiment_id": "test_sustainability_exp",
+  "start_time": "2025-10-09T20:25:47.220389",
+  "end_time": "2025-10-09T20:25:47.326033",
+  "duration_seconds": 0.105644,
+  "total_energy_kwh": 1e-06,
+  "cpu_energy_kwh": 1e-06,
+  "gpu_energy_kwh": 0.0,
+  "carbon_emissions_kg": null,
+  "carbon_intensity_gco2_kwh": null,
+  "avg_cpu_utilization": 14.45,
+  "avg_gpu_utilization": 0.0,
+  "peak_memory_usage_gb": 5.89,
+  "peak_gpu_memory_usage_gb": 0.0,
+  "avg_power_draw_watts": 23.005,
+  "peak_power_draw_watts": 24.58,
+  "estimated_cost_usd": 1.3e-07,
+  "energy_price_per_kwh": 0.13,
+  "num_measurements": 2
+}

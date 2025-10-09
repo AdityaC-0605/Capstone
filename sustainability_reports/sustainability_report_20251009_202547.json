@@ -1,0 +1,174 @@
+{
+  "report_id": "sustainability_report_20251009_202547",
+  "period_start": "2025-10-02T20:25:47.434733",
+  "period_end": "2025-10-09T20:25:47.434739",
+  "generated_at": "2025-10-09T20:25:47.434818",
+  "current_score": {
+    "environmental_score": 90.0,
+    "social_score": 97.36842105263158,
+    "governance_score": 95.48976608187134,
+    "overall_score": 93.85745614035088,
+    "timestamp": "2025-10-09T20:25:47.434745",
+    "environmental_metrics": {
+      "energy_consumption": 1e-06,
+      "carbon_emissions": 4.246e-07,
+      "carbon_intensity": 386.0,
+      "renewable_energy_ratio": 0.4,
+      "energy_efficiency": 1.0
+    },
+    "social_metrics": {
+      "algorithmic_fairness": 0.85,
+      "data_privacy_score": 0.9,
+      "accessibility_score": 0.85,
+      "transparency_score": 0.95
+    },
+    "governance_metrics": {
+      "model_governance": 0.9,
+      "data_governance": 0.85,
+      "compliance_score": 0.95,
+      "risk_management": 0.88
+    }
+  },
+  "previous_score": null,
+  "metrics": [
+    {
+      "metric_type": "energy_consumption",
+      "category": "environmental",
+      "value": 1e-06,
+      "unit": "kWh/prediction",
+      "timestamp": "2025-10-09T20:25:47.433372",
+      "description": "Average energy consumption per prediction",
+      "target_value": 0.001,
+      "benchmark_value": 0.005
+    },
+    {
+      "metric_type": "carbon_emissions",
+      "category": "environmental",
+      "value": 4.246e-07,
+      "unit": "kg CO2e/prediction",
+      "timestamp": "2025-10-09T20:25:47.433372",
+      "description": "Average carbon emissions per prediction",
+      "target_value": 0.05,
+      "benchmark_value": 0.15
+    },
+    {
+      "metric_type": "carbon_intensity",
+      "category": "environmental",
+      "value": 386.0,
+      "unit": "gCO2/kWh",
+      "timestamp": "2025-10-09T20:25:47.433372",
+      "description": "Average carbon intensity of energy grid",
+      "target_value": 200.0,
+      "benchmark_value": 475.0
+    },
+    {
+      "metric_type": "renewable_energy_ratio",
+      "category": "environmental",
+      "value": 0.4,
+      "unit": "ratio",
+      "timestamp": "2025-10-09T20:25:47.433372",
+      "description": "Estimated renewable energy ratio based on carbon intensity",
+      "target_value": 0.8,
+      "benchmark_value": 0.3
+    },
+    {
+      "metric_type": "energy_efficiency",
+      "category": "environmental",
+      "value": 1.0,
+      "unit": "efficiency_score",
+      "timestamp": "2025-10-09T20:25:47.433372",
+      "description": "Energy efficiency score (predictions per kWh, normalized)",
+      "target_value": 0.9,
+      "benchmark_value": 0.6
+    },
+    {
+      "metric_type": "algorithmic_fairness",
+      "category": "social",
+      "value": 0.85,
+      "unit": "score",
+      "timestamp": "2025-10-09T20:25:47.433446",
+      "description": "Average algorithmic fairness score across protected attributes",
+      "target_value": 0.95,
+      "benchmark_value": 0.8
+    },
+    {
+      "metric_type": "data_privacy_score",
+      "category": "social",
+      "value": 0.9,
+      "unit": "score",
+      "timestamp": "2025-10-09T20:25:47.433446",
+      "description": "Data privacy protection score",
+      "target_value": 0.9,
+      "benchmark_value": 0.7
+    },
+    {
+      "metric_type": "accessibility_score",
+      "category": "social",
+      "value": 0.85,
+      "unit": "score",
+      "timestamp": "2025-10-09T20:25:47.433446",
+      "description": "System accessibility and usability score",
+      "target_value": 0.85,
+      "benchmark_value": 0.6
+    },
+    {
+      "metric_type": "transparency_score",
+      "category": "social",
+      "value": 0.95,
+      "unit": "score",
+      "timestamp": "2025-10-09T20:25:47.433446",
+      "description": "Model transparency and explainability score",
+      "target_value": 0.9,
+      "benchmark_value": 0.5
+    },
+    {
+      "metric_type": "model_governance",
+      "category": "governance",
+      "value": 0.9,
+      "unit": "score",
+      "timestamp": "2025-10-09T20:25:47.433455",
+      "description": "Model governance and lifecycle management score",
+      "target_value": 0.95,
+      "benchmark_value": 0.7
+    },
+    {
+      "metric_type": "data_governance",
+      "category": "governance",
+      "value": 0.85,
+      "unit": "score",
+      "timestamp": "2025-10-09T20:25:47.433455",
+      "description": "Data governance and quality management score",
+      "target_value": 0.9,
+      "benchmark_value": 0.6
+    },
+    {
+      "metric_type": "compliance_score",
+      "category": "governance",
+      "value": 0.95,
+      "unit": "score",
+      "timestamp": "2025-10-09T20:25:47.433455",
+      "description": "Regulatory compliance score",
+      "target_value": 1.0,
+      "benchmark_value": 0.8
+    },
+    {
+      "metric_type": "risk_management",
+      "category": "governance",
+      "value": 0.88,
+      "unit": "score",
+      "timestamp": "2025-10-09T20:25:47.433455",
+      "description": "Risk management and monitoring score",
+      "target_value": 0.9,
+      "benchmark_value": 0.7
+    }
+  ],
+  "trends": {},
+  "recommendations": [
+    "All ESG metrics are meeting targets. Continue monitoring and maintain current practices."
+  ],
+  "alerts": [
+    "WARNING: renewable_energy_ratio is below acceptable threshold (0.4000 vs target 0.8000). Review and improvement needed."
+  ],
+  "industry_benchmarks": {},
+  "peer_comparison": {}
+}

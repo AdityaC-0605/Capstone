@@ -1,0 +1,49 @@
+{
+  "random_forest_model": [
+    {
+      "model_name": "random_forest_model",
+      "version": "1",
+      "run_id": "3a482ed9ab8e4b5ab258672a3195797a",
+      "creation_time": "2025-10-08T16:11:54.835607",
+      "model_path": "model_registry/random_forest_model/version_1/model.pkl",
+      "stage": "None",
+      "metadata": {}
+    }
+  ],
+  "logistic_regression_model": [
+    {
+      "model_name": "logistic_regression_model",
+      "version": "1",
+      "run_id": "1077fd763b974a988d786e6d43df8768",
+      "creation_time": "2025-10-08T16:11:56.242226",
+      "model_path": "model_registry/logistic_regression_model/version_1/model.pkl",
+      "stage": "None",
+      "metadata": {}
+    }
+  ],
+  "credit_risk_rf": [
+    {
+      "model_name": "credit_risk_rf",
+      "version": "1",
+      "run_id": "test_run_123",
+      "creation_time": "2025-10-08T16:11:56.261212",
+      "model_path": "model_registry/credit_risk_rf/version_1/model.pkl",
+      "stage": "None",
+      "metadata": {
+        "accuracy": 0.95,
+        "f1_score": 0.93
+      }
+    }
+  ],
+  "simple_rf_model": [
+    {
+      "model_name": "simple_rf_model",
+      "version": "1",
+      "run_id": "e1e69d4f855f4660aeaf339236b5ed5a",
+      "creation_time": "2025-10-08T16:11:57.701484",
+      "model_path": "model_registry/simple_rf_model/version_1/model.pkl",
+      "stage": "None",
+      "metadata": {}
+    }
+  ]
+}

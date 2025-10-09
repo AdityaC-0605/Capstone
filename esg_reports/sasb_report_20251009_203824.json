@@ -1,0 +1,71 @@
+{
+  "report_type": "SASB Sustainability Accounting Report",
+  "framework_version": "2023",
+  "industry": "Software & IT Services",
+  "sasb_code": "TC-SI",
+  "organization": "Sustainable Credit Risk AI System",
+  "reporting_period": {
+    "start": "2025-10-02T20:38:24.353300",
+    "end": "2025-10-09T20:38:24.353301"
+  },
+  "environmental_footprint": {
+    "topic_code": "TC-SI-130a.1",
+    "metrics": {
+      "total_energy_consumed_kwh": 0,
+      "percentage_grid_electricity": 100,
+      "percentage_renewable": 0
+    }
+  },
+  "data_privacy_security": {
+    "topic_code": "TC-SI-220a.1",
+    "metrics": {
+      "data_privacy_score": 0,
+      "privacy_incidents": 0,
+      "users_affected": 0,
+      "federated_learning_enabled": true,
+      "differential_privacy_enabled": true
+    }
+  },
+  "data_security": {
+    "topic_code": "TC-SI-220a.2",
+    "metrics": {
+      "security_breaches": 0,
+      "encryption_at_rest": true,
+      "encryption_in_transit": true,
+      "access_control_implemented": true
+    }
+  },
+  "algorithmic_bias": {
+    "topic_code": "TC-SI-220a.3",
+    "metrics": {
+      "fairness_score": 0,
+      "bias_testing_frequency": "continuous",
+      "protected_attributes_monitored": [
+        "race",
+        "gender",
+        "age"
+      ],
+      "bias_mitigation_techniques": [
+        "reweighting",
+        "adversarial_debiasing"
+      ]
+    }
+  },
+  "intellectual_property": {
+    "topic_code": "TC-SI-520a.1",
+    "metrics": {
+      "open_source_components": true,
+      "ip_protection_measures": "standard",
+      "patent_applications": 0
+    }
+  },
+  "managing_systemic_risks": {
+    "topic_code": "TC-SI-550a.1",
+    "metrics": {
+      "system_availability": 99.9,
+      "disaster_recovery_plan": true,
+      "business_continuity_plan": true,
+      "risk_management_score": 0
+    }
+  }
+}

@@ -1,0 +1,53 @@
+# Core dependencies
+torch>=2.0.0
+numpy>=1.21.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+
+# Deep learning and ML
+pytorch-geometric>=2.3.0
+transformers>=4.20.0
+lightgbm>=3.3.0
+optuna>=3.0.0
+
+# Security and cryptography
+cryptography>=3.4.8
+bcrypt>=3.2.0
+PyJWT>=2.4.0
+pyotp>=2.6.0
+
+# Data processing
+pyyaml>=6.0
+jsonschema>=4.0.0
+
+# API and web
+fastapi>=0.95.0
+uvicorn>=0.20.0
+pydantic>=1.10.0
+
+# Database
+sqlalchemy>=1.4.0
+psycopg2-binary>=2.9.0
+
+# Monitoring and logging
+prometheus-client>=0.14.0
+codecarbon>=2.1.0
+
+# Federated learning
+flower>=1.4.0
+
+# Explainability
+shap>=0.41.0
+lime>=0.2.0
+
+# Utilities
+python-dotenv>=0.19.0
+click>=8.0.0
+tqdm>=4.64.0
+
+# Development dependencies
+pytest>=7.0.0
+pytest-cov>=4.0.0
+black>=22.0.0
+flake8>=5.0.0
+mypy>=0.991
