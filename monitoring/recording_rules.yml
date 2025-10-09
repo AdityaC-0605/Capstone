@@ -1,0 +1,194 @@
+groups:
+  - name: api_performance_rules
+    interval: 30s
+    rules:
+      - record: api:request_rate_5m
+        expr: rate(http_requests_total{job="credit-risk-api"}[5m])
+
+      - record: api:error_rate_5m
+        expr: rate(http_requests_total{job="credit-risk-api",status=~"5.."}[5m]) / rate(http_requests_total{job="credit-risk-api"}[5m])
+
+      - record: api:latency_p95_5m
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="credit-risk-api"}[5m]))
+
+      - record: api:latency_p99_5m
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job="credit-risk-api"}[5m]))
+
+      - record: api:prediction_rate_5m
+        expr: rate(predictions_total{job="credit-risk-api"}[5m])
+
+      - record: api:batch_prediction_rate_5m
+        expr: rate(batch_predictions_total{job="credit-risk-api"}[5m])
+
+  - name: model_performance_rules
+    interval: 60s
+    rules:
+      - record: model:accuracy_1h
+        expr: avg_over_time(prediction_accuracy_score[1h])
+
+      - record: model:precision_1h
+        expr: avg_over_time(prediction_precision_score[1h])
+
+      - record: model:recall_1h
+        expr: avg_over_time(prediction_recall_score[1h])
+
+      - record: model:f1_score_1h
+        expr: avg_over_time(prediction_f1_score[1h])
+
+      - record: model:auc_roc_1h
+        expr: avg_over_time(prediction_auc_roc_score[1h])
+
+      - record: model:drift_score_1h
+        expr: avg_over_time(model_drift_score[1h])
+
+      - record: model:inference_latency_p95_5m
+        expr: histogram_quantile(0.95, rate(model_inference_duration_seconds_bucket[5m]))
+
+  - name: sustainability_rules
+    interval: 300s
+    rules:
+      - record: sustainability:energy_consumption_rate_1h
+        expr: rate(energy_consumption_kwh[1h])
+
+      - record: sustainability:carbon_emissions_rate_1h
+        expr: rate(carbon_emissions_kg[1h])
+
+      - record: sustainability:energy_efficiency_1h
+        expr: rate(predictions_total[1h]) / rate(energy_consumption_kwh[1h])
+
+      - record: sustainability:carbon_per_prediction_1h
+        expr: rate(carbon_emissions_kg[1h]) / rate(predictions_total[1h])
+
+      - record: sustainability:esg_score_daily
+        expr: avg_over_time(esg_score[24h])
+
+      - record: sustainability:renewable_energy_percentage_1h
+        expr: avg_over_time(renewable_energy_percentage[1h])
+
+  - name: fairness_rules
+    interval: 300s
+    rules:
+      - record: fairness:demographic_parity_1h
+        expr: avg_over_time(demographic_parity_score[1h])
+
+      - record: fairness:equal_opportunity_1h
+        expr: avg_over_time(equal_opportunity_score[1h])
+
+      - record: fairness:equalized_odds_1h
+        expr: avg_over_time(equalized_odds_score[1h])
+
+      - record: fairness:disparate_impact_1h
+        expr: avg_over_time(disparate_impact_ratio[1h])
+
+      - record: fairness:bias_score_by_attribute
+        expr: avg_over_time(bias_metric[1h]) by (protected_attribute)
+
+  - name: infrastructure_rules
+    interval: 60s
+    rules:
+      - record: infrastructure:cpu_utilization_5m
+        expr: 1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)
+
+      - record: infrastructure:memory_utilization_5m
+        expr: 1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+
+      - record: infrastructure:disk_utilization_5m
+        expr: 1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)
+
+      - record: infrastructure:network_receive_rate_5m
+        expr: rate(node_network_receive_bytes_total[5m])
+
+      - record: infrastructure:network_transmit_rate_5m
+        expr: rate(node_network_transmit_bytes_total[5m])
+
+      - record: infrastructure:pod_restart_rate_5m
+        expr: rate(kube_pod_container_status_restarts_total[5m])
+
+  - name: database_rules
+    interval: 60s
+    rules:
+      - record: database:connection_utilization
+        expr: pg_stat_activity_count / pg_settings_max_connections
+
+      - record: database:query_rate_5m
+        expr: rate(pg_stat_database_xact_commit[5m]) + rate(pg_stat_database_xact_rollback[5m])
+
+      - record: database:slow_query_rate_5m
+        expr: rate(pg_stat_statements_calls{query=~".*"}[5m])
+
+      - record: database:cache_hit_ratio
+        expr: pg_stat_database_blks_hit / (pg_stat_database_blks_hit + pg_stat_database_blks_read)
+
+  - name: federated_learning_rules
+    interval: 300s
+    rules:
+      - record: federated:client_participation_rate_1h
+        expr: avg_over_time(federated_clients_connected[1h]) / federated_clients_total
+
+      - record: federated:training_round_duration_avg_1h
+        expr: avg_over_time(federated_training_round_duration_seconds[1h])
+
+      - record: federated:model_convergence_rate_1h
+        expr: rate(federated_model_convergence_score[1h])
+
+      - record: federated:communication_overhead_1h
+        expr: rate(federated_communication_bytes_total[1h])
+
+      - record: federated:privacy_budget_consumption_rate_1h
+        expr: rate(privacy_budget_consumed[1h])
+
+  - name: business_metrics_rules
+    interval: 300s
+    rules:
+      - record: business:loan_approval_rate_1h
+        expr: rate(loan_approvals_total[1h]) / rate(loan_applications_total[1h])
+
+      - record: business:default_prediction_accuracy_1h
+        expr: avg_over_time(default_prediction_accuracy[1h])
+
+      - record: business:risk_score_distribution_1h
+        expr: histogram_quantile(0.5, rate(risk_score_bucket[1h]))
+
+      - record: business:processing_cost_per_application_1h
+        expr: rate(processing_cost_total[1h]) / rate(loan_applications_total[1h])
+
+      - record: business:revenue_impact_1h
+        expr: rate(revenue_from_approved_loans[1h]) - rate(losses_from_defaults[1h])
+
+  - name: security_rules
+    interval: 60s
+    rules:
+      - record: security:failed_auth_rate_5m
+        expr: rate(http_requests_total{status="401"}[5m])
+
+      - record: security:suspicious_request_rate_5m
+        expr: rate(suspicious_requests_total[5m])
+
+      - record: security:data_access_rate_5m
+        expr: rate(data_access_events_total[5m])
+
+      - record: security:encryption_overhead_5m
+        expr: avg_over_time(encryption_processing_time_seconds[5m])
+
+  - name: data_quality_rules
+    interval: 300s
+    rules:
+      - record: data_quality:completeness_score_1h
+        expr: avg_over_time(data_completeness_score[1h])
+
+      - record: data_quality:consistency_score_1h
+        expr: avg_over_time(data_consistency_score[1h])
+
+      - record: data_quality:validity_score_1h
+        expr: avg_over_time(data_validity_score[1h])
+
+      - record: data_quality:freshness_score_1h
+        expr: avg_over_time(data_freshness_score[1h])
+
+      - record: data_quality:overall_score_1h
+        expr: (
+          avg_over_time(data_completeness_score[1h]) +
+          avg_over_time(data_consistency_score[1h]) +
+          avg_over_time(data_validity_score[1h]) +
+          avg_over_time(data_freshness_score[1h])
+        ) / 4

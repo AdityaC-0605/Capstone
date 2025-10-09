@@ -1,0 +1,110 @@
+# Prometheus configuration for production environment
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'credit-risk-ai-prod'
+    environment: 'production'
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Credit Risk AI API (multiple instances)
+  - job_name: 'credit-risk-api'
+    dns_sd_configs:
+      - names:
+          - 'api'
+        type: 'A'
+        port: 8000
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__meta_dns_name]
+        target_label: service
+
+  # Inference Service (multiple instances)
+  - job_name: 'inference-service'
+    dns_sd_configs:
+      - names:
+          - 'inference'
+        type: 'A'
+        port: 8000
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Database monitoring
+  - job_name: 'postgres-primary'
+    static_configs:
+      - targets: ['postgres-primary:5432']
+    scrape_interval: 30s
+
+  # Redis cluster
+  - job_name: 'redis-master'
+    static_configs:
+      - targets: ['redis-master:6379']
+    scrape_interval: 30s
+
+  - job_name: 'redis-replica'
+    static_configs:
+      - targets: ['redis-replica:6379']
+    scrape_interval: 30s
+
+  # Load balancer
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:8080']
+    metrics_path: '/nginx-health'
+    scrape_interval: 30s
+
+  # System metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  # Container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+
+  # Elasticsearch
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch:9200']
+    scrape_interval: 60s
+
+  # Custom application metrics
+  - job_name: 'model-performance'
+    static_configs:
+      - targets: ['api:8000']
+    metrics_path: '/metrics/model'
+    scrape_interval: 60s
+
+  - job_name: 'sustainability-metrics'
+    static_configs:
+      - targets: ['api:8000']
+    metrics_path: '/metrics/sustainability'
+    scrape_interval: 300s  # 5 minutes
+
+  - job_name: 'compliance-metrics'
+    static_configs:
+      - targets: ['api:8000']
+    metrics_path: '/metrics/compliance'
+    scrape_interval: 300s  # 5 minutes

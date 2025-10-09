@@ -1,15 +1,25 @@
 {
   "feature_names": [
-    "feature_0",
-    "feature_1",
-    "feature_2",
-    "feature_3",
-    "feature_4",
-    "feature_5",
-    "feature_6",
-    "feature_7",
-    "feature_8",
-    "feature_9"
+    "customer_id",
+    "loan_amount_inr",
+    "credit_score",
+    "num_delinquent_accounts",
+    "past_default",
+    "credit_account_density",
+    "delinquency_rate",
+    "payment_reliability_score",
+    "loan_to_income_ratio",
+    "risk_appetite_score",
+    "potential_credit_history_years",
+    "credit_maturity_score",
+    "loan_amount_log",
+    "dti_squared",
+    "loan_affordability_ratio",
+    "financial_leverage",
+    "marital_status_Married",
+    "marital_status_Single",
+    "loan_purpose_Personal Loan",
+    "dti_risk_category_Low"
   ],
   "config": {
     "objective": "binary",
@@ -35,12 +45,11 @@
     "stratified": true,
     "importance_type": "gain",
     "save_model": true,
-    "model_path": "models/lightgbm",
-    "n_estimators": 50
+    "model_path": "models/lightgbm"
   },
   "best_params": null,
-  "best_iteration": 1,
-  "num_features": 10,
+  "best_iteration": 100,
+  "num_features": 20,
   "objective": "binary",
-  "saved_at": "2025-10-08T21:44:30.049901"
+  "saved_at": "2025-10-10T01:00:21.585198"
 }

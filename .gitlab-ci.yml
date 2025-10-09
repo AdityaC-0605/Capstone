@@ -1,0 +1,428 @@
+# GitLab CI/CD Pipeline for Sustainable Credit Risk AI System
+stages:
+  - validate
+  - test
+  - security
+  - build
+  - deploy-staging
+  - test-staging
+  - deploy-production
+  - post-deployment
+
+variables:
+  PYTHON_VERSION: "3.11"
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  REGISTRY: $CI_REGISTRY
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  KUBECONFIG: /tmp/kubeconfig
+
+# Global before_script
+before_script:
+  - python --version
+  - pip install --upgrade pip
+
+# Code Quality and Validation
+code-quality:
+  stage: validate
+  image: python:$PYTHON_VERSION
+  before_script:
+    - pip install -r requirements.txt -r requirements-dev.txt
+  script:
+    - black --check --diff src/ tests/
+    - isort --check-only --diff src/ tests/
+    - flake8 src/ tests/
+    - mypy src/
+    - bandit -r src/ -f json -o bandit-report.json
+  artifacts:
+    reports:
+      junit: bandit-report.json
+    paths:
+      - bandit-report.json
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# Unit Tests
+unit-tests:
+  stage: test
+  image: python:$PYTHON_VERSION
+  services:
+    - postgres:15
+    - redis:7
+  variables:
+    POSTGRES_DB: test_credit_risk_ai
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    DATABASE_URL: postgresql://postgres:postgres@postgres:5432/test_credit_risk_ai
+    REDIS_URL: redis://redis:6379/0
+  before_script:
+    - pip install -r requirements.txt -r requirements-dev.txt
+  script:
+    - pytest tests/unit/ 
+        --cov=src 
+        --cov-report=xml 
+        --cov-report=html 
+        --cov-report=term-missing 
+        --junitxml=pytest-results.xml 
+        -v
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  artifacts:
+    reports:
+      junit: pytest-results.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - htmlcov/
+      - coverage.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# Integration Tests
+integration-tests:
+  stage: test
+  image: python:$PYTHON_VERSION
+  services:
+    - postgres:15
+    - redis:7
+  variables:
+    POSTGRES_DB: test_credit_risk_ai
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    DATABASE_URL: postgresql://postgres:postgres@postgres:5432/test_credit_risk_ai
+    REDIS_URL: redis://redis:6379/0
+  before_script:
+    - pip install -r requirements.txt -r requirements-dev.txt
+  script:
+    - pytest tests/integration/ 
+        --junitxml=integration-results.xml 
+        -v
+  artifacts:
+    reports:
+      junit: integration-results.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# Model Tests
+model-tests:
+  stage: test
+  image: python:$PYTHON_VERSION
+  before_script:
+    - pip install -r requirements.txt -r requirements-dev.txt
+  script:
+    - pytest tests/models/ 
+        --junitxml=model-test-results.xml 
+        -v
+  artifacts:
+    reports:
+      junit: model-test-results.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# Security Scanning
+security-scan:
+  stage: security
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker info
+  script:
+    # Build image for scanning
+    - docker build -t $IMAGE_NAME:$CI_COMMIT_SHA .
+    
+    # Run Trivy vulnerability scanner
+    - docker run --rm -v /var/run/docker.sock:/var/run/docker.sock 
+        -v $PWD:/tmp/.cache/ aquasec/trivy:latest 
+        image --format template --template "@contrib/sarif.tpl" 
+        -o /tmp/.cache/trivy-results.sarif $IMAGE_NAME:$CI_COMMIT_SHA
+    
+    # Run Hadolint for Dockerfile linting
+    - docker run --rm -i hadolint/hadolint < Dockerfile > hadolint-results.txt || true
+  artifacts:
+    reports:
+      sast: trivy-results.sarif
+    paths:
+      - trivy-results.sarif
+      - hadolint-results.txt
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# Dependency Scanning
+dependency-scan:
+  stage: security
+  image: python:$PYTHON_VERSION
+  before_script:
+    - pip install safety pip-audit
+  script:
+    - safety check --json --output safety-report.json || true
+    - pip-audit --format=json --output=pip-audit-report.json || true
+  artifacts:
+    reports:
+      dependency_scanning: safety-report.json
+    paths:
+      - safety-report.json
+      - pip-audit-report.json
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# Build and Push Container Images
+build-image:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    # Build multi-stage images
+    - docker build --target production -t $IMAGE_NAME:production-$CI_COMMIT_SHA .
+    - docker build --target training -t $IMAGE_NAME:training-$CI_COMMIT_SHA .
+    - docker build --target development -t $IMAGE_NAME:development-$CI_COMMIT_SHA .
+    
+    # Tag with branch name
+    - docker tag $IMAGE_NAME:production-$CI_COMMIT_SHA $IMAGE_NAME:$CI_COMMIT_REF_SLUG-latest
+    
+    # Push images
+    - docker push $IMAGE_NAME:production-$CI_COMMIT_SHA
+    - docker push $IMAGE_NAME:training-$CI_COMMIT_SHA
+    - docker push $IMAGE_NAME:development-$CI_COMMIT_SHA
+    - docker push $IMAGE_NAME:$CI_COMMIT_REF_SLUG-latest
+    
+    # Tag and push for main branch
+    - |
+      if [ "$CI_COMMIT_BRANCH" == "main" ]; then
+        docker tag $IMAGE_NAME:production-$CI_COMMIT_SHA $IMAGE_NAME:latest
+        docker push $IMAGE_NAME:latest
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_TAG
+
+# Deploy to Staging
+deploy-staging:
+  stage: deploy-staging
+  image: bitnami/kubectl:latest
+  environment:
+    name: staging
+    url: https://staging-api.credit-risk-ai.example.com
+  before_script:
+    - echo "$STAGING_KUBECONFIG" | base64 -d > $KUBECONFIG
+    - kubectl config current-context
+  script:
+    # Update image tags in manifests
+    - sed -i "s|sustainable-credit-risk-ai:production|$IMAGE_NAME:production-$CI_COMMIT_SHA|g" k8s/*.yaml
+    
+    # Deploy to staging namespace
+    - kubectl create namespace credit-risk-ai-staging --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl apply -f k8s/ -n credit-risk-ai-staging
+    - kubectl rollout status deployment/api-deployment -n credit-risk-ai-staging --timeout=600s
+    
+    # Run smoke tests
+    - kubectl wait --for=condition=ready pod -l app=api -n credit-risk-ai-staging --timeout=300s
+    - python scripts/smoke_tests.py --url https://staging-api.credit-risk-ai.example.com
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+  when: manual
+
+# Staging Tests
+test-staging:
+  stage: test-staging
+  image: python:$PYTHON_VERSION
+  environment:
+    name: staging
+  before_script:
+    - pip install -r requirements.txt -r requirements-dev.txt
+  script:
+    # Integration tests against staging
+    - pytest tests/integration/ 
+        --staging-url=https://staging-api.credit-risk-ai.example.com 
+        --junitxml=staging-integration-results.xml 
+        -v
+    
+    # Performance tests
+    - locust -f tests/load/locustfile.py 
+        --host=https://staging-api.credit-risk-ai.example.com 
+        --users=20 --spawn-rate=2 --run-time=3m 
+        --html=staging-load-test-report.html --headless
+    
+    # Model validation
+    - pytest tests/models/test_model_validation.py 
+        --staging-url=https://staging-api.credit-risk-ai.example.com 
+        --junitxml=staging-model-results.xml 
+        -v
+    
+    # Compliance tests
+    - pytest tests/compliance/ 
+        --staging-url=https://staging-api.credit-risk-ai.example.com 
+        --junitxml=staging-compliance-results.xml 
+        -v
+  artifacts:
+    reports:
+      junit: 
+        - staging-integration-results.xml
+        - staging-model-results.xml
+        - staging-compliance-results.xml
+    paths:
+      - staging-load-test-report.html
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+  needs: ["deploy-staging"]
+
+# Deploy to Production
+deploy-production:
+  stage: deploy-production
+  image: bitnami/kubectl:latest
+  environment:
+    name: production
+    url: https://api.credit-risk-ai.example.com
+  before_script:
+    - echo "$PRODUCTION_KUBECONFIG" | base64 -d > $KUBECONFIG
+    - kubectl config current-context
+  script:
+    # Create backup of current deployment
+    - kubectl get deployment api-deployment -n credit-risk-ai -o yaml > current-deployment-backup.yaml
+    - kubectl get service api-service -n credit-risk-ai -o yaml > current-service-backup.yaml
+    
+    # Blue-Green deployment
+    - sed "s|sustainable-credit-risk-ai:production|$IMAGE_NAME:production-$CI_COMMIT_SHA|g" k8s/api-deployment.yaml > api-deployment-green.yaml
+    - sed "s|name: api-deployment|name: api-deployment-green|g" api-deployment-green.yaml > temp.yaml
+    - sed "s|app: api|app: api-green|g" temp.yaml > api-deployment-green.yaml
+    
+    # Deploy green environment
+    - kubectl apply -f api-deployment-green.yaml -n credit-risk-ai
+    - kubectl rollout status deployment/api-deployment-green -n credit-risk-ai --timeout=600s
+    
+    # Health checks on green
+    - kubectl exec deployment/api-deployment-green -n credit-risk-ai -- curl -f http://localhost:8000/health
+    - kubectl exec deployment/api-deployment-green -n credit-risk-ai -- curl -f http://localhost:8000/ready
+    
+    # Switch traffic to green
+    - kubectl patch service api-service -n credit-risk-ai -p '{"spec":{"selector":{"app":"api-green"}}}'
+    - sleep 30
+    
+    # Verify production traffic
+    - curl -f https://api.credit-risk-ai.example.com/health
+    - python scripts/production_validation.py https://api.credit-risk-ai.example.com
+    
+    # Clean up blue deployment
+    - kubectl scale deployment api-deployment -n credit-risk-ai --replicas=0
+    - sleep 60
+    - kubectl delete deployment api-deployment -n credit-risk-ai
+    
+    # Rename green to blue for next deployment
+    - kubectl patch deployment api-deployment-green -n credit-risk-ai -p '{"metadata":{"name":"api-deployment"}}'
+    - kubectl patch deployment api-deployment-green -n credit-risk-ai -p '{"spec":{"selector":{"matchLabels":{"app":"api"}}}}'
+    - kubectl patch deployment api-deployment-green -n credit-risk-ai -p '{"spec":{"template":{"metadata":{"labels":{"app":"api"}}}}}'
+  artifacts:
+    paths:
+      - current-deployment-backup.yaml
+      - current-service-backup.yaml
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == "main"
+  when: manual
+
+# Post-deployment Validation
+post-deployment-validation:
+  stage: post-deployment
+  image: python:$PYTHON_VERSION
+  environment:
+    name: production
+  before_script:
+    - pip install -r requirements.txt -r requirements-dev.txt
+  script:
+    # Comprehensive production validation
+    - python scripts/production_validation.py https://api.credit-risk-ai.example.com
+    
+    # Performance validation
+    - python scripts/performance_validation.py --url https://api.credit-risk-ai.example.com
+    
+    # Compliance validation
+    - pytest tests/compliance/test_production_compliance.py 
+        --production-url=https://api.credit-risk-ai.example.com 
+        --junitxml=production-compliance-results.xml 
+        -v
+  artifacts:
+    reports:
+      junit: production-compliance-results.xml
+    paths:
+      - production_validation_report_*.json
+    expire_in: 1 month
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == "main"
+  needs: ["deploy-production"]
+
+# Rollback on Failure
+rollback-production:
+  stage: post-deployment
+  image: bitnami/kubectl:latest
+  environment:
+    name: production
+  before_script:
+    - echo "$PRODUCTION_KUBECONFIG" | base64 -d > $KUBECONFIG
+  script:
+    - echo "Rolling back production deployment..."
+    - kubectl apply -f current-deployment-backup.yaml -n credit-risk-ai
+    - kubectl apply -f current-service-backup.yaml -n credit-risk-ai
+    - kubectl rollout status deployment/api-deployment -n credit-risk-ai --timeout=300s
+    - curl -f https://api.credit-risk-ai.example.com/health
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == "main"
+  when: manual
+  needs: ["deploy-production"]
+
+# Notification Jobs
+notify-success:
+  stage: post-deployment
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      curl -X POST -H 'Content-type: application/json' \
+        --data '{"text":"✅ Production deployment successful! Version: '$CI_COMMIT_TAG' Commit: '$CI_COMMIT_SHA'"}' \
+        $SLACK_WEBHOOK_URL
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == "main"
+  needs: ["post-deployment-validation"]
+  when: on_success
+
+notify-failure:
+  stage: post-deployment
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      curl -X POST -H 'Content-type: application/json' \
+        --data '{"text":"❌ Production deployment failed! Commit: '$CI_COMMIT_SHA' Pipeline: '$CI_PIPELINE_URL'"}' \
+        $SLACK_WEBHOOK_URL
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == "main"
+  when: on_failure

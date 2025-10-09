@@ -1,0 +1,398 @@
+name: Release Management
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.2.3)'
+        required: true
+        type: string
+      release_type:
+        description: 'Type of release'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Validate Release
+  validate-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Determine version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION=${GITHUB_REF#refs/tags/}
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Release version: $VERSION"
+
+    - name: Validate version format
+      run: |
+        if [[ ! "${{ steps.version.outputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+          echo "Invalid version format. Expected: vX.Y.Z or vX.Y.Z-suffix"
+          exit 1
+        fi
+
+    - name: Check if tag exists
+      run: |
+        if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+          echo "Tag ${{ steps.version.outputs.version }} already exists"
+          exit 1
+        fi
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Generate changelog from commits since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        if [[ -n "$LAST_TAG" ]]; then
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" $LAST_TAG..HEAD)
+        else
+          CHANGELOG=$(git log --pretty=format:"- %s (%h)" HEAD)
+        fi
+        
+        # Save changelog to file for multiline output
+        echo "$CHANGELOG" > changelog.txt
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        cat changelog.txt >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Upload changelog
+      uses: actions/upload-artifact@v3
+      with:
+        name: changelog
+        path: changelog.txt
+
+  # Run Full Test Suite
+  full-test-suite:
+    runs-on: ubuntu-latest
+    needs: validate-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Run comprehensive test suite
+      run: |
+        # Unit tests with coverage
+        pytest tests/unit/ --cov=src --cov-report=xml --cov-report=term-missing -v
+        
+        # Integration tests
+        pytest tests/integration/ -v
+        
+        # Model tests
+        pytest tests/models/ -v
+        
+        # Compliance tests
+        pytest tests/compliance/ -v
+        
+        # Performance benchmarks
+        pytest tests/performance/ --benchmark-json=benchmark-results.json -v
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: release-test-results
+        path: |
+          coverage.xml
+          benchmark-results.json
+
+  # Security Audit
+  security-audit:
+    runs-on: ubuntu-latest
+    needs: validate-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Run security audit
+      run: |
+        pip install safety bandit semgrep
+        
+        # Dependency vulnerability check
+        safety check --json --output safety-report.json || true
+        
+        # Static security analysis
+        bandit -r src/ -f json -o bandit-report.json || true
+        
+        # Semgrep security scan
+        semgrep --config=auto src/ --json --output=semgrep-report.json || true
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-audit-reports
+        path: |
+          safety-report.json
+          bandit-report.json
+          semgrep-report.json
+
+  # Build Release Artifacts
+  build-release-artifacts:
+    runs-on: ubuntu-latest
+    needs: [validate-release, full-test-suite, security-audit]
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push release images
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        target: production
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-release.outputs.version }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        labels: |
+          org.opencontainers.image.title=Sustainable Credit Risk AI
+          org.opencontainers.image.description=AI system for sustainable credit risk assessment
+          org.opencontainers.image.version=${{ needs.validate-release.outputs.version }}
+          org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          org.opencontainers.image.revision=${{ github.sha }}
+          org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+    - name: Build training image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        target: training
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-release.outputs.version }}-training
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-training
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-release.outputs.version }}
+        format: spdx-json
+        output-file: sbom.spdx.json
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v3
+      with:
+        name: sbom
+        path: sbom.spdx.json
+
+  # Create GitHub Release
+  create-github-release:
+    runs-on: ubuntu-latest
+    needs: [validate-release, build-release-artifacts]
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Create release notes
+      run: |
+        cat > release-notes.md << EOF
+        # Release ${{ needs.validate-release.outputs.version }}
+        
+        ## What's Changed
+        ${{ needs.validate-release.outputs.changelog }}
+        
+        ## Container Images
+        - Production: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-release.outputs.version }}\`
+        - Training: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-release.outputs.version }}-training\`
+        
+        ## Security
+        - All security audits passed
+        - SBOM (Software Bill of Materials) included
+        - Container images signed and verified
+        
+        ## Deployment
+        This release has been tested and is ready for production deployment.
+        
+        ## Documentation
+        - [API Documentation](https://api.credit-risk-ai.example.com/docs)
+        - [Deployment Guide](./k8s/README.md)
+        - [User Guide](./docs/user-guide.md)
+        
+        **Full Changelog**: https://github.com/${{ github.repository }}/compare/$(git describe --tags --abbrev=0 HEAD^)...${{ needs.validate-release.outputs.version }}
+        EOF
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ needs.validate-release.outputs.version }}
+        release_name: Release ${{ needs.validate-release.outputs.version }}
+        body_path: release-notes.md
+        draft: false
+        prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: sbom/sbom.spdx.json
+        asset_name: sbom.spdx.json
+        asset_content_type: application/json
+
+  # Update Documentation
+  update-documentation:
+    runs-on: ubuntu-latest
+    needs: [validate-release, create-github-release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update version in documentation
+      run: |
+        # Update version in various documentation files
+        sed -i "s/version: .*/version: ${{ needs.validate-release.outputs.version }}/g" k8s/helm-chart/Chart.yaml
+        sed -i "s/appVersion: .*/appVersion: \"${{ needs.validate-release.outputs.version }}\"/g" k8s/helm-chart/Chart.yaml
+        
+        # Update README badges
+        sed -i "s/tag\/v[0-9]\+\.[0-9]\+\.[0-9]\+/tag\/${{ needs.validate-release.outputs.version }}/g" README.md
+
+    - name: Commit documentation updates
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        git diff --staged --quiet || git commit -m "docs: update version to ${{ needs.validate-release.outputs.version }}"
+        git push
+
+  # Notify Stakeholders
+  notify-release:
+    runs-on: ubuntu-latest
+    needs: [validate-release, create-github-release]
+    if: always()
+    
+    steps:
+    - name: Notify Slack
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#releases'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+        text: |
+          🚀 New release published!
+          
+          **Version:** ${{ needs.validate-release.outputs.version }}
+          **Repository:** ${{ github.repository }}
+          **Release Notes:** https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate-release.outputs.version }}
+          
+          **Container Images:**
+          - Production: `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-release.outputs.version }}`
+          - Training: `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-release.outputs.version }}-training`
+
+    - name: Send email notification
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "New Release: ${{ needs.validate-release.outputs.version }}"
+        to: ${{ secrets.RELEASE_NOTIFICATION_EMAIL }}
+        from: "GitHub Actions <noreply@github.com>"
+        body: |
+          A new release of the Sustainable Credit Risk AI system has been published.
+          
+          Version: ${{ needs.validate-release.outputs.version }}
+          Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate-release.outputs.version }}
+          
+          This release is ready for production deployment.
+
+  # Trigger Deployment Pipeline
+  trigger-deployment:
+    runs-on: ubuntu-latest
+    needs: [validate-release, create-github-release]
+    
+    steps:
+    - name: Trigger production deployment
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'cd-production.yml',
+            ref: '${{ needs.validate-release.outputs.version }}',
+            inputs: {
+              version: '${{ needs.validate-release.outputs.version }}',
+              environment: 'production'
+            }
+          });

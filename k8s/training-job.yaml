@@ -1,0 +1,146 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: model-training-job
+  namespace: credit-risk-ai
+  labels:
+    app: training
+    component: ml-training
+spec:
+  template:
+    metadata:
+      labels:
+        app: training
+        component: ml-training
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: training
+        image: sustainable-credit-risk-ai:training
+        envFrom:
+        - configMapRef:
+            name: credit-risk-config
+        - secretRef:
+            name: credit-risk-secrets
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+        - name: data-storage
+          mountPath: /app/data
+        - name: experiments
+          mountPath: /app/experiments
+        - name: logs
+          mountPath: /app/logs
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+            nvidia.com/gpu: "1"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+            nvidia.com/gpu: "1"
+        command: ["python", "scripts/train_model.py", "--config", "config/training.yaml"]
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      - name: data-storage
+        emptyDir: {}
+      - name: experiments
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.35
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Waiting for PostgreSQL..."
+          until nc -z postgres-service 5432; do
+            sleep 2
+          done
+          echo "Waiting for MLflow..."
+          until nc -z mlflow-service 5000; do
+            sleep 2
+          done
+          echo "Dependencies are ready!"
+  backoffLimit: 3
+  activeDeadlineSeconds: 7200  # 2 hours timeout
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scheduled-training
+  namespace: credit-risk-ai
+  labels:
+    app: scheduled-training
+    component: ml-training
+spec:
+  schedule: "0 2 * * 0"  # Weekly on Sunday at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: scheduled-training
+            component: ml-training
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: scheduled-training
+            image: sustainable-credit-risk-ai:training
+            envFrom:
+            - configMapRef:
+                name: credit-risk-config
+            - secretRef:
+                name: credit-risk-secrets
+            volumeMounts:
+            - name: model-storage
+              mountPath: /app/models
+            - name: data-storage
+              mountPath: /app/data
+            - name: experiments
+              mountPath: /app/experiments
+            - name: logs
+              mountPath: /app/logs
+            resources:
+              requests:
+                memory: "4Gi"
+                cpu: "2000m"
+                nvidia.com/gpu: "1"
+              limits:
+                memory: "8Gi"
+                cpu: "4000m"
+                nvidia.com/gpu: "1"
+            command: ["python", "scripts/scheduled_training.py"]
+          volumes:
+          - name: model-storage
+            persistentVolumeClaim:
+              claimName: model-storage-pvc
+          - name: data-storage
+            emptyDir: {}
+          - name: experiments
+            emptyDir: {}
+          - name: logs
+            emptyDir: {}
+          initContainers:
+          - name: wait-for-dependencies
+            image: busybox:1.35
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL..."
+              until nc -z postgres-service 5432; do
+                sleep 2
+              done
+              echo "Waiting for MLflow..."
+              until nc -z mlflow-service 5000; do
+                sleep 2
+              done
+              echo "Dependencies are ready!"
+      backoffLimit: 2
+      activeDeadlineSeconds: 14400  # 4 hours timeout

@@ -1,0 +1,174 @@
+# Istio Service Mesh Configuration
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: credit-risk-gateway
+  namespace: credit-risk-ai
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - api.credit-risk-ai.example.com
+    - monitoring.credit-risk-ai.example.com
+    - mlflow.credit-risk-ai.example.com
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+    - api.credit-risk-ai.example.com
+    - monitoring.credit-risk-ai.example.com
+    - mlflow.credit-risk-ai.example.com
+    tls:
+      mode: SIMPLE
+      credentialName: credit-risk-tls
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: credit-risk-vs
+  namespace: credit-risk-ai
+spec:
+  hosts:
+  - api.credit-risk-ai.example.com
+  - monitoring.credit-risk-ai.example.com
+  - mlflow.credit-risk-ai.example.com
+  gateways:
+  - credit-risk-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /api/v1/predict
+    route:
+    - destination:
+        host: api-service
+        port:
+          number: 8000
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+  - match:
+    - uri:
+        prefix: /api/v1/batch
+    route:
+    - destination:
+        host: api-service
+        port:
+          number: 8000
+    timeout: 300s
+  - match:
+    - headers:
+        host:
+          exact: monitoring.credit-risk-ai.example.com
+    - uri:
+        prefix: /grafana
+    route:
+    - destination:
+        host: grafana-service
+        port:
+          number: 3000
+  - match:
+    - headers:
+        host:
+          exact: monitoring.credit-risk-ai.example.com
+    - uri:
+        prefix: /prometheus
+    route:
+    - destination:
+        host: prometheus-service
+        port:
+          number: 9090
+  - match:
+    - headers:
+        host:
+          exact: mlflow.credit-risk-ai.example.com
+    route:
+    - destination:
+        host: mlflow-service
+        port:
+          number: 5000
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: api-destination-rule
+  namespace: credit-risk-ai
+spec:
+  host: api-service
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_CONN
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 10
+        maxRetries: 3
+    circuitBreaker:
+      consecutiveErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+  portLevelSettings:
+  - port:
+      number: 8000
+    connectionPool:
+      tcp:
+        maxConnections: 50
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: credit-risk-ai
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: api-authz
+  namespace: credit-risk-ai
+spec:
+  selector:
+    matchLabels:
+      app: api
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/istio-system/sa/istio-ingressgateway-service-account"]
+  - to:
+    - operation:
+        methods: ["GET", "POST"]
+        paths: ["/api/v1/*", "/health", "/ready", "/docs", "/openapi.json"]
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: default
+  namespace: credit-risk-ai
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+  - overrides:
+    - match:
+        metric: ALL_METRICS
+      tagOverrides:
+        request_id:
+          operation: UPSERT
+          value: "%{REQUEST_ID}"
+  accessLogging:
+  - providers:
+    - name: otel
