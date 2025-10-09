@@ -1,0 +1,264 @@
+groups:
+  - name: credit_risk_api_alerts
+    rules:
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{job="credit-risk-api",status=~"5.."}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "High error rate on Credit Risk API"
+          description: "API error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+          runbook_url: "https://docs.credit-risk-ai.example.com/runbooks/high-error-rate"
+
+      - alert: APIHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="credit-risk-api"}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High latency on Credit Risk API"
+          description: "95th percentile latency is {{ $value }}s for the last 5 minutes"
+          runbook_url: "https://docs.credit-risk-ai.example.com/runbooks/high-latency"
+
+      - alert: APILowThroughput
+        expr: rate(http_requests_total{job="credit-risk-api"}[5m]) < 10
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "Low throughput on Credit Risk API"
+          description: "Request rate is {{ $value }} requests/second for the last 5 minutes"
+
+      - alert: PredictionAccuracyDrop
+        expr: prediction_accuracy_score < 0.8
+        for: 5m
+        labels:
+          severity: critical
+          service: ml-model
+        annotations:
+          summary: "Model prediction accuracy dropped"
+          description: "Prediction accuracy is {{ $value | humanizePercentage }}, below 80% threshold"
+          runbook_url: "https://docs.credit-risk-ai.example.com/runbooks/model-accuracy"
+
+  - name: model_drift_alerts
+    rules:
+      - alert: ModelDriftDetected
+        expr: model_drift_score > 0.1
+        for: 1m
+        labels:
+          severity: warning
+          service: ml-model
+        annotations:
+          summary: "Model drift detected"
+          description: "Model drift score is {{ $value }}, exceeding 0.1 threshold"
+          runbook_url: "https://docs.credit-risk-ai.example.com/runbooks/model-drift"
+
+      - alert: DataDriftDetected
+        expr: data_drift_score > 0.15
+        for: 1m
+        labels:
+          severity: warning
+          service: data-pipeline
+        annotations:
+          summary: "Data drift detected"
+          description: "Data drift score is {{ $value }}, exceeding 0.15 threshold"
+          runbook_url: "https://docs.credit-risk-ai.example.com/runbooks/data-drift"
+
+      - alert: FeatureImportanceShift
+        expr: abs(feature_importance_change) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          service: ml-model
+        annotations:
+          summary: "Significant feature importance shift detected"
+          description: "Feature importance changed by {{ $value | humanizePercentage }}"
+
+  - name: bias_and_fairness_alerts
+    rules:
+      - alert: BiasViolation
+        expr: bias_metric{protected_attribute!=""} > 0.1
+        for: 1m
+        labels:
+          severity: critical
+          service: compliance
+        annotations:
+          summary: "Bias violation detected"
+          description: "Bias metric for {{ $labels.protected_attribute }} is {{ $value }}, exceeding 0.1 threshold"
+          runbook_url: "https://docs.credit-risk-ai.example.com/runbooks/bias-violation"
+
+      - alert: FairnessViolation
+        expr: fairness_metric{metric_type!=""} < 0.8
+        for: 2m
+        labels:
+          severity: critical
+          service: compliance
+        annotations:
+          summary: "Fairness violation detected"
+          description: "{{ $labels.metric_type }} fairness metric is {{ $value }}, below 0.8 threshold"
+          runbook_url: "https://docs.credit-risk-ai.example.com/runbooks/fairness-violation"
+
+      - alert: DisparateImpactDetected
+        expr: disparate_impact_ratio < 0.8 or disparate_impact_ratio > 1.25
+        for: 5m
+        labels:
+          severity: warning
+          service: compliance
+        annotations:
+          summary: "Disparate impact detected"
+          description: "Disparate impact ratio is {{ $value }}, outside acceptable range [0.8, 1.25]"
+
+  - name: sustainability_alerts
+    rules:
+      - alert: HighCarbonFootprint
+        expr: carbon_emissions_kg_per_hour > 5
+        for: 10m
+        labels:
+          severity: warning
+          service: sustainability
+        annotations:
+          summary: "High carbon footprint detected"
+          description: "Carbon emissions are {{ $value }} kg/hour, exceeding 5 kg/hour threshold"
+          runbook_url: "https://docs.credit-risk-ai.example.com/runbooks/high-carbon-footprint"
+
+      - alert: EnergyConsumptionSpike
+        expr: rate(energy_consumption_kwh[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: sustainability
+        annotations:
+          summary: "Energy consumption spike detected"
+          description: "Energy consumption rate is {{ $value }} kWh/hour"
+
+      - alert: ESGTargetMissed
+        expr: esg_score < 0.7
+        for: 30m
+        labels:
+          severity: warning
+          service: sustainability
+        annotations:
+          summary: "ESG target missed"
+          description: "ESG score is {{ $value }}, below 0.7 target"
+
+  - name: infrastructure_alerts
+    rules:
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          service: infrastructure
+        annotations:
+          summary: "Pod is crash looping"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently"
+          runbook_url: "https://docs.credit-risk-ai.example.com/runbooks/pod-crash-loop"
+
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "High memory usage"
+          description: "Container {{ $labels.container }} is using {{ $value | humanizePercentage }} of memory"
+
+      - alert: HighCPUUsage
+        expr: (rate(container_cpu_usage_seconds_total[5m]) / container_spec_cpu_quota * container_spec_cpu_period) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "High CPU usage"
+          description: "Container {{ $labels.container }} is using {{ $value | humanizePercentage }} of CPU"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: infrastructure
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value | humanizePercentage }} full on {{ $labels.instance }}"
+
+      - alert: DatabaseConnectionsHigh
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "High database connections"
+          description: "PostgreSQL has {{ $value }} active connections"
+
+  - name: federated_learning_alerts
+    rules:
+      - alert: FederatedClientDisconnected
+        expr: federated_clients_connected < federated_clients_expected * 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: federated-learning
+        annotations:
+          summary: "Federated learning clients disconnected"
+          description: "Only {{ $value }} out of {{ $labels.expected }} clients are connected"
+
+      - alert: FederatedTrainingStalled
+        expr: increase(federated_training_rounds_completed[30m]) == 0
+        for: 30m
+        labels:
+          severity: critical
+          service: federated-learning
+        annotations:
+          summary: "Federated training has stalled"
+          description: "No training rounds completed in the last 30 minutes"
+
+      - alert: FederatedModelDivergence
+        expr: federated_model_divergence_score > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          service: federated-learning
+        annotations:
+          summary: "Federated model divergence detected"
+          description: "Model divergence score is {{ $value }}, indicating potential client data heterogeneity"
+
+  - name: security_alerts
+    rules:
+      - alert: UnauthorizedAPIAccess
+        expr: rate(http_requests_total{status="401"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High rate of unauthorized API access attempts"
+          description: "{{ $value }} unauthorized requests per second detected"
+
+      - alert: SuspiciousRequestPattern
+        expr: rate(http_requests_total{user_agent=~".*bot.*|.*crawler.*"}[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Suspicious request pattern detected"
+          description: "High rate of bot/crawler requests: {{ $value }} requests/second"
+
+      - alert: DataPrivacyViolation
+        expr: privacy_budget_consumed > 0.9
+        for: 1m
+        labels:
+          severity: critical
+          service: privacy
+        annotations:
+          summary: "Privacy budget nearly exhausted"
+          description: "Privacy budget consumption is {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.credit-risk-ai.example.com/runbooks/privacy-budget"

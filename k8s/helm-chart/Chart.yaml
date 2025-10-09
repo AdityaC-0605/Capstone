@@ -1,0 +1,35 @@
+apiVersion: v2
+name: sustainable-credit-risk-ai
+description: A Helm chart for Sustainable Credit Risk AI System
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - ai
+  - machine-learning
+  - credit-risk
+  - federated-learning
+  - sustainability
+home: https://github.com/example/sustainable-credit-risk-ai
+sources:
+  - https://github.com/example/sustainable-credit-risk-ai
+maintainers:
+  - name: AI Team
+    email: ai-team@example.com
+dependencies:
+  - name: postgresql
+    version: "12.1.9"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.3.7"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: prometheus
+    version: "15.18.0"
+    repository: "https://prometheus-community.github.io/helm-charts"
+    condition: monitoring.prometheus.enabled
+  - name: grafana
+    version: "6.44.11"
+    repository: "https://grafana.github.io/helm-charts"
+    condition: monitoring.grafana.enabled

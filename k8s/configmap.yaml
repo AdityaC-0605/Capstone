@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: credit-risk-config
+  namespace: credit-risk-ai
+data:
+  ENVIRONMENT: "production"
+  DATABASE_URL: "postgresql://postgres:password@postgres-service:5432/credit_risk_ai"
+  REDIS_URL: "redis://redis-service:6379/0"
+  MLFLOW_TRACKING_URI: "http://mlflow-service:5000"
+  FL_SERVER_ADDRESS: "federated-server-service:8080"
+  CODECARBON_LOG_LEVEL: "INFO"
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: credit-risk-ai
+data:
+  POSTGRES_DB: "credit_risk_ai"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "password"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlflow-config
+  namespace: credit-risk-ai
+data:
+  MLFLOW_BACKEND_STORE_URI: "postgresql://postgres:password@postgres-service:5432/mlflow"
+  MLFLOW_DEFAULT_ARTIFACT_ROOT: "/mlflow/artifacts"

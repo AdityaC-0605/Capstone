@@ -1,53 +1,97 @@
-# Core dependencies
-torch>=2.0.0
-numpy>=1.21.0
-pandas>=1.3.0
-scikit-learn>=1.0.0
+# Core dependencies for Sustainable Credit Risk AI System
 
-# Deep learning and ML
-pytorch-geometric>=2.3.0
-transformers>=4.20.0
-lightgbm>=3.3.0
-optuna>=3.0.0
+# Web framework and API
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
 
-# Security and cryptography
-cryptography>=3.4.8
-bcrypt>=3.2.0
-PyJWT>=2.4.0
-pyotp>=2.6.0
+# Machine Learning and Data Science
+torch==2.1.1
+torchvision==0.16.1
+torch-geometric==2.4.0
+scikit-learn==1.3.2
+pandas==2.1.4
+numpy==1.24.4
+scipy==1.11.4
 
-# Data processing
-pyyaml>=6.0
-jsonschema>=4.0.0
+# Deep Learning utilities
+transformers==4.36.2
+datasets==2.15.0
 
-# API and web
-fastapi>=0.95.0
-uvicorn>=0.20.0
-pydantic>=1.10.0
-
-# Database
-sqlalchemy>=1.4.0
-psycopg2-binary>=2.9.0
-
-# Monitoring and logging
-prometheus-client>=0.14.0
-codecarbon>=2.1.0
-
-# Federated learning
-flower>=1.4.0
+# Federated Learning
+flower==1.6.0
 
 # Explainability
-shap>=0.41.0
-lime>=0.2.0
+shap==0.43.0
+lime==0.2.0.1
+
+# Synthetic Data Generation
+ctgan==0.7.4
+
+# Sustainability and Carbon Tracking
+codecarbon==2.3.4
+
+# Experiment Tracking
+mlflow==2.8.1
+wandb==0.16.1
+
+# Hyperparameter Optimization
+optuna==3.4.0
+
+# Data Processing
+pyarrow==14.0.1
+openpyxl==3.1.2
+
+# Visualization
+plotly==5.17.0
+dash==2.14.2
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# Database and Storage
+sqlalchemy==2.0.23
+alembic==1.13.1
+redis==5.0.1
+
+# Security and Authentication
+cryptography==41.0.8
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Configuration and Environment
+python-dotenv==1.0.0
+pydantic-settings==2.1.0
+
+# Logging and Monitoring
+structlog==23.2.0
+prometheus-client==0.19.0
+
+# HTTP and API clients
+httpx==0.25.2
+requests==2.31.0
+
+# Date and Time
+python-dateutil==2.8.2
 
 # Utilities
-python-dotenv>=0.19.0
-click>=8.0.0
-tqdm>=4.64.0
+tqdm==4.66.1
+click==8.1.7
+rich==13.7.0
 
-# Development dependencies
-pytest>=7.0.0
-pytest-cov>=4.0.0
-black>=22.0.0
-flake8>=5.0.0
-mypy>=0.991
+# Model Compression and Optimization
+torch-pruning==1.3.2
+
+# Bias Detection and Fairness
+fairlearn==0.10.0
+aif360==0.5.0
+
+# Data Validation
+great-expectations==0.18.8
+
+# Async support
+asyncio-mqtt==0.16.1
+aiofiles==23.2.1
+
+# Testing (minimal for production)
+pytest==7.4.3

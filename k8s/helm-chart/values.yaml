@@ -1,0 +1,296 @@
+# Default values for sustainable-credit-risk-ai
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Application configuration
+app:
+  name: sustainable-credit-risk-ai
+  version: "1.0.0"
+
+# API Service configuration
+api:
+  enabled: true
+  image:
+    repository: sustainable-credit-risk-ai
+    tag: "production"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 3
+  
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 30
+  
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+# Federated Learning Server configuration
+federatedServer:
+  enabled: true
+  image:
+    repository: sustainable-credit-risk-ai
+    tag: "development"
+    pullPolicy: IfNotPresent
+  
+  replicaCount: 1
+  
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+  
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+
+# Training Jobs configuration
+training:
+  enabled: true
+  image:
+    repository: sustainable-credit-risk-ai
+    tag: "training"
+    pullPolicy: IfNotPresent
+  
+  schedule: "0 2 * * 0"  # Weekly on Sunday at 2 AM
+  
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "2000m"
+      nvidia.com/gpu: "1"
+    limits:
+      memory: "8Gi"
+      cpu: "4000m"
+      nvidia.com/gpu: "1"
+  
+  backoffLimit: 3
+  activeDeadlineSeconds: 7200
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "password"
+    database: "credit_risk_ai"
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+    
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "250m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
+
+# Redis configuration
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+    
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "200m"
+
+# MLflow configuration
+mlflow:
+  enabled: true
+  image:
+    repository: python
+    tag: "3.11-slim"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 5000
+    targetPort: 5000
+  
+  persistence:
+    enabled: true
+    size: 20Gi
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  
+  prometheus:
+    enabled: true
+    server:
+      persistentVolume:
+        enabled: true
+        size: 10Gi
+      
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "250m"
+        limits:
+          memory: "1Gi"
+          cpu: "500m"
+  
+  grafana:
+    enabled: true
+    persistence:
+      enabled: true
+      size: 5Gi
+    
+    adminPassword: "admin"
+    
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "200m"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  
+  hosts:
+    - host: api.credit-risk-ai.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api
+    - host: monitoring.credit-risk-ai.example.com
+      paths:
+        - path: /grafana
+          pathType: Prefix
+          service: grafana
+        - path: /prometheus
+          pathType: Prefix
+          service: prometheus
+    - host: mlflow.credit-risk-ai.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: mlflow
+  
+  tls:
+    - secretName: credit-risk-tls
+      hosts:
+        - api.credit-risk-ai.example.com
+        - monitoring.credit-risk-ai.example.com
+        - mlflow.credit-risk-ai.example.com
+
+# Security configuration
+security:
+  networkPolicies:
+    enabled: true
+  
+  podSecurityPolicy:
+    enabled: true
+  
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+
+# Storage configuration
+persistence:
+  storageClass: ""
+  
+  models:
+    enabled: true
+    size: 50Gi
+    accessMode: ReadWriteMany
+
+# Configuration for external services
+external:
+  database:
+    enabled: false
+    host: ""
+    port: 5432
+    database: "credit_risk_ai"
+    username: "postgres"
+    password: ""
+  
+  redis:
+    enabled: false
+    host: ""
+    port: 6379
+    password: ""
+
+# Environment-specific configurations
+environment: "production"
+
+# Additional environment variables
+env:
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  CODECARBON_LOG_LEVEL: "INFO"
+
+# Node selector and tolerations
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2

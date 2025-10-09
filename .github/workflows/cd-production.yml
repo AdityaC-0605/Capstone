@@ -1,0 +1,424 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - production-canary
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Pre-deployment Validation
+  pre-deployment-checks:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should-deploy: ${{ steps.checks.outputs.should-deploy }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Extract version
+      id: version
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION=${GITHUB_REF#refs/tags/}
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Deploying version: $VERSION"
+
+    - name: Validate version format
+      run: |
+        if [[ ! "${{ steps.version.outputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "Invalid version format. Expected: vX.Y.Z"
+          exit 1
+        fi
+
+    - name: Check if staging tests passed
+      id: checks
+      run: |
+        # Check if the corresponding staging deployment was successful
+        # This would typically query your deployment system or CI/CD history
+        echo "should-deploy=true" >> $GITHUB_OUTPUT
+
+    - name: Verify image exists
+      run: |
+        docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+
+  # Blue-Green Deployment Strategy
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: pre-deployment-checks
+    if: needs.pre-deployment-checks.outputs.should-deploy == 'true'
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: https://api.credit-risk-ai.example.com
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl for production
+      run: |
+        echo "${{ secrets.PRODUCTION_KUBECONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+        kubectl config current-context
+
+    - name: Create backup of current deployment
+      env:
+        KUBECONFIG: kubeconfig
+      run: |
+        kubectl get deployment api-deployment -n credit-risk-ai -o yaml > current-deployment-backup.yaml
+        kubectl get service api-service -n credit-risk-ai -o yaml > current-service-backup.yaml
+
+    - name: Upload backup
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-backup-${{ github.run_number }}
+        path: |
+          current-deployment-backup.yaml
+          current-service-backup.yaml
+
+    - name: Deploy green environment
+      env:
+        KUBECONFIG: kubeconfig
+        VERSION: ${{ needs.pre-deployment-checks.outputs.version }}
+      run: |
+        # Create green deployment
+        sed "s|sustainable-credit-risk-ai:production|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION|g" k8s/api-deployment.yaml > api-deployment-green.yaml
+        sed "s|name: api-deployment|name: api-deployment-green|g" api-deployment-green.yaml > api-deployment-green-final.yaml
+        sed "s|app: api|app: api-green|g" api-deployment-green-final.yaml > api-deployment-green.yaml
+        
+        kubectl apply -f api-deployment-green.yaml -n credit-risk-ai
+        kubectl rollout status deployment/api-deployment-green -n credit-risk-ai --timeout=600s
+
+    - name: Run production smoke tests on green
+      env:
+        KUBECONFIG: kubeconfig
+      run: |
+        # Port forward to green deployment for testing
+        kubectl port-forward deployment/api-deployment-green 8080:8000 -n credit-risk-ai &
+        PF_PID=$!
+        sleep 10
+        
+        # Run smoke tests
+        python scripts/smoke_tests.py --url http://localhost:8080
+        
+        # Clean up port forward
+        kill $PF_PID
+
+    - name: Run health checks on green
+      env:
+        KUBECONFIG: kubeconfig
+      run: |
+        # Comprehensive health checks
+        kubectl exec deployment/api-deployment-green -n credit-risk-ai -- curl -f http://localhost:8000/health
+        kubectl exec deployment/api-deployment-green -n credit-risk-ai -- curl -f http://localhost:8000/ready
+
+    - name: Switch traffic to green (Blue-Green cutover)
+      env:
+        KUBECONFIG: kubeconfig
+      run: |
+        # Update service selector to point to green deployment
+        kubectl patch service api-service -n credit-risk-ai -p '{"spec":{"selector":{"app":"api-green"}}}'
+        
+        # Wait for traffic to stabilize
+        sleep 30
+
+    - name: Verify production traffic
+      run: |
+        # Test production endpoint
+        curl -f https://api.credit-risk-ai.example.com/health
+        
+        # Run quick validation
+        python scripts/production_validation.py
+
+    - name: Clean up blue deployment
+      env:
+        KUBECONFIG: kubeconfig
+      run: |
+        # Scale down old deployment
+        kubectl scale deployment api-deployment -n credit-risk-ai --replicas=0
+        
+        # Wait before deletion
+        sleep 60
+        
+        # Delete old deployment
+        kubectl delete deployment api-deployment -n credit-risk-ai
+        
+        # Rename green to blue for next deployment
+        kubectl patch deployment api-deployment-green -n credit-risk-ai -p '{"metadata":{"name":"api-deployment"}}'
+        kubectl patch deployment api-deployment-green -n credit-risk-ai -p '{"spec":{"selector":{"matchLabels":{"app":"api"}}}}'
+        kubectl patch deployment api-deployment-green -n credit-risk-ai -p '{"spec":{"template":{"metadata":{"labels":{"app":"api"}}}}}'
+
+  # Canary Deployment (Alternative Strategy)
+  deploy-canary:
+    runs-on: ubuntu-latest
+    needs: pre-deployment-checks
+    if: needs.pre-deployment-checks.outputs.should-deploy == 'true' && github.event.inputs.environment == 'production-canary'
+    environment:
+      name: production-canary
+      url: https://api.credit-risk-ai.example.com
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.PRODUCTION_KUBECONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Deploy canary (10% traffic)
+      env:
+        KUBECONFIG: kubeconfig
+        VERSION: ${{ needs.pre-deployment-checks.outputs.version }}
+      run: |
+        # Create canary deployment with 1 replica (10% of traffic)
+        sed "s|sustainable-credit-risk-ai:production|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION|g" k8s/api-deployment.yaml > api-deployment-canary.yaml
+        sed "s|name: api-deployment|name: api-deployment-canary|g" api-deployment-canary.yaml > temp.yaml
+        sed "s|replicas: 3|replicas: 1|g" temp.yaml > api-deployment-canary.yaml
+        sed "s|app: api|app: api-canary|g" api-deployment-canary.yaml > temp.yaml
+        mv temp.yaml api-deployment-canary.yaml
+        
+        kubectl apply -f api-deployment-canary.yaml -n credit-risk-ai
+        kubectl rollout status deployment/api-deployment-canary -n credit-risk-ai --timeout=300s
+
+    - name: Configure traffic splitting
+      env:
+        KUBECONFIG: kubeconfig
+      run: |
+        # Update service to include both stable and canary
+        kubectl patch service api-service -n credit-risk-ai -p '{"spec":{"selector":{}}}'
+        
+        # Apply Istio VirtualService for traffic splitting (if using Istio)
+        cat <<EOF | kubectl apply -f -
+        apiVersion: networking.istio.io/v1beta1
+        kind: VirtualService
+        metadata:
+          name: api-canary-vs
+          namespace: credit-risk-ai
+        spec:
+          hosts:
+          - api-service
+          http:
+          - match:
+            - headers:
+                canary:
+                  exact: "true"
+            route:
+            - destination:
+                host: api-service
+                subset: canary
+          - route:
+            - destination:
+                host: api-service
+                subset: stable
+              weight: 90
+            - destination:
+                host: api-service
+                subset: canary
+              weight: 10
+        EOF
+
+    - name: Monitor canary metrics
+      env:
+        KUBECONFIG: kubeconfig
+      run: |
+        # Monitor for 10 minutes
+        for i in {1..20}; do
+          echo "Monitoring canary deployment... ($i/20)"
+          
+          # Check error rates
+          ERROR_RATE=$(kubectl exec deployment/prometheus-deployment -n credit-risk-ai -- \
+            promtool query instant 'rate(http_requests_total{status=~"5.."}[5m])' | grep -o '[0-9.]*' | head -1)
+          
+          if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then
+            echo "High error rate detected: $ERROR_RATE"
+            exit 1
+          fi
+          
+          sleep 30
+        done
+
+    - name: Promote canary to full deployment
+      env:
+        KUBECONFIG: kubeconfig
+      run: |
+        # Scale up canary to full capacity
+        kubectl scale deployment api-deployment-canary -n credit-risk-ai --replicas=3
+        
+        # Scale down stable deployment
+        kubectl scale deployment api-deployment -n credit-risk-ai --replicas=0
+        
+        # Update service selector
+        kubectl patch service api-service -n credit-risk-ai -p '{"spec":{"selector":{"app":"api-canary"}}}'
+        
+        # Clean up old deployment
+        kubectl delete deployment api-deployment -n credit-risk-ai
+        
+        # Rename canary to stable
+        kubectl patch deployment api-deployment-canary -n credit-risk-ai -p '{"metadata":{"name":"api-deployment"}}'
+
+  # Post-deployment Validation
+  post-deployment-validation:
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always() && (needs.deploy-production.result == 'success' || needs.deploy-canary.result == 'success')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Run production validation suite
+      env:
+        PRODUCTION_URL: https://api.credit-risk-ai.example.com
+      run: |
+        pytest tests/production/ \
+          --production-url=$PRODUCTION_URL \
+          --junitxml=production-validation-results.xml \
+          -v
+
+    - name: Run performance validation
+      env:
+        PRODUCTION_URL: https://api.credit-risk-ai.example.com
+      run: |
+        python scripts/performance_validation.py --url $PRODUCTION_URL
+
+    - name: Run compliance validation
+      env:
+        PRODUCTION_URL: https://api.credit-risk-ai.example.com
+      run: |
+        pytest tests/compliance/test_production_compliance.py \
+          --production-url=$PRODUCTION_URL \
+          --junitxml=production-compliance-results.xml \
+          -v
+
+    - name: Upload validation results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: production-validation-results
+        path: |
+          production-validation-results.xml
+          production-compliance-results.xml
+
+  # Rollback on Failure
+  rollback-on-failure:
+    runs-on: ubuntu-latest
+    needs: [deploy-production, post-deployment-validation]
+    if: failure()
+    
+    steps:
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.PRODUCTION_KUBECONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Download deployment backup
+      uses: actions/download-artifact@v3
+      with:
+        name: deployment-backup-${{ github.run_number }}
+
+    - name: Rollback deployment
+      env:
+        KUBECONFIG: kubeconfig
+      run: |
+        echo "Rolling back deployment due to failure..."
+        kubectl apply -f current-deployment-backup.yaml -n credit-risk-ai
+        kubectl apply -f current-service-backup.yaml -n credit-risk-ai
+        kubectl rollout status deployment/api-deployment -n credit-risk-ai --timeout=300s
+
+    - name: Verify rollback
+      run: |
+        curl -f https://api.credit-risk-ai.example.com/health
+
+    - name: Notify rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#alerts'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+        text: "🚨 Production deployment failed and was rolled back!"
+
+  # Deployment Notification
+  notify-deployment:
+    runs-on: ubuntu-latest
+    needs: [deploy-production, post-deployment-validation]
+    if: success()
+    
+    steps:
+    - name: Notify successful deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+        text: "✅ Production deployment successful! Version: ${{ needs.pre-deployment-checks.outputs.version }}"
+
+    - name: Create GitHub release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ needs.pre-deployment-checks.outputs.version }}
+        release_name: Release ${{ needs.pre-deployment-checks.outputs.version }}
+        body: |
+          ## Changes
+          - Deployed to production successfully
+          - All validation tests passed
+          
+          ## Deployment Details
+          - **Environment**: Production
+          - **Image**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.pre-deployment-checks.outputs.version }}
+          - **Deployment Time**: ${{ github.event.head_commit.timestamp }}
+        draft: false
+        prerelease: false

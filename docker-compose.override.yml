@@ -1,0 +1,25 @@
+# Docker Compose override for development environment
+
+services:
+  api:
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - RELOAD=true
+    volumes:
+      - .:/app
+    command: ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "debug"]
+
+  postgres:
+    environment:
+      - POSTGRES_DB=credit_risk_ai_dev
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  mlflow:
+    ports:
+      - "5000:5000"

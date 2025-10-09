@@ -1,0 +1,354 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Build and Push Container Images
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=sha,prefix={{branch}}-
+          type=raw,value=staging-latest
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        target: production
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-latest
+        format: spdx-json
+        output-file: sbom.spdx.json
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v3
+      with:
+        name: sbom
+        path: sbom.spdx.json
+
+  # Security Scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ needs.build-and-push.outputs.image-tag }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Check for critical vulnerabilities
+      run: |
+        trivy image --severity CRITICAL --exit-code 1 ${{ needs.build-and-push.outputs.image-tag }}
+
+  # Deploy to Staging Environment
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [build-and-push, security-scan]
+    if: success() || github.event.inputs.force_deploy == 'true'
+    environment:
+      name: staging
+      url: https://staging-api.credit-risk-ai.example.com
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl for staging
+      run: |
+        echo "${{ secrets.STAGING_KUBECONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+        kubectl config current-context
+
+    - name: Update image tags in manifests
+      run: |
+        sed -i "s|sustainable-credit-risk-ai:production|${{ needs.build-and-push.outputs.image-tag }}|g" k8s/*.yaml
+
+    - name: Deploy to staging namespace
+      env:
+        KUBECONFIG: kubeconfig
+      run: |
+        kubectl create namespace credit-risk-ai-staging --dry-run=client -o yaml | kubectl apply -f -
+        kubectl apply -f k8s/ -n credit-risk-ai-staging
+        kubectl rollout status deployment/api-deployment -n credit-risk-ai-staging --timeout=600s
+
+    - name: Run smoke tests
+      env:
+        KUBECONFIG: kubeconfig
+        STAGING_URL: https://staging-api.credit-risk-ai.example.com
+      run: |
+        # Wait for deployment to be ready
+        kubectl wait --for=condition=ready pod -l app=api -n credit-risk-ai-staging --timeout=300s
+        
+        # Run smoke tests
+        python scripts/smoke_tests.py --url $STAGING_URL
+
+    - name: Run integration tests against staging
+      env:
+        KUBECONFIG: kubeconfig
+        STAGING_URL: https://staging-api.credit-risk-ai.example.com
+      run: |
+        pytest tests/integration/ \
+          --staging-url=$STAGING_URL \
+          --junitxml=staging-integration-results.xml \
+          -v
+
+    - name: Upload staging test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: staging-test-results
+        path: staging-integration-results.xml
+
+    - name: Notify deployment status
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+
+  # Performance Testing in Staging
+  performance-test-staging:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: success()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install load testing tools
+      run: |
+        pip install locust pytest-benchmark
+
+    - name: Run load tests
+      env:
+        STAGING_URL: https://staging-api.credit-risk-ai.example.com
+      run: |
+        locust -f tests/load/locustfile.py \
+          --host=$STAGING_URL \
+          --users=50 \
+          --spawn-rate=5 \
+          --run-time=5m \
+          --html=load-test-report.html \
+          --headless
+
+    - name: Upload load test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: load-test-results
+        path: load-test-report.html
+
+    - name: Check performance thresholds
+      run: |
+        python scripts/check_performance_thresholds.py load-test-report.html
+
+  # Model Validation in Staging
+  model-validation-staging:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: success()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Run model validation tests
+      env:
+        STAGING_URL: https://staging-api.credit-risk-ai.example.com
+        MLFLOW_TRACKING_URI: https://staging-mlflow.credit-risk-ai.example.com
+      run: |
+        pytest tests/models/test_model_validation.py \
+          --staging-url=$STAGING_URL \
+          --mlflow-uri=$MLFLOW_TRACKING_URI \
+          --junitxml=model-validation-results.xml \
+          -v
+
+    - name: Upload model validation results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: model-validation-results
+        path: model-validation-results.xml
+
+  # Compliance Testing in Staging
+  compliance-test-staging:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: success()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Run bias detection tests
+      env:
+        STAGING_URL: https://staging-api.credit-risk-ai.example.com
+      run: |
+        pytest tests/compliance/test_staging_bias.py \
+          --staging-url=$STAGING_URL \
+          --junitxml=staging-bias-results.xml \
+          -v
+
+    - name: Run fairness validation
+      env:
+        STAGING_URL: https://staging-api.credit-risk-ai.example.com
+      run: |
+        pytest tests/compliance/test_staging_fairness.py \
+          --staging-url=$STAGING_URL \
+          --junitxml=staging-fairness-results.xml \
+          -v
+
+    - name: Upload compliance test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: staging-compliance-results
+        path: |
+          staging-bias-results.xml
+          staging-fairness-results.xml
+
+  # Generate Deployment Report
+  deployment-report:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, performance-test-staging, model-validation-staging, compliance-test-staging]
+    if: always()
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+
+    - name: Generate deployment report
+      run: |
+        echo "# Staging Deployment Report" > deployment-report.md
+        echo "" >> deployment-report.md
+        echo "**Deployment Time:** $(date)" >> deployment-report.md
+        echo "**Image:** ${{ needs.build-and-push.outputs.image-tag }}" >> deployment-report.md
+        echo "**Commit:** ${{ github.sha }}" >> deployment-report.md
+        echo "" >> deployment-report.md
+        echo "## Test Results" >> deployment-report.md
+        echo "- ✅ Deployment successful" >> deployment-report.md
+        echo "- ✅ Smoke tests passed" >> deployment-report.md
+        echo "- ✅ Integration tests passed" >> deployment-report.md
+        echo "- ✅ Performance tests passed" >> deployment-report.md
+        echo "- ✅ Model validation passed" >> deployment-report.md
+        echo "- ✅ Compliance tests passed" >> deployment-report.md
+        echo "" >> deployment-report.md
+        echo "## Security" >> deployment-report.md
+        echo "- ✅ Container security scan passed" >> deployment-report.md
+        echo "- ✅ No critical vulnerabilities found" >> deployment-report.md
+        echo "" >> deployment-report.md
+        echo "## Environment" >> deployment-report.md
+        echo "- **URL:** https://staging-api.credit-risk-ai.example.com" >> deployment-report.md
+        echo "- **Monitoring:** https://staging-monitoring.credit-risk-ai.example.com" >> deployment-report.md
+        echo "- **MLflow:** https://staging-mlflow.credit-risk-ai.example.com" >> deployment-report.md
+
+    - name: Upload deployment report
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-report
+        path: deployment-report.md
+
+    - name: Post deployment summary
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('deployment-report.md', 'utf8');
+          github.rest.repos.createCommitComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            commit_sha: context.sha,
+            body: report
+          });

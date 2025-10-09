@@ -1,0 +1,722 @@
+openapi: 3.0.3
+info:
+  title: Sustainable Credit Risk AI API
+  description: |
+    A comprehensive API for sustainable credit risk assessment using neural networks,
+    federated learning, and explainable AI with built-in sustainability monitoring
+    and bias detection capabilities.
+    
+    ## Features
+    - Real-time credit risk prediction
+    - Batch processing capabilities
+    - Model explainability (SHAP, LIME)
+    - Bias detection and fairness metrics
+    - Sustainability tracking
+    - Federated learning coordination
+    
+    ## Authentication
+    All endpoints require API key authentication via the `X-API-Key` header.
+    
+    ## Rate Limiting
+    - Standard endpoints: 1000 requests/hour
+    - Batch endpoints: 100 requests/hour
+    - Training endpoints: 10 requests/hour
+  version: 1.0.0
+  contact:
+    name: AI Team
+    email: ai-team@credit-risk-ai.example.com
+    url: https://docs.credit-risk-ai.example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://credit-risk-ai.example.com/terms
+
+servers:
+  - url: https://api.credit-risk-ai.example.com/api/v1
+    description: Production server
+  - url: https://staging-api.credit-risk-ai.example.com/api/v1
+    description: Staging server
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the API service
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+  /ready:
+    get:
+      summary: Readiness check endpoint
+      description: Returns whether the service is ready to accept requests
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ready:
+                    type: boolean
+                  models_loaded:
+                    type: boolean
+                  database_connected:
+                    type: boolean
+
+  /predict:
+    post:
+      summary: Single credit risk prediction
+      description: |
+        Predicts credit risk for a single loan application with explainability
+        and bias detection. Returns risk score, category, confidence, and
+        detailed explanations.
+      tags:
+        - Prediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditApplication'
+            example:
+              application_id: "app_12345"
+              applicant_id: "user_67890"
+              loan_amount: 50000.0
+              loan_term: 36
+              annual_income: 75000.0
+              employment_length: 5
+              home_ownership: "RENT"
+              debt_to_income_ratio: 0.25
+              credit_history_length: 10
+              behavioral_features:
+                avg_monthly_spending: 3000.0
+                payment_frequency: 0.95
+              temporal_features:
+                - month: 1
+                  spending: 2800.0
+                  payments: 1
+              relational_features:
+                guarantors: []
+                co_applicants: []
+      responses:
+        '200':
+          description: Successful prediction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictionResult'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /batch:
+    post:
+      summary: Batch credit risk prediction
+      description: |
+        Processes multiple loan applications in a single request.
+        Optimized for high-throughput scenarios with efficient batching.
+      tags:
+        - Prediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                applications:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CreditApplication'
+                  maxItems: 100
+                options:
+                  type: object
+                  properties:
+                    include_explanations:
+                      type: boolean
+                      default: true
+                    include_bias_analysis:
+                      type: boolean
+                      default: true
+      responses:
+        '200':
+          description: Successful batch prediction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  predictions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PredictionResult'
+                  processing_time_ms:
+                    type: number
+                  total_applications:
+                    type: integer
+        '400':
+          description: Invalid batch request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /explain/{application_id}:
+    get:
+      summary: Get detailed explanation for a prediction
+      description: |
+        Retrieves comprehensive explanation for a previously made prediction
+        including SHAP values, LIME explanations, and counterfactuals.
+      tags:
+        - Explainability
+      parameters:
+        - name: application_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique application identifier
+      responses:
+        '200':
+          description: Detailed explanation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedExplanation'
+        '404':
+          description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /models:
+    get:
+      summary: List available models
+      description: Returns information about all available prediction models
+      tags:
+        - Models
+      responses:
+        '200':
+          description: List of available models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ModelInfo'
+
+  /models/{model_id}/metrics:
+    get:
+      summary: Get model performance metrics
+      description: Returns current performance metrics for a specific model
+      tags:
+        - Models
+      parameters:
+        - name: model_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Model performance metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelMetrics'
+
+  /bias/analysis:
+    post:
+      summary: Analyze bias in predictions
+      description: |
+        Analyzes bias across protected attributes for a set of predictions.
+        Returns fairness metrics and bias detection results.
+      tags:
+        - Bias Detection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                predictions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PredictionResult'
+                protected_attributes:
+                  type: array
+                  items:
+                    type: string
+                  example: ["gender", "race", "age_group"]
+      responses:
+        '200':
+          description: Bias analysis results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BiasAnalysis'
+
+  /sustainability/metrics:
+    get:
+      summary: Get sustainability metrics
+      description: Returns current sustainability and ESG metrics
+      tags:
+        - Sustainability
+      parameters:
+        - name: time_range
+          in: query
+          schema:
+            type: string
+            enum: [1h, 24h, 7d, 30d]
+            default: 24h
+      responses:
+        '200':
+          description: Sustainability metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SustainabilityMetrics'
+
+  /federated/status:
+    get:
+      summary: Get federated learning status
+      description: Returns status of federated learning coordination
+      tags:
+        - Federated Learning
+      responses:
+        '200':
+          description: Federated learning status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FederatedStatus'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    CreditApplication:
+      type: object
+      required:
+        - application_id
+        - applicant_id
+        - loan_amount
+        - loan_term
+        - annual_income
+        - employment_length
+        - home_ownership
+        - debt_to_income_ratio
+        - credit_history_length
+      properties:
+        application_id:
+          type: string
+          description: Unique application identifier
+          example: "app_12345"
+        applicant_id:
+          type: string
+          description: Unique applicant identifier
+          example: "user_67890"
+        loan_amount:
+          type: number
+          minimum: 1000
+          maximum: 1000000
+          description: Requested loan amount in USD
+          example: 50000.0
+        loan_term:
+          type: integer
+          minimum: 6
+          maximum: 360
+          description: Loan term in months
+          example: 36
+        annual_income:
+          type: number
+          minimum: 0
+          description: Annual income in USD
+          example: 75000.0
+        employment_length:
+          type: integer
+          minimum: 0
+          description: Employment length in years
+          example: 5
+        home_ownership:
+          type: string
+          enum: [RENT, OWN, MORTGAGE, OTHER]
+          description: Home ownership status
+          example: "RENT"
+        debt_to_income_ratio:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Debt-to-income ratio
+          example: 0.25
+        credit_history_length:
+          type: integer
+          minimum: 0
+          description: Credit history length in years
+          example: 10
+        behavioral_features:
+          type: object
+          description: Behavioral spending patterns
+          properties:
+            avg_monthly_spending:
+              type: number
+            payment_frequency:
+              type: number
+              minimum: 0
+              maximum: 1
+        temporal_features:
+          type: array
+          description: Time-series financial data
+          items:
+            type: object
+            properties:
+              month:
+                type: integer
+              spending:
+                type: number
+              payments:
+                type: integer
+        relational_features:
+          type: object
+          description: Relationship and network data
+          properties:
+            guarantors:
+              type: array
+              items:
+                type: string
+            co_applicants:
+              type: array
+              items:
+                type: string
+
+    PredictionResult:
+      type: object
+      properties:
+        application_id:
+          type: string
+          example: "app_12345"
+        risk_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Risk probability (0 = low risk, 1 = high risk)
+          example: 0.23
+        risk_category:
+          type: string
+          enum: [low, medium, high]
+          example: "low"
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Model confidence in prediction
+          example: 0.87
+        model_contributions:
+          type: object
+          description: Individual model contributions in ensemble
+          additionalProperties:
+            type: number
+        explanation:
+          $ref: '#/components/schemas/ExplanationResult'
+        processing_time_ms:
+          type: number
+          example: 45.2
+        energy_consumed_mwh:
+          type: number
+          description: Energy consumed for this prediction
+          example: 0.0001
+        timestamp:
+          type: string
+          format: date-time
+
+    ExplanationResult:
+      type: object
+      properties:
+        feature_importance:
+          type: object
+          description: Feature importance scores
+          additionalProperties:
+            type: number
+        shap_values:
+          type: object
+          description: SHAP explanation values
+          additionalProperties:
+            type: number
+        lime_explanation:
+          type: object
+          description: LIME local explanation
+          properties:
+            local_importance:
+              type: object
+              additionalProperties:
+                type: number
+            intercept:
+              type: number
+        counterfactuals:
+          type: array
+          description: What-if scenarios
+          items:
+            type: object
+            properties:
+              feature:
+                type: string
+              original_value:
+                type: number
+              counterfactual_value:
+                type: number
+              impact:
+                type: number
+
+    DetailedExplanation:
+      allOf:
+        - $ref: '#/components/schemas/ExplanationResult'
+        - type: object
+          properties:
+            attention_weights:
+              type: object
+              description: Attention mechanism weights
+            decision_path:
+              type: array
+              description: Decision tree path
+              items:
+                type: object
+            bias_analysis:
+              $ref: '#/components/schemas/BiasAnalysis'
+
+    ModelInfo:
+      type: object
+      properties:
+        model_id:
+          type: string
+          example: "ensemble_v1.2"
+        model_type:
+          type: string
+          example: "ensemble"
+        version:
+          type: string
+          example: "1.2.0"
+        architecture:
+          type: array
+          items:
+            type: string
+          example: ["DNN", "LSTM", "GNN", "TCN"]
+        training_date:
+          type: string
+          format: date-time
+        performance_metrics:
+          $ref: '#/components/schemas/ModelMetrics'
+        sustainability_metrics:
+          type: object
+          properties:
+            model_size_mb:
+              type: number
+            inference_energy_mwh:
+              type: number
+            carbon_footprint_kg:
+              type: number
+
+    ModelMetrics:
+      type: object
+      properties:
+        accuracy:
+          type: number
+          example: 0.87
+        precision:
+          type: number
+          example: 0.85
+        recall:
+          type: number
+          example: 0.82
+        f1_score:
+          type: number
+          example: 0.83
+        auc_roc:
+          type: number
+          example: 0.91
+        drift_score:
+          type: number
+          example: 0.05
+        last_updated:
+          type: string
+          format: date-time
+
+    BiasAnalysis:
+      type: object
+      properties:
+        overall_bias_score:
+          type: number
+          description: Overall bias score (0 = no bias, 1 = maximum bias)
+          example: 0.03
+        protected_attribute_analysis:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              demographic_parity:
+                type: number
+              equal_opportunity:
+                type: number
+              equalized_odds:
+                type: number
+              disparate_impact_ratio:
+                type: number
+        fairness_violations:
+          type: array
+          items:
+            type: object
+            properties:
+              attribute:
+                type: string
+              metric:
+                type: string
+              value:
+                type: number
+              threshold:
+                type: number
+              severity:
+                type: string
+                enum: [low, medium, high, critical]
+
+    SustainabilityMetrics:
+      type: object
+      properties:
+        energy_consumption:
+          type: object
+          properties:
+            total_kwh:
+              type: number
+            training_kwh:
+              type: number
+            inference_kwh:
+              type: number
+            infrastructure_kwh:
+              type: number
+        carbon_emissions:
+          type: object
+          properties:
+            total_kg_co2e:
+              type: number
+            per_prediction_g_co2e:
+              type: number
+            renewable_percentage:
+              type: number
+        esg_metrics:
+          type: object
+          properties:
+            environmental_score:
+              type: number
+            social_score:
+              type: number
+            governance_score:
+              type: number
+            overall_esg_score:
+              type: number
+        efficiency_metrics:
+          type: object
+          properties:
+            predictions_per_kwh:
+              type: number
+            model_compression_ratio:
+              type: number
+            energy_efficiency_improvement:
+              type: number
+
+    FederatedStatus:
+      type: object
+      properties:
+        server_status:
+          type: string
+          enum: [active, inactive, training, aggregating]
+        connected_clients:
+          type: integer
+        total_clients:
+          type: integer
+        current_round:
+          type: integer
+        last_aggregation:
+          type: string
+          format: date-time
+        model_convergence:
+          type: number
+        privacy_budget_remaining:
+          type: number
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+        request_id:
+          type: string
+          description: Unique request identifier for debugging
+
+tags:
+  - name: Health
+    description: Service health and readiness endpoints
+  - name: Prediction
+    description: Credit risk prediction endpoints
+  - name: Explainability
+    description: Model explanation and interpretability
+  - name: Models
+    description: Model management and information
+  - name: Bias Detection
+    description: Fairness and bias analysis
+  - name: Sustainability
+    description: Environmental and ESG metrics
+  - name: Federated Learning
+    description: Federated learning coordination

@@ -1,0 +1,74 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: sustainable-credit-risk-ai
+  namespace: credit-risk-ai
+
+resources:
+- namespace.yaml
+- configmap.yaml
+- secrets.yaml
+- persistent-volumes.yaml
+- rbac.yaml
+- postgres-deployment.yaml
+- redis-deployment.yaml
+- mlflow-deployment.yaml
+- api-deployment.yaml
+- federated-server-deployment.yaml
+- training-job.yaml
+- monitoring-deployment.yaml
+- ingress.yaml
+
+# Optional service mesh configuration
+# Uncomment if using Istio
+# - service-mesh.yaml
+
+commonLabels:
+  app.kubernetes.io/name: sustainable-credit-risk-ai
+  app.kubernetes.io/version: "1.0.0"
+  app.kubernetes.io/managed-by: kustomize
+
+images:
+- name: sustainable-credit-risk-ai
+  newTag: "1.0.0"
+
+replicas:
+- name: api-deployment
+  count: 3
+- name: postgres-deployment
+  count: 1
+- name: redis-deployment
+  count: 1
+
+patchesStrategicMerge:
+- |-
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: api-deployment
+    namespace: credit-risk-ai
+  spec:
+    template:
+      spec:
+        serviceAccountName: credit-risk-service-account
+
+configMapGenerator:
+- name: prometheus-config
+  files:
+  - ../monitoring/prometheus.yml
+- name: grafana-datasources
+  files:
+  - ../monitoring/grafana/datasources/prometheus.yml
+- name: grafana-dashboards
+  files:
+  - ../monitoring/grafana/dashboards/credit-risk-dashboard.json
+
+secretGenerator:
+- name: tls-secret
+  type: kubernetes.io/tls
+  files:
+  - tls.crt=../ssl/tls.crt
+  - tls.key=../ssl/tls.key
+
+namespace: credit-risk-ai

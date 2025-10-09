@@ -1,0 +1,332 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  namespace: credit-risk-ai
+data:
+  fluent.conf: |
+    # Input plugins
+    <source>
+      @type tail
+      @id in_tail_container_logs
+      path /var/log/containers/*.log
+      pos_file /var/log/fluentd-containers.log.pos
+      tag kubernetes.*
+      read_from_head true
+      <parse>
+        @type json
+        time_format %Y-%m-%dT%H:%M:%S.%NZ
+      </parse>
+    </source>
+
+    <source>
+      @type tail
+      @id in_tail_api_logs
+      path /var/log/credit-risk-api/*.log
+      pos_file /var/log/fluentd-api.log.pos
+      tag credit-risk.api
+      <parse>
+        @type json
+        time_key timestamp
+        time_format %Y-%m-%d %H:%M:%S
+      </parse>
+    </source>
+
+    <source>
+      @type tail
+      @id in_tail_model_logs
+      path /var/log/model-training/*.log
+      pos_file /var/log/fluentd-model.log.pos
+      tag credit-risk.model
+      <parse>
+        @type json
+        time_key timestamp
+        time_format %Y-%m-%d %H:%M:%S
+      </parse>
+    </source>
+
+    <source>
+      @type tail
+      @id in_tail_audit_logs
+      path /var/log/audit/*.log
+      pos_file /var/log/fluentd-audit.log.pos
+      tag credit-risk.audit
+      <parse>
+        @type json
+        time_key timestamp
+        time_format %Y-%m-%d %H:%M:%S
+      </parse>
+    </source>
+
+    # Filter plugins
+    <filter kubernetes.**>
+      @type kubernetes_metadata
+      @id filter_kube_metadata
+      kubernetes_url "#{ENV['FLUENT_FILTER_KUBERNETES_URL'] || 'https://' + ENV['KUBERNETES_SERVICE_HOST'] + ':' + ENV['KUBERNETES_SERVICE_PORT'] + '/api'}"
+      verify_ssl "#{ENV['KUBERNETES_VERIFY_SSL'] || true}"
+      ca_file "#{ENV['KUBERNETES_CA_FILE']}"
+      skip_labels "#{ENV['FLUENT_KUBERNETES_METADATA_SKIP_LABELS'] || 'false'}"
+      skip_container_metadata "#{ENV['FLUENT_KUBERNETES_METADATA_SKIP_CONTAINER_METADATA'] || 'false'}"
+      skip_master_url "#{ENV['FLUENT_KUBERNETES_METADATA_SKIP_MASTER_URL'] || 'false'}"
+      skip_namespace_metadata "#{ENV['FLUENT_KUBERNETES_METADATA_SKIP_NAMESPACE_METADATA'] || 'false'}"
+    </filter>
+
+    <filter credit-risk.**>
+      @type record_transformer
+      @id filter_add_metadata
+      <record>
+        service_name ${tag_parts[1]}
+        environment "#{ENV['ENVIRONMENT'] || 'production'}"
+        cluster_name "#{ENV['CLUSTER_NAME'] || 'credit-risk-ai'}"
+      </record>
+    </filter>
+
+    # Parse structured logs
+    <filter credit-risk.api>
+      @type parser
+      @id filter_parse_api_logs
+      key_name message
+      reserve_data true
+      <parse>
+        @type json
+      </parse>
+    </filter>
+
+    # Extract metrics from logs
+    <filter credit-risk.**>
+      @type prometheus
+      @id filter_prometheus_metrics
+      <metric>
+        name fluentd_input_status_num_records_total
+        type counter
+        desc The total number of incoming records
+        <labels>
+          tag ${tag}
+          hostname ${hostname}
+        </labels>
+      </metric>
+    </filter>
+
+    # Security and compliance filtering
+    <filter credit-risk.**>
+      @type grep
+      @id filter_security_events
+      <regexp>
+        key level
+        pattern ^(ERROR|WARN|SECURITY|AUDIT)$
+      </regexp>
+    </filter>
+
+    # Anonymize PII data
+    <filter credit-risk.**>
+      @type record_transformer
+      @id filter_anonymize_pii
+      <record>
+        message ${record["message"].gsub(/\b\d{3}-\d{2}-\d{4}\b/, "XXX-XX-XXXX").gsub(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/, "***@***.***")}
+      </record>
+    </filter>
+
+    # Output plugins
+    <match credit-risk.api>
+      @type elasticsearch
+      @id out_es_api
+      host "#{ENV['FLUENT_ELASTICSEARCH_HOST'] || 'elasticsearch'}"
+      port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
+      scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME'] || 'http'}"
+      ssl_verify "#{ENV['FLUENT_ELASTICSEARCH_SSL_VERIFY'] || 'true'}"
+      user "#{ENV['FLUENT_ELASTICSEARCH_USER'] || use_default}"
+      password "#{ENV['FLUENT_ELASTICSEARCH_PASSWORD'] || use_default}"
+      index_name credit-risk-api-logs
+      type_name _doc
+      logstash_format true
+      logstash_prefix credit-risk-api
+      logstash_dateformat %Y.%m.%d
+      include_tag_key true
+      tag_key @log_name
+      <buffer>
+        flush_thread_count 8
+        flush_interval 5s
+        chunk_limit_size 2M
+        queue_limit_length 32
+        retry_max_interval 30
+        retry_forever true
+      </buffer>
+    </match>
+
+    <match credit-risk.model>
+      @type elasticsearch
+      @id out_es_model
+      host "#{ENV['FLUENT_ELASTICSEARCH_HOST'] || 'elasticsearch'}"
+      port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
+      scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME'] || 'http'}"
+      index_name credit-risk-model-logs
+      type_name _doc
+      logstash_format true
+      logstash_prefix credit-risk-model
+      logstash_dateformat %Y.%m.%d
+      include_tag_key true
+      tag_key @log_name
+      <buffer>
+        flush_thread_count 4
+        flush_interval 10s
+        chunk_limit_size 2M
+        queue_limit_length 16
+      </buffer>
+    </match>
+
+    <match credit-risk.audit>
+      @type elasticsearch
+      @id out_es_audit
+      host "#{ENV['FLUENT_ELASTICSEARCH_HOST'] || 'elasticsearch'}"
+      port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
+      scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME'] || 'http'}"
+      index_name credit-risk-audit-logs
+      type_name _doc
+      logstash_format true
+      logstash_prefix credit-risk-audit
+      logstash_dateformat %Y.%m.%d
+      include_tag_key true
+      tag_key @log_name
+      <buffer>
+        flush_thread_count 2
+        flush_interval 5s
+        chunk_limit_size 1M
+        queue_limit_length 8
+      </buffer>
+    </match>
+
+    # Kubernetes logs
+    <match kubernetes.**>
+      @type elasticsearch
+      @id out_es_kubernetes
+      host "#{ENV['FLUENT_ELASTICSEARCH_HOST'] || 'elasticsearch'}"
+      port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
+      scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME'] || 'http'}"
+      index_name kubernetes-logs
+      type_name _doc
+      logstash_format true
+      logstash_prefix kubernetes
+      logstash_dateformat %Y.%m.%d
+      include_tag_key true
+      tag_key @log_name
+      <buffer>
+        flush_thread_count 4
+        flush_interval 10s
+        chunk_limit_size 2M
+        queue_limit_length 16
+      </buffer>
+    </match>
+
+    # Fallback for unmatched logs
+    <match **>
+      @type stdout
+      @id out_stdout
+    </match>
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd
+  namespace: credit-risk-ai
+  labels:
+    app: fluentd
+    component: logging
+spec:
+  selector:
+    matchLabels:
+      app: fluentd
+  template:
+    metadata:
+      labels:
+        app: fluentd
+        component: logging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "24231"
+    spec:
+      serviceAccountName: fluentd
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: fluentd
+        image: fluent/fluentd-kubernetes-daemonset:v1.16-debian-elasticsearch7-1
+        env:
+        - name: FLUENT_ELASTICSEARCH_HOST
+          value: "elasticsearch-service"
+        - name: FLUENT_ELASTICSEARCH_PORT
+          value: "9200"
+        - name: FLUENT_ELASTICSEARCH_SCHEME
+          value: "http"
+        - name: FLUENTD_SYSTEMD_CONF
+          value: disable
+        - name: FLUENT_CONTAINER_TAIL_EXCLUDE_PATH
+          value: /var/log/containers/fluent*
+        - name: FLUENT_CONTAINER_TAIL_PARSER_TYPE
+          value: /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: 200m
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: fluentd-config
+          mountPath: /fluentd/etc/fluent.conf
+          subPath: fluent.conf
+        ports:
+        - containerPort: 24231
+          name: prometheus
+          protocol: TCP
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: fluentd-config
+        configMap:
+          name: fluentd-config
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluentd
+  namespace: credit-risk-ai
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluentd
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fluentd
+roleRef:
+  kind: ClusterRole
+  name: fluentd
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: fluentd
+  namespace: credit-risk-ai

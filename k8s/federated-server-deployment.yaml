@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: federated-server-deployment
+  namespace: credit-risk-ai
+  labels:
+    app: federated-server
+    component: federated-learning
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: federated-server
+  template:
+    metadata:
+      labels:
+        app: federated-server
+        component: federated-learning
+    spec:
+      containers:
+      - name: federated-server
+        image: sustainable-credit-risk-ai:development
+        ports:
+        - containerPort: 8080
+        env:
+        - name: FL_SERVER_ADDRESS
+          value: "0.0.0.0:8080"
+        envFrom:
+        - configMapRef:
+            name: credit-risk-config
+        - secretRef:
+            name: credit-risk-secrets
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+        - name: logs
+          mountPath: /app/logs
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        command: ["python", "src/federated/server.py"]
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      - name: logs
+        emptyDir: {}
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.35
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Waiting for PostgreSQL..."
+          until nc -z postgres-service 5432; do
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: federated-server-service
+  namespace: credit-risk-ai
+  labels:
+    app: federated-server
+    component: federated-learning
+spec:
+  selector:
+    app: federated-server
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
