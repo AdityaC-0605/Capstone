@@ -1,0 +1,10 @@
+{
+  "ensemble_method": "weighted_average",
+  "num_models": 2,
+  "active_models": 2,
+  "model_types": [
+    "lightgbm",
+    "dnn"
+  ],
+  "saved_at": "2025-10-08T21:44:30.150867"
+}

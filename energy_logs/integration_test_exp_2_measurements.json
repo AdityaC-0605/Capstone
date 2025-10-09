@@ -1,0 +1,24 @@
+[
+  {
+    "timestamp": "2025-10-09T20:25:47.859375",
+    "cpu_energy_kwh": 0.0,
+    "gpu_energy_kwh": 0.0,
+    "total_energy_kwh": 0.0,
+    "cpu_utilization": 0.0,
+    "gpu_utilization": 0.0,
+    "memory_usage_gb": 5.86,
+    "gpu_memory_usage_gb": 0.0,
+    "power_draw_watts": 10.0
+  },
+  {
+    "timestamp": "2025-10-09T20:25:48.014957",
+    "cpu_energy_kwh": 0.0,
+    "gpu_energy_kwh": 0.0,
+    "total_energy_kwh": 0.0,
+    "cpu_utilization": 0.0,
+    "gpu_utilization": 0.0,
+    "memory_usage_gb": 5.86,
+    "gpu_memory_usage_gb": 0.0,
+    "power_draw_watts": 10.0
+  }
+]

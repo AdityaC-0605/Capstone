@@ -1,0 +1,25 @@
+# Development environment configuration
+
+environment: development
+debug: true
+log_level: DEBUG
+
+# Development database
+database:
+  host: "localhost"
+  port: 5432
+  database: "credit_risk_ai_dev"
+  username: "dev_user"
+  password: "dev_password"
+
+# Relaxed security for development
+security:
+  jwt_expiration_hours: 168  # 7 days
+  differential_privacy_epsilon: 2.0  # Less strict for development
+
+# Development API settings
+api:
+  host: "127.0.0.1"
+  port: 8000
+  workers: 1
+  rate_limit_per_minute: 10000  # No rate limiting in dev

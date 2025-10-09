@@ -1,0 +1,1 @@
+{"platform": "macOS-26.0.1-arm64-arm-64bit-Mach-O", "system": "Darwin", "release": "25.0.0", "version": "Darwin Kernel Version 25.0.0: Wed Sep 17 21:42:08 PDT 2025; root:xnu-12377.1.9~141/RELEASE_ARM64_T8132", "machine": "arm64", "processor": "arm", "python_version": "3.13.7", "python_implementation": "CPython"}
