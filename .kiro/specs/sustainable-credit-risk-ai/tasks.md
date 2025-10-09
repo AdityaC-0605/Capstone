@@ -374,14 +374,14 @@
     - _Requirements: 5.1, 5.2, 5.4_
 
 - [ ] 10. Implement compliance and fairness monitoring
-  - [ ] 10.1 Build bias detection system
+  - [x] 10.1 Build bias detection system
     - Implement fairness metrics calculation (demographic parity, equal opportunity)
     - Create protected attribute analysis
     - Build bias detection across different demographic groups
     - Add fairness violation alerting and reporting
     - _Requirements: 8.1, 8.3_
 
-  - [ ] 10.2 Create regulatory compliance validation
+  - [x] 10.2 Create regulatory compliance validation
     - Implement FCRA and ECOA compliance checks
     - Build GDPR data protection validation
     - Create audit trail generation for regulatory reviews
