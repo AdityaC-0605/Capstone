@@ -1,0 +1,199 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sustainable-credit-risk-ai"
+version = "1.0.0"
+description = "Sustainable AI system for credit risk assessment with federated learning and explainability"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Sustainable AI Team", email = "team@sustainable-ai.com"},
+]
+keywords = ["ai", "credit-risk", "sustainability", "federated-learning", "explainable-ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Office/Business :: Financial",
+]
+dependencies = [
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "scikit-learn>=1.3.0",
+    "lightgbm>=4.0.0",
+    "torch>=2.0.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "pydantic>=2.0.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.11.0",
+    "redis>=4.6.0",
+    "celery>=5.3.0",
+    "mlflow>=2.5.0",
+    "optuna>=3.3.0",
+    "shap>=0.42.0",
+    "lime>=0.2.0",
+    "codecarbon>=2.2.0",
+    "plotly>=5.15.0",
+    "streamlit>=1.25.0",
+    "cryptography>=41.0.0",
+    "python-jose>=3.3.0",
+    "passlib>=1.7.4",
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.0.0",
+    "httpx>=0.24.0",
+    "prometheus-client>=0.17.0",
+    "psutil>=5.9.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.0",
+    "pytest-benchmark>=4.0.0",
+    "black>=23.7.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.5.0",
+    "bandit>=1.7.5",
+    "safety>=2.3.0",
+    "pre-commit>=3.3.0",
+]
+docs = [
+    "sphinx>=7.1.0",
+    "sphinx-rtd-theme>=1.3.0",
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.1.0",
+]
+test = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.0",
+    "pytest-benchmark>=4.0.0",
+    "httpx>=0.24.0",
+    "factory-boy>=3.3.0",
+    "faker>=19.3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/sustainable-ai/credit-risk-ai"
+Documentation = "https://sustainable-ai.github.io/credit-risk-ai"
+Repository = "https://github.com/sustainable-ai/credit-risk-ai"
+"Bug Tracker" = "https://github.com/sustainable-ai/credit-risk-ai/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.black]
+line-length = 88
+target-version = ['py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "lightgbm.*",
+    "shap.*",
+    "lime.*",
+    "codecarbon.*",
+    "optuna.*",
+    "mlflow.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "e2e: marks tests as end-to-end tests",
+    "performance: marks tests as performance tests",
+    "security: marks tests as security tests",
+    "compliance: marks tests as compliance tests",
+    "benchmark: marks tests as benchmark tests",
+]
+filterwarnings = [
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/venv/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv"]
+skips = ["B101", "B601"]

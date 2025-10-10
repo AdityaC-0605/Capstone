@@ -35,6 +35,7 @@ line-profiler==4.1.1
 # Security Scanning
 bandit==1.7.5
 safety==2.3.5
+pip-audit==2.6.1
 
 # Type Checking
 types-requests==2.31.0.10
@@ -52,6 +53,7 @@ sphinx-autoapi==3.0.0
 
 # Performance Testing
 locust==2.17.0
+pytest-benchmark==4.0.0
 
 # Database Migration Testing
 pytest-alembic==0.10.7
