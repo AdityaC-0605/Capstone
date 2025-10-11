@@ -17,7 +17,6 @@ import numpy as np
 
 try:
     from ..core.logging import get_logger, get_audit_logger
-    from .energy_tracker import EnergyReport, EnergyMeasurement
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -377,7 +376,7 @@ class CarbonCalculator:
         
         logger.info("Carbon calculator initialized")
     
-    def calculate_carbon_footprint(self, energy_report: EnergyReport, 
+    def calculate_carbon_footprint(self, energy_report, 
                                  region: Optional[str] = None) -> CarbonFootprint:
         """Calculate carbon footprint from energy consumption report."""
         
