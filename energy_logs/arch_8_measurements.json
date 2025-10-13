@@ -1,0 +1,90 @@
+[
+  {
+    "timestamp": "2025-10-13T21:31:43.161372",
+    "cpu_energy_kwh": 0.0,
+    "gpu_energy_kwh": 0.0,
+    "total_energy_kwh": 0.0,
+    "cpu_utilization": 0.0,
+    "gpu_utilization": 0.0,
+    "memory_usage_gb": 7.24,
+    "gpu_memory_usage_gb": 0.0,
+    "power_draw_watts": 10.0
+  },
+  {
+    "timestamp": "2025-10-13T21:31:43.161856",
+    "cpu_energy_kwh": 0.0,
+    "gpu_energy_kwh": 0.0,
+    "total_energy_kwh": 0.0,
+    "cpu_utilization": 0.0,
+    "gpu_utilization": 0.0,
+    "memory_usage_gb": 7.24,
+    "gpu_memory_usage_gb": 0.0,
+    "power_draw_watts": 10.0
+  },
+  {
+    "timestamp": "2025-10-13T21:31:43.161076",
+    "cpu_energy_kwh": 0.0,
+    "gpu_energy_kwh": 0.0,
+    "total_energy_kwh": 0.0,
+    "cpu_utilization": 0.0,
+    "gpu_utilization": 0.0,
+    "memory_usage_gb": 7.24,
+    "gpu_memory_usage_gb": 0.0,
+    "power_draw_watts": 10.0
+  },
+  {
+    "timestamp": "2025-10-13T21:31:43.160877",
+    "cpu_energy_kwh": 0.0,
+    "gpu_energy_kwh": 0.0,
+    "total_energy_kwh": 0.0,
+    "cpu_utilization": 0.0,
+    "gpu_utilization": 0.0,
+    "memory_usage_gb": 7.24,
+    "gpu_memory_usage_gb": 0.0,
+    "power_draw_watts": 10.0
+  },
+  {
+    "timestamp": "2025-10-13T21:31:43.262735",
+    "cpu_energy_kwh": 1e-06,
+    "gpu_energy_kwh": 0.0,
+    "total_energy_kwh": 1e-06,
+    "cpu_utilization": 10.6,
+    "gpu_utilization": 0.0,
+    "memory_usage_gb": 7.24,
+    "gpu_memory_usage_gb": 0.0,
+    "power_draw_watts": 19.54
+  },
+  {
+    "timestamp": "2025-10-13T21:31:43.262744",
+    "cpu_energy_kwh": 1e-06,
+    "gpu_energy_kwh": 0.0,
+    "total_energy_kwh": 1e-06,
+    "cpu_utilization": 10.6,
+    "gpu_utilization": 0.0,
+    "memory_usage_gb": 7.24,
+    "gpu_memory_usage_gb": 0.0,
+    "power_draw_watts": 19.54
+  },
+  {
+    "timestamp": "2025-10-13T21:31:43.262713",
+    "cpu_energy_kwh": 1e-06,
+    "gpu_energy_kwh": 0.0,
+    "total_energy_kwh": 1e-06,
+    "cpu_utilization": 10.6,
+    "gpu_utilization": 0.0,
+    "memory_usage_gb": 7.24,
+    "gpu_memory_usage_gb": 0.0,
+    "power_draw_watts": 19.54
+  },
+  {
+    "timestamp": "2025-10-13T21:31:43.262751",
+    "cpu_energy_kwh": 1e-06,
+    "gpu_energy_kwh": 0.0,
+    "total_energy_kwh": 1e-06,
+    "cpu_utilization": 10.6,
+    "gpu_utilization": 0.0,
+    "memory_usage_gb": 7.24,
+    "gpu_memory_usage_gb": 0.0,
+    "power_draw_watts": 19.54
+  }
+]
