@@ -1,0 +1,77 @@
+{
+  "model_id": "benchmark_1760337909_Standard-Credit",
+  "model_name": "Standard-Credit",
+  "model_type": "DNN",
+  "benchmark_timestamp": "2025-10-13T12:15:09.427632",
+  "accuracy": 0.62,
+  "precision": 0.5795,
+  "recall": 0.62,
+  "f1_score": 0.5915592515592515,
+  "roc_auc": 0.6052389705882353,
+  "carbon_footprint_kg": 4.246e-07,
+  "energy_consumption_kwh": 1e-06,
+  "training_time_seconds": 1800,
+  "inference_latency_ms": 0.2281665802001953,
+  "model_size_mb": 10.0,
+  "carbon_efficiency": 1425433.2797650385,
+  "energy_efficiency": 605238.9705882353,
+  "time_efficiency": 2652.618845657385,
+  "size_efficiency": 0.06052389705882353,
+  "industry_sector": "finance",
+  "benchmark_metrics": [
+    {
+      "metric_name": "carbon_footprint_kg",
+      "metric_value": 4.246e-07,
+      "unit": "kg CO2e",
+      "category": "carbon_efficiency",
+      "is_higher_better": false,
+      "industry_average": 0.15,
+      "industry_percentile": 25.0,
+      "best_practice_threshold": 0.08
+    },
+    {
+      "metric_name": "energy_consumption_kwh",
+      "metric_value": 1e-06,
+      "unit": "kWh",
+      "category": "energy_efficiency",
+      "is_higher_better": false,
+      "industry_average": 0.08,
+      "industry_percentile": 25.0,
+      "best_practice_threshold": 0.04
+    },
+    {
+      "metric_name": "carbon_efficiency",
+      "metric_value": 1425433.2797650385,
+      "unit": "AUC/kg CO2e",
+      "category": "carbon_efficiency",
+      "is_higher_better": true,
+      "industry_average": 6.5,
+      "industry_percentile": 90.0,
+      "best_practice_threshold": 9.0
+    },
+    {
+      "metric_name": "energy_efficiency",
+      "metric_value": 605238.9705882353,
+      "unit": "AUC/kWh",
+      "category": "energy_efficiency",
+      "is_higher_better": true,
+      "industry_average": 12.0,
+      "industry_percentile": 90.0,
+      "best_practice_threshold": 16.0
+    },
+    {
+      "metric_name": "accuracy",
+      "metric_value": 0.6052389705882353,
+      "unit": "AUC",
+      "category": "model_efficiency",
+      "is_higher_better": true,
+      "industry_average": 0.89,
+      "industry_percentile": 25.0,
+      "best_practice_threshold": 0.93
+    }
+  ],
+  "sustainability_score": 82.5,
+  "performance_score": 60.35383637030696,
+  "efficiency_score": 25.0,
+  "overall_score": 62.141534548122785
+}
