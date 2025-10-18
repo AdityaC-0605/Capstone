@@ -6,12 +6,12 @@ import os
 import sys
 from pathlib import Path
 
-# Add src to Python path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Add app to Python path
+sys.path.insert(0, str(Path(__file__).parent / "app"))
 
-from src.core.config import load_config
-from src.core.logging import get_logger
-from src.security.security_manager import get_security_manager
+from app.core.config import load_config
+from app.core.logging import get_logger
+from app.security.security_manager import get_security_manager
 
 
 def main():
