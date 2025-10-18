@@ -98,7 +98,7 @@ jobs:
         kubectl get service api-service -n credit-risk-ai -o yaml > current-service-backup.yaml
 
     - name: Upload backup
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: deployment-backup-${{ github.run_number }}
         path: |
@@ -111,7 +111,7 @@ jobs:
         VERSION: ${{ needs.pre-deployment-checks.outputs.version }}
       run: |
         # Create green deployment
-        sed "s|sustainable-credit-risk-ai:production|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION|g" k8s/api-deployment.yaml > api-deployment-green.yaml
+        sed "s|sustainable-credit-risk-ai:production|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION|g" infrastructure/k8s/api-deployment.yaml > api-deployment-green.yaml
         sed "s|name: api-deployment|name: api-deployment-green|g" api-deployment-green.yaml > api-deployment-green-final.yaml
         sed "s|app: api|app: api-green|g" api-deployment-green-final.yaml > api-deployment-green.yaml
         
@@ -128,7 +128,7 @@ jobs:
         sleep 10
         
         # Run smoke tests
-        python scripts/smoke_tests.py --url http://localhost:8080
+        python app/scripts/smoke_tests.py --url http://localhost:8080
         
         # Clean up port forward
         kill $PF_PID
@@ -157,7 +157,7 @@ jobs:
         curl -f https://api.credit-risk-ai.example.com/health
         
         # Run quick validation
-        python scripts/production_validation.py
+        python app/scripts/production_validation.py
 
     - name: Clean up blue deployment
       env:
@@ -206,7 +206,7 @@ jobs:
         VERSION: ${{ needs.pre-deployment-checks.outputs.version }}
       run: |
         # Create canary deployment with 1 replica (10% of traffic)
-        sed "s|sustainable-credit-risk-ai:production|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION|g" k8s/api-deployment.yaml > api-deployment-canary.yaml
+        sed "s|sustainable-credit-risk-ai:production|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION|g" infrastructure/k8s/api-deployment.yaml > api-deployment-canary.yaml
         sed "s|name: api-deployment|name: api-deployment-canary|g" api-deployment-canary.yaml > temp.yaml
         sed "s|replicas: 3|replicas: 1|g" temp.yaml > api-deployment-canary.yaml
         sed "s|app: api|app: api-canary|g" api-deployment-canary.yaml > temp.yaml
@@ -315,7 +315,7 @@ jobs:
       env:
         PRODUCTION_URL: https://api.credit-risk-ai.example.com
       run: |
-        pytest tests/production/ \
+        pytest tests/ \
           --production-url=$PRODUCTION_URL \
           --junitxml=production-validation-results.xml \
           -v
@@ -324,19 +324,19 @@ jobs:
       env:
         PRODUCTION_URL: https://api.credit-risk-ai.example.com
       run: |
-        python scripts/performance_validation.py --url $PRODUCTION_URL
+        python app/scripts/performance_validation.py --url $PRODUCTION_URL
 
     - name: Run compliance validation
       env:
         PRODUCTION_URL: https://api.credit-risk-ai.example.com
       run: |
-        pytest tests/compliance/test_production_compliance.py \
+        pytest tests/ \
           --production-url=$PRODUCTION_URL \
           --junitxml=production-compliance-results.xml \
           -v
 
     - name: Upload validation results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: production-validation-results
@@ -362,7 +362,7 @@ jobs:
         export KUBECONFIG=kubeconfig
 
     - name: Download deployment backup
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: deployment-backup-${{ github.run_number }}
 

@@ -86,7 +86,7 @@ jobs:
         echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Upload changelog
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: changelog
         path: changelog.txt
@@ -114,22 +114,22 @@ jobs:
     - name: Run comprehensive test suite
       run: |
         # Unit tests with coverage
-        pytest tests/unit/ --cov=src --cov-report=xml --cov-report=term-missing -v
+        pytest tests/ --cov=app --cov-report=xml --cov-report=term-missing -v
         
         # Integration tests
-        pytest tests/integration/ -v
+        pytest tests/ -v
         
         # Model tests
-        pytest tests/models/ -v
+        pytest tests/ -v
         
         # Compliance tests
-        pytest tests/compliance/ -v
+        pytest tests/ -v
         
         # Performance benchmarks
-        pytest tests/performance/ --benchmark-json=benchmark-results.json -v
+        pytest tests/ --benchmark-json=benchmark-results.json -v
 
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: release-test-results
@@ -159,13 +159,13 @@ jobs:
         safety check --json --output safety-report.json || true
         
         # Static security analysis
-        bandit -r src/ -f json -o bandit-report.json || true
+        bandit -r app/ -f json -o bandit-report.json || true
         
         # Semgrep security scan
-        semgrep --config=auto src/ --json --output=semgrep-report.json || true
+        semgrep --config=auto app/ --json --output=semgrep-report.json || true
 
     - name: Upload security reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: security-audit-reports
@@ -200,6 +200,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: infrastructure/docker/Dockerfile
         target: production
         push: true
         tags: |
@@ -220,6 +221,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: infrastructure/docker/Dockerfile
         target: training
         push: true
         tags: |
@@ -236,7 +238,7 @@ jobs:
         output-file: sbom.spdx.json
 
     - name: Upload SBOM
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: sbom
         path: sbom.spdx.json
@@ -253,7 +255,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
 
     - name: Create release notes
       run: |
@@ -277,8 +279,8 @@ jobs:
         
         ## Documentation
         - [API Documentation](https://api.credit-risk-ai.example.com/docs)
-        - [Deployment Guide](./k8s/README.md)
-        - [User Guide](./docs/user-guide.md)
+        - [Deployment Guide](./infrastructure/README.md)
+        - [User Guide](./docs/README.md)
         
         **Full Changelog**: https://github.com/${{ github.repository }}/compare/$(git describe --tags --abbrev=0 HEAD^)...${{ needs.validate-release.outputs.version }}
         EOF
@@ -318,8 +320,8 @@ jobs:
     - name: Update version in documentation
       run: |
         # Update version in various documentation files
-        sed -i "s/version: .*/version: ${{ needs.validate-release.outputs.version }}/g" k8s/helm-chart/Chart.yaml
-        sed -i "s/appVersion: .*/appVersion: \"${{ needs.validate-release.outputs.version }}\"/g" k8s/helm-chart/Chart.yaml
+        sed -i "s/version: .*/version: ${{ needs.validate-release.outputs.version }}/g" infrastructure/k8s/helm-chart/Chart.yaml
+        sed -i "s/appVersion: .*/appVersion: \"${{ needs.validate-release.outputs.version }}\"/g" infrastructure/k8s/helm-chart/Chart.yaml
         
         # Update README badges
         sed -i "s/tag\/v[0-9]\+\.[0-9]\+\.[0-9]\+/tag\/${{ needs.validate-release.outputs.version }}/g" README.md

@@ -40,22 +40,22 @@ jobs:
         pip install -r requirements-dev.txt
 
     - name: Run Black code formatter check
-      run: black --check --diff src/ tests/
+      run: black --check --diff app/ tests/
 
     - name: Run isort import sorting check
-      run: isort --check-only --diff src/ tests/
+      run: isort --check-only --diff app/ tests/
 
     - name: Run flake8 linting
-      run: flake8 src/ tests/
+      run: flake8 app/ tests/
 
     - name: Run mypy type checking
-      run: mypy src/
+      run: mypy app/
 
     - name: Run bandit security linting
-      run: bandit -r src/ -f json -o bandit-report.json
+      run: bandit -r app/ -f json -o bandit-report.json
 
     - name: Upload bandit report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: bandit-security-report
@@ -91,8 +91,8 @@ jobs:
 
     - name: Run unit tests with coverage
       run: |
-        pytest tests/unit/ \
-          --cov=src \
+        pytest tests/ \
+          --cov=app \
           --cov-report=xml \
           --cov-report=html \
           --cov-report=term-missing \
@@ -107,7 +107,7 @@ jobs:
         name: codecov-umbrella
 
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: pytest-results-${{ matrix.python-version }}
@@ -169,12 +169,12 @@ jobs:
         REDIS_URL: redis://localhost:6379/0
         ENVIRONMENT: test
       run: |
-        pytest tests/integration/ \
+        pytest tests/ \
           --junitxml=integration-results.xml \
           -v
 
     - name: Upload integration test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: integration-test-results
@@ -205,12 +205,12 @@ jobs:
 
     - name: Run model validation tests
       run: |
-        pytest tests/models/ \
+        pytest tests/ \
           --junitxml=model-test-results.xml \
           -v
 
     - name: Upload model test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: model-test-results
@@ -230,6 +230,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: infrastructure/docker/Dockerfile
         target: production
         tags: sustainable-credit-risk-ai:test
         load: true
@@ -252,7 +253,7 @@ jobs:
     - name: Run Hadolint Dockerfile linter
       uses: hadolint/hadolint-action@v3.1.0
       with:
-        dockerfile: Dockerfile
+        dockerfile: infrastructure/docker/Dockerfile
         format: sarif
         output-file: hadolint-results.sarif
 
@@ -281,7 +282,7 @@ jobs:
       run: safety check --json --output safety-report.json || true
 
     - name: Upload safety report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: safety-report
@@ -293,7 +294,7 @@ jobs:
         pip-audit --format=json --output=pip-audit-report.json || true
 
     - name: Upload pip-audit report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: pip-audit-report
@@ -320,12 +321,12 @@ jobs:
 
     - name: Run performance benchmarks
       run: |
-        pytest tests/performance/ \
+        pytest tests/ \
           --benchmark-json=benchmark-results.json \
           -v
 
     - name: Upload benchmark results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: benchmark-results
@@ -351,24 +352,24 @@ jobs:
 
     - name: Run bias detection tests
       run: |
-        pytest tests/compliance/test_bias_detection.py \
+        pytest tests/test_bias_detection.py \
           --junitxml=bias-test-results.xml \
           -v
 
     - name: Run fairness validation tests
       run: |
-        pytest tests/compliance/test_fairness.py \
+        pytest tests/test_fairness.py \
           --junitxml=fairness-test-results.xml \
           -v
 
     - name: Run privacy tests
       run: |
-        pytest tests/compliance/test_privacy.py \
+        pytest tests/test_privacy.py \
           --junitxml=privacy-test-results.xml \
           -v
 
     - name: Upload compliance test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: compliance-test-results
@@ -384,7 +385,7 @@ jobs:
     if: always()
     steps:
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
 
     - name: Generate test report
       run: |
@@ -418,7 +419,7 @@ jobs:
           });
 
     - name: Upload test summary
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-summary
         path: test-summary.md
