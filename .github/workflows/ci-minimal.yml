@@ -34,8 +34,8 @@ jobs:
 
     - name: Check Python syntax
       run: |
-        python -m py_compile src/**/*.py || echo "Syntax check completed"
+        python -m py_compile app/**/*.py || echo "Syntax check completed"
         
     - name: Basic import test
       run: |
-        python -c "import sys; sys.path.append('src'); print('Basic imports working')" || echo "Import test completed"
+        python -c "import sys; sys.path.append('app'); print('Basic imports working')" || echo "Import test completed"

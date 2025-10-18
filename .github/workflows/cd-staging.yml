@@ -56,6 +56,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: infrastructure/docker/Dockerfile
         target: production
         push: true
         tags: ${{ steps.meta.outputs.tags }}
@@ -72,7 +73,7 @@ jobs:
         output-file: sbom.spdx.json
 
     - name: Upload SBOM
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: sbom
         path: sbom.spdx.json
@@ -125,14 +126,14 @@ jobs:
 
     - name: Update image tags in manifests
       run: |
-        sed -i "s|sustainable-credit-risk-ai:production|${{ needs.build-and-push.outputs.image-tag }}|g" k8s/*.yaml
+        sed -i "s|sustainable-credit-risk-ai:production|${{ needs.build-and-push.outputs.image-tag }}|g" infrastructure/k8s/*.yaml
 
     - name: Deploy to staging namespace
       env:
         KUBECONFIG: kubeconfig
       run: |
         kubectl create namespace credit-risk-ai-staging --dry-run=client -o yaml | kubectl apply -f -
-        kubectl apply -f k8s/ -n credit-risk-ai-staging
+        kubectl apply -f infrastructure/k8s/ -n credit-risk-ai-staging
         kubectl rollout status deployment/api-deployment -n credit-risk-ai-staging --timeout=600s
 
     - name: Run smoke tests
@@ -144,20 +145,20 @@ jobs:
         kubectl wait --for=condition=ready pod -l app=api -n credit-risk-ai-staging --timeout=300s
         
         # Run smoke tests
-        python scripts/smoke_tests.py --url $STAGING_URL
+        python app/scripts/smoke_tests.py --url $STAGING_URL
 
     - name: Run integration tests against staging
       env:
         KUBECONFIG: kubeconfig
         STAGING_URL: https://staging-api.credit-risk-ai.example.com
       run: |
-        pytest tests/integration/ \
+        pytest tests/ \
           --staging-url=$STAGING_URL \
           --junitxml=staging-integration-results.xml \
           -v
 
     - name: Upload staging test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: staging-test-results
@@ -195,7 +196,7 @@ jobs:
       env:
         STAGING_URL: https://staging-api.credit-risk-ai.example.com
       run: |
-        locust -f tests/load/locustfile.py \
+        locust -f tests/locustfile.py \
           --host=$STAGING_URL \
           --users=50 \
           --spawn-rate=5 \
@@ -204,7 +205,7 @@ jobs:
           --headless
 
     - name: Upload load test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: load-test-results
@@ -212,7 +213,7 @@ jobs:
 
     - name: Check performance thresholds
       run: |
-        python scripts/check_performance_thresholds.py load-test-report.html
+        python app/scripts/check_performance_thresholds.py load-test-report.html
 
   # Model Validation in Staging
   model-validation-staging:
@@ -239,14 +240,14 @@ jobs:
         STAGING_URL: https://staging-api.credit-risk-ai.example.com
         MLFLOW_TRACKING_URI: https://staging-mlflow.credit-risk-ai.example.com
       run: |
-        pytest tests/models/test_model_validation.py \
+        pytest tests/test_model_validation.py \
           --staging-url=$STAGING_URL \
           --mlflow-uri=$MLFLOW_TRACKING_URI \
           --junitxml=model-validation-results.xml \
           -v
 
     - name: Upload model validation results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: model-validation-results
@@ -276,7 +277,7 @@ jobs:
       env:
         STAGING_URL: https://staging-api.credit-risk-ai.example.com
       run: |
-        pytest tests/compliance/test_staging_bias.py \
+        pytest tests/test_bias_detection.py \
           --staging-url=$STAGING_URL \
           --junitxml=staging-bias-results.xml \
           -v
@@ -285,13 +286,13 @@ jobs:
       env:
         STAGING_URL: https://staging-api.credit-risk-ai.example.com
       run: |
-        pytest tests/compliance/test_staging_fairness.py \
+        pytest tests/test_fairness.py \
           --staging-url=$STAGING_URL \
           --junitxml=staging-fairness-results.xml \
           -v
 
     - name: Upload compliance test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: staging-compliance-results
@@ -307,7 +308,7 @@ jobs:
     
     steps:
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
 
     - name: Generate deployment report
       run: |
@@ -335,7 +336,7 @@ jobs:
         echo "- **MLflow:** https://staging-mlflow.credit-risk-ai.example.com" >> deployment-report.md
 
     - name: Upload deployment report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: deployment-report
         path: deployment-report.md
