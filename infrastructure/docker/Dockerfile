@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for Sustainable Credit Risk AI System
 # Stage 1: Base Python environment with dependencies
-FROM python:3.11-slim as base
+FROM python:3.10-slim AS base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -24,16 +24,12 @@ WORKDIR /app
 
 # Copy requirements first for better caching
 COPY requirements.txt .
-COPY requirements-dev.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Development environment
-FROM base as development
-
-# Install development dependencies
-RUN pip install --no-cache-dir -r requirements-dev.txt
+FROM base AS development
 
 # Copy source code
 COPY --chown=appuser:appuser . .
@@ -45,16 +41,16 @@ USER appuser
 EXPOSE 8000
 
 # Default command for development
-CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["python", "-m", "uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # Stage 3: Production environment
-FROM base as production
+FROM base AS production
 
 # Copy only necessary files
-COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser config/ ./config/
-COPY --chown=appuser:appuser models/ ./models/
-COPY --chown=appuser:appuser data/ ./data/
+COPY --chown=appuser:appuser model_registry/ ./model_registry/
+COPY --chown=appuser:appuser Bank_data.csv ./Bank_data.csv
 
 # Create necessary directories
 RUN mkdir -p logs compliance_reports && \
@@ -71,10 +67,10 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 EXPOSE 8000
 
 # Production command
-CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["python", "-m", "uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
 
 # Stage 4: Training environment
-FROM base as training
+FROM base AS training
 
 # Install additional ML dependencies for training
 RUN pip install --no-cache-dir \
@@ -84,10 +80,10 @@ RUN pip install --no-cache-dir \
     ray[tune]
 
 # Copy training-specific files
-COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser config/ ./config/
-COPY --chown=appuser:appuser data/ ./data/
-COPY --chown=appuser:appuser scripts/ ./scripts/
+COPY --chown=appuser:appuser Bank_data.csv ./Bank_data.csv
+COPY --chown=appuser:appuser app/scripts/ ./scripts/
 
 # Create directories for training outputs
 RUN mkdir -p models experiments logs && \
@@ -100,7 +96,7 @@ USER appuser
 CMD ["python", "scripts/train_model.py"]
 
 # Stage 5: Inference-only lightweight image
-FROM python:3.11-slim as inference
+FROM python:3.10-slim AS inference
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -128,10 +124,10 @@ RUN pip install --no-cache-dir \
 WORKDIR /app
 
 # Copy only inference-related code
-COPY --chown=appuser:appuser src/api/ ./src/api/
-COPY --chown=appuser:appuser src/models/ ./src/models/
-COPY --chown=appuser:appuser src/core/ ./src/core/
-COPY --chown=appuser:appuser models/ ./models/
+COPY --chown=appuser:appuser app/api/ ./app/api/
+COPY --chown=appuser:appuser app/models/ ./app/models/
+COPY --chown=appuser:appuser app/core/ ./app/core/
+COPY --chown=appuser:appuser model_registry/ ./model_registry/
 
 # Switch to non-root user
 USER appuser
@@ -144,4 +140,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 8000
 
 # Inference command
-CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
