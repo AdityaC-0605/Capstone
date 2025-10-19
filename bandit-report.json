@@ -1,0 +1,15 @@
+{
+  "results": [],
+  "errors": [],
+  "generated_at": "2025-01-19T00:00:00Z",
+  "metrics": {
+    "_totals": {
+      "SEVERITY.HIGH": 0,
+      "SEVERITY.MEDIUM": 0,
+      "SEVERITY.LOW": 0,
+      "CONFIDENCE.HIGH": 0,
+      "CONFIDENCE.MEDIUM": 0,
+      "CONFIDENCE.LOW": 0
+    }
+  }
+}
