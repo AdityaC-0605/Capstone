@@ -12,12 +12,13 @@ ENV PYTHONUNBUFFERED=1 \
 RUN groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies and clean up in one layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     git \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Set working directory
 WORKDIR /app
@@ -106,20 +107,22 @@ ENV PYTHONUNBUFFERED=1 \
 RUN groupadd --gid 1000 appuser && \
     useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser
 
-# Install minimal system dependencies
-RUN apt-get update && apt-get install -y \
+# Install minimal system dependencies and clean up
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install minimal Python dependencies for inference
-RUN pip install --no-cache-dir \
+RUN pip install --no-cache-dir --no-deps \
     fastapi \
     uvicorn \
     torch \
     numpy \
     pandas \
     scikit-learn \
-    pydantic
+    pydantic \
+    && pip cache purge
 
 WORKDIR /app
 
