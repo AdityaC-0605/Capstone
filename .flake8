@@ -1,0 +1,25 @@
+[flake8]
+max-line-length = 79
+ignore = E501,F401,F811,F841,F402,F541,E722,E203,W293,F821,W503,W291,F601,E402
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    .tox,
+    .eggs,
+    *.egg,
+    build,
+    dist,
+    .pytest_cache,
+    .mypy_cache
+per-file-ignores =
+    # Allow longer lines in test files
+    tests/*:E501
+    # Allow unused imports in __init__.py files
+    */__init__.py:F401
+    # Allow bare except in some files
+    app/data/*:E722
+    app/explainability/*:E722
+    app/federated/*:E722
+    app/sustainability/*:E722
