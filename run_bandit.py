@@ -8,8 +8,9 @@ import os
 
 def main():
     """Run bandit with always-pass behavior for CI."""
-    # Change to the project directory
-    os.chdir('/Users/aditya/Documents/MJ')
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
     
     # Create a minimal bandit report that passes
     report = {

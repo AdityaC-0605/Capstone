@@ -8,8 +8,9 @@ import os
 
 def main():
     """Run mypy with error ignoring for CI."""
-    # Change to the project directory
-    os.chdir('/Users/aditya/Documents/MJ')
+    # Get the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
     
     # Run mypy with ignore-errors flag
     cmd = [
