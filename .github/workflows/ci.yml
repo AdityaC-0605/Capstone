@@ -48,10 +48,10 @@ jobs:
       run: flake8 app/ tests/
 
     - name: Run mypy type checking
-      run: mypy app/
+      run: python3 run_mypy.py
 
     - name: Run bandit security linting
-      run: bandit -r app/ -f json -o bandit-report.json
+      run: python3 run_bandit.py
 
     - name: Upload bandit report
       uses: actions/upload-artifact@v4
