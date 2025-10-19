@@ -4,48 +4,49 @@ Uses PyTorch Geometric for graph operations and includes graph construction,
 convolution layers, attention mechanisms, and mixed precision training.
 """
 
+import json
+import warnings
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import networkx as nx
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.cuda.amp import GradScaler, autocast
-from torch.utils.data import DataLoader, Dataset
 import torch_geometric
-from torch_geometric.nn import (
-    GCNConv,
-    GATConv,
-    GraphConv,
-    global_mean_pool,
-    global_max_pool,
-    global_add_pool,
-)
-from torch_geometric.data import Data, Batch
-from torch_geometric.utils import to_networkx, from_networkx
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple, Union
-from dataclasses import dataclass, field
-from datetime import datetime
-import warnings
-import json
-from pathlib import Path
-import networkx as nx
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
     classification_report,
     confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
 )
-from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import kneighbors_graph
+from sklearn.preprocessing import StandardScaler
+from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader, Dataset
+from torch_geometric.data import Batch, Data
+from torch_geometric.nn import (
+    GATConv,
+    GCNConv,
+    GraphConv,
+    global_add_pool,
+    global_max_pool,
+    global_mean_pool,
+)
+from torch_geometric.utils import from_networkx, to_networkx
 
 try:
     from ..core.interfaces import BaseModel, TrainingMetrics
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -54,7 +55,7 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from core.interfaces import BaseModel, TrainingMetrics
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
     # Create minimal implementations for testing
     class MockAuditLogger:

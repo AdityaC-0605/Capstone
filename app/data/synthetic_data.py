@@ -3,25 +3,26 @@ Synthetic data generation using CTGAN for privacy-preserving data augmentation.
 Includes quality validation and evaluation metrics for synthetic data.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple, Union
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
-import warnings
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-# Statistical and ML imports
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import LabelEncoder
+import numpy as np
+import pandas as pd
 from scipy import stats
 from scipy.stats import wasserstein_distance
+from sklearn.ensemble import RandomForestClassifier
 
-from ..core.interfaces import DataProcessor
+# Statistical and ML imports
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
 from ..core.config import get_config
-from ..core.logging import get_logger, get_audit_logger
+from ..core.interfaces import DataProcessor
+from ..core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

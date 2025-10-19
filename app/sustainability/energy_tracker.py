@@ -6,19 +6,20 @@ training and inference, integrating CodeCarbon for real-time energy tracking,
 GPU/CPU measurement, and detailed reporting capabilities.
 """
 
-import time
-import threading
-import psutil
-import torch
-import numpy as np
-import warnings
 import json
-from typing import Dict, List, Optional, Any, Tuple, Union
+import threading
+import time
+import warnings
+from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from contextlib import contextmanager
-from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import psutil
+import torch
 
 # Optional GPU monitoring
 try:
@@ -39,7 +40,7 @@ except ImportError:
     warnings.warn("CodeCarbon not available. Install with: pip install codecarbon")
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -47,7 +48,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
     # Create minimal implementations for testing
     class MockAuditLogger:

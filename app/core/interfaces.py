@@ -3,11 +3,12 @@ Core interfaces and abstract base classes for the sustainable credit risk AI sys
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Optional, Union
 from dataclasses import dataclass
 from datetime import datetime
-import torch
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
+import torch
 
 
 @dataclass

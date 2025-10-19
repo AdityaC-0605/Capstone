@@ -2,17 +2,18 @@
 Utility functions for knowledge distillation.
 """
 
+import copy
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple
-import copy
 
 from .knowledge_distillation import (
-    KnowledgeDistiller,
     DistillationConfig,
     DistillationResult,
+    KnowledgeDistiller,
 )
 
 
@@ -380,7 +381,7 @@ def _evaluate_model_simple(
             probs = torch.sigmoid(outputs.squeeze()).numpy()
             preds = (probs > 0.5).astype(int)
 
-        from sklearn.metrics import accuracy_score, roc_auc_score, f1_score
+        from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 
         return {
             "accuracy": accuracy_score(y.numpy(), preds),

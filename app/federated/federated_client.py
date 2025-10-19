@@ -6,47 +6,48 @@ It includes local training, encrypted model update transmission, client-side dif
 and gradient compression for communication efficiency.
 """
 
+import asyncio
+import base64
+import copy
+import gzip
+import hashlib
+import json
+import logging
+import secrets
+import time
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import aiohttp
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
-import numpy as np
-import pandas as pd
-import asyncio
-import aiohttp
-import json
-import time
-import hashlib
-import secrets
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Union, Callable
-from dataclasses import dataclass, field
-from enum import Enum
-from pathlib import Path
-import logging
-import copy
-import gzip
-import base64
+from cryptography.hazmat.backends import default_backend
 
 # Cryptographic imports
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
+from torch.utils.data import DataLoader, TensorDataset
 
 try:
-    from .federated_server import ModelUpdate, FederatedConfig
+    from ..core.interfaces import BaseModel, TrainingMetrics
+    from ..core.logging import get_audit_logger, get_logger
+    from ..data.cross_validation import validate_model_cv
     from .communication import (
         FederatedCommunicationManager,
-        MessageType,
         FederatedMessage,
         MessageSerializer,
+        MessageType,
         SecureCommunicator,
         create_registration_message,
     )
-    from ..core.logging import get_logger, get_audit_logger
-    from ..core.interfaces import BaseModel, TrainingMetrics
-    from ..data.cross_validation import validate_model_cv
+    from .federated_server import FederatedConfig, ModelUpdate
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -54,17 +55,17 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from federated.federated_server import ModelUpdate, FederatedConfig
+    from core.interfaces import BaseModel, TrainingMetrics
+    from core.logging import get_audit_logger, get_logger
     from federated.communication import (
         FederatedCommunicationManager,
-        MessageType,
         FederatedMessage,
         MessageSerializer,
+        MessageType,
         SecureCommunicator,
         create_registration_message,
     )
-    from core.logging import get_logger, get_audit_logger
-    from core.interfaces import BaseModel, TrainingMetrics
+    from federated.federated_server import FederatedConfig, ModelUpdate
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

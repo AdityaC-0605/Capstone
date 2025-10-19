@@ -5,17 +5,17 @@ This module implements efficient batch processing capabilities with
 asynchronous processing, job queuing, status tracking, and result callbacks.
 """
 
+import asyncio
 import json
+import threading
 import time
 import uuid
-import asyncio
-import threading
-from typing import Dict, List, Optional, Any, Callable, Union
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-import warnings
+from typing import Any, Callable, Dict, List, Optional, Union
 
 # Queue and async dependencies
 try:
@@ -35,13 +35,13 @@ except ImportError:
     warnings.warn("Celery not available. Install with: pip install celery")
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
+    from ..sustainability.sustainability_monitor import SustainabilityMonitor
     from .inference_service import (
         CreditApplication,
-        PredictionResponse,
         InferenceService,
+        PredictionResponse,
     )
-    from ..sustainability.sustainability_monitor import SustainabilityMonitor
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -49,7 +49,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
     # Mock classes for testing
     class MockCreditApplication:
@@ -702,7 +702,7 @@ class BatchProcessor:
         for app_data in chunk:
             try:
                 # Create prediction request
-                from .inference_service import PredictionRequest, CreditApplication
+                from .inference_service import CreditApplication, PredictionRequest
 
                 # Convert dict to CreditApplication
                 credit_app = CreditApplication(**app_data)

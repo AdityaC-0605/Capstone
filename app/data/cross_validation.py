@@ -3,42 +3,42 @@ Cross-validation strategies for credit risk modeling.
 Implements stratified k-fold, time-series, and nested cross-validation.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple, Union, Iterator, Callable
+import warnings
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-import warnings
-from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+
+import joblib
+import numpy as np
+import pandas as pd
+from scipy import stats
+from sklearn.base import BaseEstimator, clone
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 
 # ML imports
 from sklearn.model_selection import (
-    StratifiedKFold,
     KFold,
-    TimeSeriesSplit,
     ParameterGrid,
     ParameterSampler,
+    StratifiedKFold,
+    TimeSeriesSplit,
     cross_val_score,
     cross_validate,
 )
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
-    classification_report,
-    confusion_matrix,
-)
-from sklearn.base import BaseEstimator, clone
-from scipy import stats
-import joblib
 
-from ..core.interfaces import DataProcessor
 from ..core.config import get_config
-from ..core.logging import get_logger, get_audit_logger
-
+from ..core.interfaces import DataProcessor
+from ..core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

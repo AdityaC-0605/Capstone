@@ -4,41 +4,42 @@ Implements Quantization-Aware Training (QAT), post-training static and dynamic q
 and INT8 model conversion pipeline with accuracy validation.
 """
 
+import copy
+import json
+import warnings
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+
+# ML imports
+from sklearn.model_selection import train_test_split
 from torch.quantization import (
-    QuantStub,
     DeQuantStub,
-    prepare_qat,
+    QuantStub,
     convert,
     get_default_qat_qconfig,
     get_default_qconfig,
     prepare,
+    prepare_qat,
     quantize_dynamic,
 )
-from torch.quantization.observer import MinMaxObserver, MovingAverageMinMaxObserver
 from torch.quantization.fake_quantize import FakeQuantize
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple, Union, Callable
-from dataclasses import dataclass, field
-from datetime import datetime
-import json
-from pathlib import Path
-import copy
-import warnings
-from abc import ABC, abstractmethod
-
-# ML imports
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, f1_score, accuracy_score
+from torch.quantization.observer import MinMaxObserver, MovingAverageMinMaxObserver
 
 try:
-    from ..models.dnn_model import DNNModel, DNNTrainer, DNNConfig
     from ..core.interfaces import BaseModel, TrainingMetrics
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
+    from ..models.dnn_model import DNNConfig, DNNModel, DNNTrainer
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -46,9 +47,9 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from models.dnn_model import DNNModel, DNNTrainer, DNNConfig
     from core.interfaces import BaseModel, TrainingMetrics
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
+    from models.dnn_model import DNNConfig, DNNModel, DNNTrainer
 
     # Create minimal implementations for testing
     class MockAuditLogger:

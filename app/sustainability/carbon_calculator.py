@@ -8,15 +8,16 @@ carbon footprint tracking across experiments, and carbon budget monitoring.
 
 import json
 import warnings
-from typing import Dict, List, Optional, Any, Tuple, Union
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -24,7 +25,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
     # Create minimal implementations for testing
     class MockAuditLogger:
@@ -900,8 +901,9 @@ def calculate_carbon_footprint_from_energy(
     Returns:
         CarbonFootprint object with calculated emissions
     """
-    from .energy_tracker import EnergyReport
     from datetime import datetime
+
+    from .energy_tracker import EnergyReport
 
     # Create a mock energy report
     experiment_id = (

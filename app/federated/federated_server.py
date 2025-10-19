@@ -6,37 +6,38 @@ collaborative training across multiple banking institutions. It includes client 
 secure model aggregation using FedAvg algorithm, and authentication mechanisms.
 """
 
-import torch
-import torch.nn as nn
-import numpy as np
 import asyncio
-import json
+import copy
 import hashlib
 import hmac
+import json
+import logging
+import secrets
+import threading
 import time
 import uuid
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Union, Callable
+from collections import OrderedDict, defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-import logging
-from collections import defaultdict, OrderedDict
-import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import copy
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import torch
+import torch.nn as nn
+from cryptography.hazmat.backends import default_backend
 
 # Cryptographic imports
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-import secrets
 
 try:
-    from ..core.interfaces import BaseModel, TrainingMetrics
-    from ..core.logging import get_logger, get_audit_logger
     from ..core.config import Config
+    from ..core.interfaces import BaseModel, TrainingMetrics
+    from ..core.logging import get_audit_logger, get_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -44,9 +45,9 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.interfaces import BaseModel, TrainingMetrics
-    from core.logging import get_logger, get_audit_logger
     from core.config import Config
+    from core.interfaces import BaseModel, TrainingMetrics
+    from core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

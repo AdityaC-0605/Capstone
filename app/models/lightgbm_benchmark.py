@@ -3,19 +3,21 @@ LightGBM benchmarking and performance comparison utilities.
 Provides comprehensive benchmarking against neural network models.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple
+import json
+import time
 from dataclasses import dataclass
 from datetime import datetime
-import time
-import json
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-# Core imports
-from .lightgbm_model import LightGBMTrainer, LightGBMConfig, LightGBMResult
+import numpy as np
+import pandas as pd
+
 from ..core.logging import get_logger
 from ..data.experiment_tracking import ExperimentTracker
+
+# Core imports
+from .lightgbm_model import LightGBMConfig, LightGBMResult, LightGBMTrainer
 
 logger = get_logger(__name__)
 
@@ -413,7 +415,7 @@ class LightGBMBenchmark:
 # Factory functions for common benchmark configurations
 def create_fast_benchmark_config() -> BenchmarkConfig:
     """Create a fast benchmark configuration for testing."""
-    from .lightgbm_model import get_fast_lightgbm_config, get_default_lightgbm_config
+    from .lightgbm_model import get_default_lightgbm_config, get_fast_lightgbm_config
 
     configs = [get_fast_lightgbm_config(), get_default_lightgbm_config()]
 
@@ -428,8 +430,8 @@ def create_fast_benchmark_config() -> BenchmarkConfig:
 def create_comprehensive_benchmark_config() -> BenchmarkConfig:
     """Create a comprehensive benchmark configuration."""
     from .lightgbm_model import (
-        get_fast_lightgbm_config,
         get_default_lightgbm_config,
+        get_fast_lightgbm_config,
         get_optimized_lightgbm_config,
     )
 

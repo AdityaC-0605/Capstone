@@ -6,40 +6,41 @@ when selecting clients and scheduling training rounds. It integrates with the ex
 federated learning infrastructure to optimize for both performance and sustainability.
 """
 
-import torch
-import torch.nn as nn
-import numpy as np
-import pandas as pd
 import asyncio
-import aiohttp
 import json
-import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Union
-from dataclasses import dataclass, field
-from enum import Enum
 import logging
 import random
+import time
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import aiohttp
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
 
 try:
+    from ..core.logging import get_audit_logger, get_logger
+    from ..federated.federated_client import ClientConfig, FederatedClient
     from ..federated.federated_server import (
-        FederatedServer,
-        FederatedConfig,
-        ModelUpdate,
-        ClientInfo,
-        FederatedRound,
         AggregationMethod,
+        ClientInfo,
         ClientSelector,
+        FederatedConfig,
+        FederatedRound,
+        FederatedServer,
+        ModelUpdate,
     )
-    from ..federated.federated_client import FederatedClient, ClientConfig
+    from ..sustainability.carbon_aware_optimizer import (
+        CarbonAwareConfig,
+        CarbonAwareOptimizer,
+    )
     from ..sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
     from ..sustainability.energy_tracker import EnergyTracker
-    from ..sustainability.carbon_aware_optimizer import (
-        CarbonAwareOptimizer,
-        CarbonAwareConfig,
-    )
-    from ..core.logging import get_logger, get_audit_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -47,23 +48,23 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
+    from core.logging import get_audit_logger, get_logger
+    from federated.federated_client import ClientConfig, FederatedClient
     from federated.federated_server import (
-        FederatedServer,
-        FederatedConfig,
-        ModelUpdate,
-        ClientInfo,
-        FederatedRound,
         AggregationMethod,
+        ClientInfo,
         ClientSelector,
+        FederatedConfig,
+        FederatedRound,
+        FederatedServer,
+        ModelUpdate,
     )
-    from federated.federated_client import FederatedClient, ClientConfig
+    from sustainability.carbon_aware_optimizer import (
+        CarbonAwareConfig,
+        CarbonAwareOptimizer,
+    )
     from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
     from sustainability.energy_tracker import EnergyTracker
-    from sustainability.carbon_aware_optimizer import (
-        CarbonAwareOptimizer,
-        CarbonAwareConfig,
-    )
-    from core.logging import get_logger, get_audit_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

@@ -7,38 +7,39 @@ It includes multi-objective optimization, real-time carbon intensity integration
 and automated architecture discovery for sustainable credit risk models.
 """
 
-import torch
-import torch.nn as nn
-import numpy as np
-import pandas as pd
 import json
+import logging
+import threading
 import time
-import requests
-from typing import Dict, List, Optional, Any, Tuple, Callable, Union
+from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-import logging
-from concurrent.futures import ThreadPoolExecutor
-import threading
-from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
+import requests
+import torch
+import torch.nn as nn
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
-    from .carbon_calculator import CarbonCalculator, CarbonFootprintConfig
-    from .energy_tracker import EnergyTracker, EnergyConfig
+    from ..core.logging import get_audit_logger, get_logger
     from ..nas.neural_architecture_search import ArchitectureSpec, NASConfig
+    from .carbon_calculator import CarbonCalculator, CarbonFootprintConfig
+    from .energy_tracker import EnergyConfig, EnergyTracker
 except ImportError:
     import sys
     from pathlib import Path
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
-    from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprintConfig
-    from sustainability.energy_tracker import EnergyTracker, EnergyConfig
+    from core.logging import get_audit_logger, get_logger
     from nas.neural_architecture_search import ArchitectureSpec, NASConfig
+    from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprintConfig
+    from sustainability.energy_tracker import EnergyConfig, EnergyTracker
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()
@@ -407,7 +408,7 @@ class CarbonAwareArchitectureEvaluator:
             predictions = model(X_tensor).numpy().flatten()
 
         # Calculate metrics
-        from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
+        from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 
         # Convert probabilities to binary predictions
         binary_preds = (predictions > 0.5).astype(int)

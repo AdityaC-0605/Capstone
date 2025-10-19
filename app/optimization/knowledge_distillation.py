@@ -4,31 +4,32 @@ Implements teacher-student training pipeline with temperature-scaled softmax,
 compressed model generation and validation, and distillation loss optimization.
 """
 
+import copy
+import json
+import warnings
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.cuda.amp import GradScaler, autocast
-from torch.utils.data import DataLoader, TensorDataset
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple, Union, Callable
-from dataclasses import dataclass, field
-from datetime import datetime
-import json
-from pathlib import Path
-import copy
-import warnings
-from abc import ABC, abstractmethod
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 
 # ML imports
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, f1_score, accuracy_score
+from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader, TensorDataset
 
 try:
-    from ..models.dnn_model import DNNModel, DNNTrainer, DNNConfig
     from ..core.interfaces import BaseModel, TrainingMetrics
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
+    from ..models.dnn_model import DNNConfig, DNNModel, DNNTrainer
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -36,9 +37,9 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from models.dnn_model import DNNModel, DNNTrainer, DNNConfig
     from core.interfaces import BaseModel, TrainingMetrics
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
+    from models.dnn_model import DNNConfig, DNNModel, DNNTrainer
 
     # Create minimal implementations for testing
     class MockAuditLogger:

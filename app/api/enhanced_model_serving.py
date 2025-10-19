@@ -7,10 +7,10 @@ and the inference service, with additional features for production readiness.
 
 import asyncio
 import time
-from typing import Dict, List, Optional, Any, Union
-from datetime import datetime, timedelta
-from dataclasses import dataclass
 import warnings
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Union
 
 try:
     from fastapi import HTTPException
@@ -21,20 +21,20 @@ except ImportError:
     warnings.warn("FastAPI not available. Install with: pip install fastapi")
 
 try:
-    from .model_serving import (
-        ModelServingManager,
-        ModelServingConfig,
-        ModelStatus,
-        RoutingStrategy,
-        ModelMetadata,
-    )
+    from ..core.logging import get_audit_logger, get_logger
     from .inference_service import (
         CreditApplication,
         PredictionResponse,
         PredictionStatus,
         RiskLevel,
     )
-    from ..core.logging import get_logger, get_audit_logger
+    from .model_serving import (
+        ModelMetadata,
+        ModelServingConfig,
+        ModelServingManager,
+        ModelStatus,
+        RoutingStrategy,
+    )
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -42,7 +42,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
     # Mock classes for testing
     class MockModelServingManager:

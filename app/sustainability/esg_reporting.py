@@ -6,21 +6,21 @@ standard frameworks (TCFD, SASB), stakeholder customization, and scheduled
 reporting capabilities.
 """
 
-import json
 import csv
-import xml.etree.ElementTree as ET
-from typing import Dict, List, Optional, Any, Tuple, Union
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, time
-from pathlib import Path
-from enum import Enum
-import warnings
-import threading
+import json
 import smtplib
+import threading
+import warnings
+import xml.etree.ElementTree as ET
+from dataclasses import dataclass, field
+from datetime import datetime, time, timedelta
+from email import encoders
+from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 try:
     import schedule
@@ -39,7 +39,7 @@ except ImportError:
     warnings.warn("Pandas not available. Install with: pip install pandas")
 
 try:
-    from jinja2 import Template, Environment, FileSystemLoader
+    from jinja2 import Environment, FileSystemLoader, Template
 
     JINJA2_AVAILABLE = True
 except ImportError:
@@ -47,15 +47,15 @@ except ImportError:
     warnings.warn("Jinja2 not available. Install with: pip install jinja2")
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
-    from .esg_metrics import (
-        ESGMetricsCollector,
-        ESGMetric,
-        ESGScore,
-        ESGReport,
-        ESGCategory,
-    )
+    from ..core.logging import get_audit_logger, get_logger
     from .carbon_calculator import CarbonCalculator, CarbonFootprint
+    from .esg_metrics import (
+        ESGCategory,
+        ESGMetric,
+        ESGMetricsCollector,
+        ESGReport,
+        ESGScore,
+    )
     from .sustainability_monitor import SustainabilityMonitor
 except ImportError:
     # Fallback for direct execution
@@ -64,15 +64,15 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
-    from sustainability.esg_metrics import (
-        ESGMetricsCollector,
-        ESGMetric,
-        ESGScore,
-        ESGReport,
-        ESGCategory,
-    )
+    from core.logging import get_audit_logger, get_logger
     from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from sustainability.esg_metrics import (
+        ESGCategory,
+        ESGMetric,
+        ESGMetricsCollector,
+        ESGReport,
+        ESGScore,
+    )
     from sustainability.sustainability_monitor import SustainabilityMonitor
 
 logger = get_logger(__name__)

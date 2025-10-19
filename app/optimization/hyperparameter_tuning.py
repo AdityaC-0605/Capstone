@@ -3,32 +3,33 @@ Hyperparameter optimization system using Optuna for automated tuning.
 Supports multi-objective optimization including accuracy and energy efficiency.
 """
 
-import optuna
-from optuna.samplers import TPESampler, CmaEsSampler
-from optuna.pruners import MedianPruner, HyperbandPruner
-import numpy as np
-import pandas as pd
-import torch
-from typing import Dict, List, Any, Optional, Tuple, Union, Callable
-from dataclasses import dataclass, field
-from datetime import datetime
 import json
-from pathlib import Path
+import time
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import optuna
+import pandas as pd
+import torch
+from optuna.pruners import HyperbandPruner, MedianPruner
+from optuna.samplers import CmaEsSampler, TPESampler
+from sklearn.metrics import f1_score, roc_auc_score
 
 # ML imports
-from sklearn.model_selection import cross_val_score, StratifiedKFold
-from sklearn.metrics import roc_auc_score, f1_score
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 try:
-    from ..models.dnn_model import DNNModel, DNNTrainer, DNNConfig
-    from ..models.lstm_model import LSTMModel, LSTMTrainer, LSTMConfig
-    from ..models.gnn_model import GNNModel, GNNTrainer, GNNConfig
-    from ..models.tcn_model import TCNModel, TCNTrainer, TCNConfig
-    from ..models.lightgbm_model import LightGBMModel, LightGBMTrainer, LightGBMConfig
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
+    from ..models.dnn_model import DNNConfig, DNNModel, DNNTrainer
+    from ..models.gnn_model import GNNConfig, GNNModel, GNNTrainer
+    from ..models.lightgbm_model import LightGBMConfig, LightGBMModel, LightGBMTrainer
+    from ..models.lstm_model import LSTMConfig, LSTMModel, LSTMTrainer
+    from ..models.tcn_model import TCNConfig, TCNModel, TCNTrainer
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -36,12 +37,12 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from models.dnn_model import DNNModel, DNNTrainer, DNNConfig
-    from models.lstm_model import LSTMModel, LSTMTrainer, LSTMConfig
-    from models.gnn_model import GNNModel, GNNTrainer, GNNConfig
-    from models.tcn_model import TCNModel, TCNTrainer, TCNConfig
-    from models.lightgbm_model import LightGBMModel, LightGBMTrainer, LightGBMConfig
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
+    from models.dnn_model import DNNConfig, DNNModel, DNNTrainer
+    from models.gnn_model import GNNConfig, GNNModel, GNNTrainer
+    from models.lightgbm_model import LightGBMConfig, LightGBMModel, LightGBMTrainer
+    from models.lstm_model import LSTMConfig, LSTMModel, LSTMTrainer
+    from models.tcn_model import TCNConfig, TCNModel, TCNTrainer
 
     # Create minimal implementations for testing
     class MockAuditLogger:

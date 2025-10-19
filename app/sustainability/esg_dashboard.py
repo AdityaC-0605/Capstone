@@ -6,18 +6,19 @@ with trend analysis, comparative visualizations, and alerting capabilities.
 """
 
 import json
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime, timedelta
 import warnings
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
 
 # Dashboard dependencies
 try:
     import dash
-    from dash import dcc, html, Input, Output, State, callback_context
-    import plotly.graph_objects as go
     import plotly.express as px
+    import plotly.graph_objects as go
+    from dash import Input, Output, State, callback_context, dcc, html
     from plotly.subplots import make_subplots
 
     DASH_AVAILABLE = True
@@ -81,16 +82,16 @@ except ImportError:
 
 try:
     from ..core.logging import get_logger
-    from .esg_metrics import (
-        ESGMetricsCollector,
-        ESGMetric,
-        ESGScore,
-        ESGReport,
-        ESGCategory,
-        ESGMetricType,
-    )
     from .carbon_calculator import CarbonCalculator
     from .energy_tracker import EnergyTracker
+    from .esg_metrics import (
+        ESGCategory,
+        ESGMetric,
+        ESGMetricsCollector,
+        ESGMetricType,
+        ESGReport,
+        ESGScore,
+    )
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -99,16 +100,16 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from core.logging import get_logger
-    from sustainability.esg_metrics import (
-        ESGMetricsCollector,
-        ESGMetric,
-        ESGScore,
-        ESGReport,
-        ESGCategory,
-        ESGMetricType,
-    )
     from sustainability.carbon_calculator import CarbonCalculator
     from sustainability.energy_tracker import EnergyTracker
+    from sustainability.esg_metrics import (
+        ESGCategory,
+        ESGMetric,
+        ESGMetricsCollector,
+        ESGMetricType,
+        ESGReport,
+        ESGScore,
+    )
 
 logger = get_logger(__name__)
 
@@ -441,8 +442,8 @@ class ESGDashboard:
         # In a real implementation, this would fetch actual data
         # For now, generate sample data
 
-        from .energy_tracker import EnergyReport
         from .carbon_calculator import CarbonFootprint
+        from .energy_tracker import EnergyReport
 
         # Create sample energy reports
         energy_reports = []

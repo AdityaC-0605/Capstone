@@ -4,12 +4,13 @@ Production validation script for the Sustainable Credit Risk AI system
 Performs comprehensive validation of the production deployment
 """
 
-import requests
-import time
 import json
 import sys
-from typing import Dict, List, Any
+import time
 from datetime import datetime
+from typing import Any, Dict, List
+
+import requests
 
 
 class ProductionValidator:

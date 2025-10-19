@@ -5,30 +5,31 @@ This module provides utility functions for federated learning operations,
 including client simulation, model aggregation testing, and performance monitoring.
 """
 
-import torch
-import torch.nn as nn
+import json
+import logging
+import random
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime, timedelta
-import json
-import random
-from pathlib import Path
-import logging
+import torch
+import torch.nn as nn
 
 try:
-    from .federated_server import (
-        FederatedServer,
-        FederatedConfig,
-        ModelUpdate,
-        ClientInfo,
-        FederatedRound,
-        AggregationMethod,
-    )
-    from .communication import FederatedCommunicationManager, MessageType
     from ..core.logging import get_logger
-    from ..models.dnn_model import DNNModel, DNNConfig
+    from ..models.dnn_model import DNNConfig, DNNModel
+    from .communication import FederatedCommunicationManager, MessageType
+    from .federated_server import (
+        AggregationMethod,
+        ClientInfo,
+        FederatedConfig,
+        FederatedRound,
+        FederatedServer,
+        ModelUpdate,
+    )
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -36,17 +37,17 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from federated.federated_server import (
-        FederatedServer,
-        FederatedConfig,
-        ModelUpdate,
-        ClientInfo,
-        FederatedRound,
-        AggregationMethod,
-    )
-    from federated.communication import FederatedCommunicationManager, MessageType
     from core.logging import get_logger
-    from models.dnn_model import DNNModel, DNNConfig
+    from federated.communication import FederatedCommunicationManager, MessageType
+    from federated.federated_server import (
+        AggregationMethod,
+        ClientInfo,
+        FederatedConfig,
+        FederatedRound,
+        FederatedServer,
+        ModelUpdate,
+    )
+    from models.dnn_model import DNNConfig, DNNModel
 
 logger = get_logger(__name__)
 

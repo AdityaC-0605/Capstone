@@ -7,21 +7,22 @@ calculates required offsets based on AI carbon footprint, and provides
 transparent offset tracking and verification.
 """
 
-import requests
-import json
-import time
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
-from pathlib import Path
-import logging
 import hashlib
 import hmac
-from decimal import Decimal, ROUND_HALF_UP
+import json
+import logging
+import time
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import requests
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
     from .carbon_calculator import CarbonCalculator, CarbonFootprint
 except ImportError:
     import sys
@@ -29,7 +30,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
     from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
 
 logger = get_logger(__name__)

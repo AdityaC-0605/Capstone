@@ -3,38 +3,39 @@ Temporal Convolutional Network (TCN) implementation for credit risk prediction.
 Uses dilated causal convolutions with residual connections for efficient sequence processing.
 """
 
+import json
+import math
+import warnings
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.cuda.amp import GradScaler, autocast
-from torch.utils.data import DataLoader, TensorDataset
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple, Union
-from dataclasses import dataclass, field
-from datetime import datetime
-import warnings
-import json
-from pathlib import Path
-import math
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 
 # ML imports
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
-    classification_report,
-    confusion_matrix,
-)
 from sklearn.preprocessing import StandardScaler
+from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader, TensorDataset
 
 try:
     from ..core.interfaces import BaseModel, TrainingMetrics
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -43,7 +44,7 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from core.interfaces import BaseModel, TrainingMetrics
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
     # Create minimal implementations for testing
     class MockAuditLogger:

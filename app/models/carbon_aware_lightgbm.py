@@ -5,29 +5,30 @@ This module demonstrates how to integrate carbon-aware optimization
 into existing ML models to achieve real emission reductions.
 """
 
+import warnings
+from datetime import datetime
+from typing import Any, Dict, Optional, Tuple
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
-from typing import Dict, Any, Optional, Tuple
-from datetime import datetime
-import warnings
 
 try:
     from ..sustainability.carbon_aware_optimizer import (
-        CarbonAwareOptimizer,
         CarbonAwareConfig,
+        CarbonAwareOptimizer,
         carbon_aware_training,
     )
-    from ..sustainability.energy_tracker import EnergyTracker
     from ..sustainability.carbon_calculator import CarbonCalculator
+    from ..sustainability.energy_tracker import EnergyTracker
 
     CARBON_AWARE_AVAILABLE = True
 except ImportError:
     CARBON_AWARE_AVAILABLE = False
     warnings.warn("Carbon-aware optimization not available")
 
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.model_selection import train_test_split
 
 
 class CarbonAwareLightGBM:

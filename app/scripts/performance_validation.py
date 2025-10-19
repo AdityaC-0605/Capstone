@@ -5,12 +5,13 @@ Validates that the system meets performance SLAs
 """
 
 import argparse
-import requests
-import time
 import statistics
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
+import requests
 
 
 class PerformanceValidator:

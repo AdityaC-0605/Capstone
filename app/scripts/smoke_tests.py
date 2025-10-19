@@ -5,11 +5,12 @@ These tests verify basic functionality after deployment
 """
 
 import argparse
-import requests
+import json
 import sys
 import time
-import json
-from typing import Dict, Any
+from typing import Any, Dict
+
+import requests
 
 
 class SmokeTestRunner:

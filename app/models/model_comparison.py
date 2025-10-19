@@ -3,26 +3,27 @@ Model comparison utilities for benchmarking different model types.
 Compares DNN, LightGBM, and other models on performance, efficiency, and sustainability.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple
+import json
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
-import time
-import json
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
 
 # Model imports
 try:
-    from .lightgbm_model import LightGBMTrainer, get_fast_lightgbm_config
     from .dnn_model import DNNTrainer, get_fast_dnn_config
+    from .lightgbm_model import LightGBMTrainer, get_fast_lightgbm_config
 except ImportError:
     # Fallback for direct execution
     import sys
 
     sys.path.append(str(Path(__file__).parent))
-    from lightgbm_model import LightGBMTrainer, get_fast_lightgbm_config
     from dnn_model import DNNTrainer, get_fast_dnn_config
+    from lightgbm_model import LightGBMTrainer, get_fast_lightgbm_config
 
 # Core imports
 try:

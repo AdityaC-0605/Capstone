@@ -3,20 +3,20 @@ Data anonymization pipeline with PII detection, k-anonymity, l-diversity,
 differential privacy, and data masking/tokenization.
 """
 
-import re
 import hashlib
+import json
+import re
 import secrets
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Set, Tuple, Union
 from dataclasses import dataclass
 from enum import Enum
-import json
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
+
+import numpy as np
+import pandas as pd
 
 from ..core.config import get_config
-from ..core.logging import get_logger, get_audit_logger
-
+from ..core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

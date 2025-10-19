@@ -7,37 +7,38 @@ insights for improving carbon efficiency and environmental impact.
 """
 
 import json
+import logging
 import time
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Optional, Any, Tuple, Union
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-import logging
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 import requests
-from abc import ABC, abstractmethod
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
-    from .carbon_calculator import CarbonCalculator, CarbonFootprint
-    from .energy_tracker import EnergyTracker, EnergyReport
+    from ..core.logging import get_audit_logger, get_logger
     from ..models.dnn_model import DNNModel
-    from ..models.lstm_model import LSTMModel
     from ..models.gnn_model import GNNModel
+    from ..models.lstm_model import LSTMModel
+    from .carbon_calculator import CarbonCalculator, CarbonFootprint
+    from .energy_tracker import EnergyReport, EnergyTracker
 except ImportError:
     import sys
     from pathlib import Path
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
-    from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
-    from sustainability.energy_tracker import EnergyTracker, EnergyReport
+    from core.logging import get_audit_logger, get_logger
     from models.dnn_model import DNNModel
-    from models.lstm_model import LSTMModel
     from models.gnn_model import GNNModel
+    from models.lstm_model import LSTMModel
+    from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from sustainability.energy_tracker import EnergyReport, EnergyTracker
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()
@@ -462,9 +463,9 @@ class SustainableAIBenchmark:
             # Calculate performance metrics
             from sklearn.metrics import (
                 accuracy_score,
+                f1_score,
                 precision_score,
                 recall_score,
-                f1_score,
                 roc_auc_score,
             )
 

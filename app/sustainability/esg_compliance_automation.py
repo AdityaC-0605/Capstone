@@ -6,23 +6,24 @@ reporting with TCFD (Task Force on Climate-related Financial Disclosures) and
 SASB (Sustainability Accounting Standards Board) standards.
 """
 
+import asyncio
 import json
 import logging
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Union
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-import asyncio
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import aiohttp
+import numpy as np
+import pandas as pd
 from jinja2 import Template
 
 try:
     from ..core.logging import get_logger
-    from ..sustainability.energy_tracker import EnergyTracker, EnergyReport
     from ..sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from ..sustainability.energy_tracker import EnergyReport, EnergyTracker
     from ..sustainability.sustainability_monitor import SustainabilityMonitor
 except ImportError:
     import sys
@@ -30,8 +31,8 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent.parent))
     from src.core.logging import get_logger
-    from src.sustainability.energy_tracker import EnergyTracker, EnergyReport
     from src.sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from src.sustainability.energy_tracker import EnergyReport, EnergyTracker
     from src.sustainability.sustainability_monitor import SustainabilityMonitor
 
 logger = get_logger(__name__)

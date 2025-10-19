@@ -2,12 +2,13 @@
 Main FastAPI application for the Sustainable Credit Risk AI System.
 """
 
+import sys
+from pathlib import Path
+
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import uvicorn
-import sys
-from pathlib import Path
 
 # Add app to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
