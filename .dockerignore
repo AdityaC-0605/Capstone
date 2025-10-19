@@ -1,9 +1,27 @@
-# Docker ignore file for Sustainable Credit Risk AI System
-
-# Version control
+# Git
 .git
 .gitignore
 .gitattributes
+
+# Documentation
+README.md
+docs/
+*.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Testing
+tests/
+test_*/
+*_test.py
+pytest.ini
+.coverage
+htmlcov/
+.pytest_cache/
 
 # Python
 __pycache__/
@@ -44,94 +62,80 @@ ENV/
 
 # OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
 # Logs
 *.log
 logs/
-*.out
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-
-# Documentation
-docs/_build/
-site/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-
-# Environment variables
-.env
-.env.local
-.env.development
-.env.test
-.env.production
-
-# Database
-*.db
-*.sqlite3
 
 # Temporary files
 tmp/
 temp/
-*.tmp
+.tmp/
+
+# Model files (large)
+*.pkl
+*.joblib
+*.h5
+*.pb
+models/*.bin
+models/*.safetensors
+
+# Data files
+*.csv
+*.json
+*.parquet
+data/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Coverage
+.coverage
+htmlcov/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Local development
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Docker
 Dockerfile*
-docker-compose*.yml
+docker-compose*
 .dockerignore
 
-# CI/CD
-.github/
-.gitlab-ci.yml
-Jenkinsfile
+# Kubernetes
+k8s/
+*.yaml
+*.yml
 
-# Monitoring and configs (exclude from build context)
-monitoring/
-nginx/
+# Infrastructure
+infrastructure/monitoring/
+infrastructure/nginx.conf
+
+# Scripts
 scripts/
+run_tests.sh
 
-# Large data files (should be mounted as volumes)
-data/raw/
-data/processed/
-models/large/
-experiments/
+# Makefile
+Makefile
 
-# Development tools
-.pre-commit-config.yaml
-.flake8
-.mypy.ini
+# Requirements (keep only what's needed)
+requirements-minimal.txt
 pyproject.toml
-setup.cfg
-
-# Node.js (if any frontend components)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Backup files
-*.bak
-*.backup
-
-# Compliance reports (generated at runtime)
-compliance_reports/
-
-# MLflow artifacts (should be in volumes)
-mlruns/
-mlflow_artifacts/
