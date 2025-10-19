@@ -2,6 +2,4 @@
 
 from .energy_tracker import EnergyTracker, EnergyConfig, EnergyReport, EnergyMeasurement
 
-__all__ = [
-    'EnergyTracker', 'EnergyConfig', 'EnergyReport', 'EnergyMeasurement'
-]
+__all__ = ["EnergyTracker", "EnergyConfig", "EnergyReport", "EnergyMeasurement"]

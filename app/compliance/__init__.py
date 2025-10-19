@@ -17,7 +17,7 @@ from .bias_detector import (
     BiasDetectionResult,
     ProtectedGroupStats,
     create_bias_detector,
-    analyze_dataset_bias
+    analyze_dataset_bias,
 )
 
 from .regulatory_compliance import (
@@ -34,36 +34,35 @@ from .regulatory_compliance import (
     AuditTrailEntry,
     DataProcessingRecord,
     create_compliance_validator,
-    validate_credit_decision_compliance
+    validate_credit_decision_compliance,
 )
 
 __all__ = [
     # Bias Detection
-    'BiasDetector',
-    'FairnessMetricsCalculator', 
-    'ProtectedAttributeAnalyzer',
-    'FairnessMetric',
-    'ProtectedAttribute',
-    'BiasLevel',
-    'FairnessThreshold',
-    'BiasDetectionResult',
-    'ProtectedGroupStats',
-    'create_bias_detector',
-    'analyze_dataset_bias',
-    
+    "BiasDetector",
+    "FairnessMetricsCalculator",
+    "ProtectedAttributeAnalyzer",
+    "FairnessMetric",
+    "ProtectedAttribute",
+    "BiasLevel",
+    "FairnessThreshold",
+    "BiasDetectionResult",
+    "ProtectedGroupStats",
+    "create_bias_detector",
+    "analyze_dataset_bias",
     # Regulatory Compliance
-    'RegulatoryComplianceValidator',
-    'FCRAComplianceChecker',
-    'ECOAComplianceChecker',
-    'GDPRComplianceChecker',
-    'AuditTrailManager',
-    'ComplianceFramework',
-    'ComplianceStatus',
-    'ViolationSeverity',
-    'ComplianceRule',
-    'ComplianceViolation',
-    'AuditTrailEntry',
-    'DataProcessingRecord',
-    'create_compliance_validator',
-    'validate_credit_decision_compliance'
+    "RegulatoryComplianceValidator",
+    "FCRAComplianceChecker",
+    "ECOAComplianceChecker",
+    "GDPRComplianceChecker",
+    "AuditTrailManager",
+    "ComplianceFramework",
+    "ComplianceStatus",
+    "ViolationSeverity",
+    "ComplianceRule",
+    "ComplianceViolation",
+    "AuditTrailEntry",
+    "DataProcessingRecord",
+    "create_compliance_validator",
+    "validate_credit_decision_compliance",
 ]
