@@ -676,7 +676,6 @@ class PerformanceMonitor:
         throttle_config: Optional[ThrottleConfig] = None,
         retry_config: Optional[RetryConfig] = None,
     ):
-
         self.sla_config = sla_config or SLAConfig()
         self.alert_config = alert_config or AlertConfig()
         self.throttle_config = throttle_config or ThrottleConfig()
@@ -748,7 +747,6 @@ class PerformanceMonitor:
             latency_summary["count"] > 0
             and latency_summary["p95"] > self.sla_config.max_latency_ms
         ):
-
             self.alert_manager.create_alert(
                 AlertLevel.WARNING,
                 f"Latency SLA violation: P95 {latency_summary['p95']:.1f}ms > {self.sla_config.max_latency_ms}ms",
@@ -766,7 +764,6 @@ class PerformanceMonitor:
             error_summary["count"] > 0
             and error_summary["mean"] > self.sla_config.max_error_rate
         ):
-
             self.alert_manager.create_alert(
                 AlertLevel.ERROR,
                 f"Error rate SLA violation: {error_summary['mean']:.3f} > {self.sla_config.max_error_rate:.3f}",
@@ -784,7 +781,6 @@ class PerformanceMonitor:
             throughput_summary["count"] > 0
             and throughput_summary["mean"] < self.sla_config.min_throughput_rps
         ):
-
             self.alert_manager.create_alert(
                 AlertLevel.WARNING,
                 f"Throughput SLA violation: {throughput_summary['mean']:.1f} RPS < {self.sla_config.min_throughput_rps} RPS",

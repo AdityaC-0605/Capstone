@@ -409,15 +409,18 @@ class FeatureSelectionPipeline(DataProcessor):
                 removed_features.update(low_var_removed)
 
             # 2. Correlation analysis and multicollinearity removal
-            corr_matrix, multicollinear_pairs, target_correlations = (
-                self.correlation_analyzer.analyze_correlations(X_current, y)
-            )
+            (
+                corr_matrix,
+                multicollinear_pairs,
+                target_correlations,
+            ) = self.correlation_analyzer.analyze_correlations(X_current, y)
 
             if multicollinear_pairs:
-                X_current, multicoll_removed = (
-                    self.correlation_analyzer.remove_multicollinear_features(
-                        X_current, y, multicollinear_pairs
-                    )
+                (
+                    X_current,
+                    multicoll_removed,
+                ) = self.correlation_analyzer.remove_multicollinear_features(
+                    X_current, y, multicollinear_pairs
                 )
                 removed_features.update(multicoll_removed)
 
@@ -427,9 +430,10 @@ class FeatureSelectionPipeline(DataProcessor):
                     all_feature_scores[feature].correlation_score = score
 
             # 3. Statistical feature selection
-            statistical_features, statistical_scores = (
-                self.statistical_selector.select_features(X_current, y)
-            )
+            (
+                statistical_features,
+                statistical_scores,
+            ) = self.statistical_selector.select_features(X_current, y)
 
             # Update statistical scores
             for feature, score in statistical_scores.items():
