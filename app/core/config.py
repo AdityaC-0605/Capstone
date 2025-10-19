@@ -13,6 +13,7 @@ from enum import Enum
 
 class Environment(Enum):
     """Environment types."""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -22,6 +23,7 @@ class Environment(Enum):
 @dataclass
 class DatabaseConfig:
     """Database configuration."""
+
     host: str = "localhost"
     port: int = 5432
     database: str = "credit_risk_ai"
@@ -33,6 +35,7 @@ class DatabaseConfig:
 @dataclass
 class ModelConfig:
     """Model configuration."""
+
     batch_size: int = 32
     learning_rate: float = 0.001
     epochs: int = 100
@@ -44,6 +47,7 @@ class ModelConfig:
 @dataclass
 class SecurityConfig:
     """Security configuration."""
+
     encryption_key_path: str = "keys/encryption.key"
     jwt_secret_key: str = ""
     jwt_expiration_hours: int = 24
@@ -55,6 +59,7 @@ class SecurityConfig:
 @dataclass
 class FederatedConfig:
     """Federated learning configuration."""
+
     server_host: str = "localhost"
     server_port: int = 8080
     num_rounds: int = 10
@@ -66,6 +71,7 @@ class FederatedConfig:
 @dataclass
 class SustainabilityConfig:
     """Sustainability monitoring configuration."""
+
     enable_energy_tracking: bool = True
     carbon_region: str = "US"
     energy_threshold_kwh: float = 10.0
@@ -76,6 +82,7 @@ class SustainabilityConfig:
 @dataclass
 class APIConfig:
     """API configuration."""
+
     host: str = "0.0.0.0"
     port: int = 8000
     workers: int = 4
@@ -87,10 +94,11 @@ class APIConfig:
 @dataclass
 class Config:
     """Main configuration class."""
+
     environment: Environment = Environment.DEVELOPMENT
     debug: bool = True
     log_level: str = "INFO"
-    
+
     # Component configurations
     database: DatabaseConfig = field(default_factory=DatabaseConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
@@ -98,7 +106,7 @@ class Config:
     federated: FederatedConfig = field(default_factory=FederatedConfig)
     sustainability: SustainabilityConfig = field(default_factory=SustainabilityConfig)
     api: APIConfig = field(default_factory=APIConfig)
-    
+
     # Paths
     data_path: str = "data/"
     logs_path: str = "logs/"
@@ -108,59 +116,59 @@ class Config:
 
 class ConfigManager:
     """Configuration manager for loading and managing configurations."""
-    
+
     def __init__(self, config_path: Optional[str] = None):
         self.config_path = config_path or "config/"
         self._config: Optional[Config] = None
-    
+
     def load_config(self, environment: Optional[str] = None) -> Config:
         """Load configuration for the specified environment."""
         env = environment or os.getenv("ENVIRONMENT", "development")
-        
+
         # Load base configuration
         base_config = self._load_base_config()
-        
+
         # Load environment-specific overrides
         env_config = self._load_environment_config(env)
-        
+
         # Merge configurations
         merged_config = self._merge_configs(base_config, env_config)
-        
+
         # Apply environment variables
         final_config = self._apply_env_vars(merged_config)
-        
+
         self._config = final_config
         return final_config
-    
+
     def get_config(self) -> Config:
         """Get the current configuration."""
         if self._config is None:
             return self.load_config()
         return self._config
-    
+
     def _load_base_config(self) -> Dict[str, Any]:
         """Load base configuration."""
         config_file = Path(self.config_path) / "base.yaml"
         if config_file.exists():
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 return yaml.safe_load(f) or {}
         return {}
-    
+
     def _load_environment_config(self, environment: str) -> Dict[str, Any]:
         """Load environment-specific configuration."""
         config_file = Path(self.config_path) / f"{environment}.yaml"
         if config_file.exists():
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 return yaml.safe_load(f) or {}
         return {}
-    
+
     def _merge_configs(self, base: Dict[str, Any], override: Dict[str, Any]) -> Config:
         """Merge base and override configurations."""
         merged = {**base, **override}
-        
+
         # Convert to Config object
         config = Config()
-        
+
         # Update fields if they exist in merged config
         for field_name, field_value in merged.items():
             if hasattr(config, field_name):
@@ -172,9 +180,9 @@ class ConfigManager:
                             setattr(nested_config, nested_key, nested_value)
                 else:
                     setattr(config, field_name, field_value)
-        
+
         return config
-    
+
     def _apply_env_vars(self, config: Config) -> Config:
         """Apply environment variable overrides."""
         # Database overrides
@@ -184,38 +192,38 @@ class ConfigManager:
             config.database.port = int(os.getenv("DB_PORT"))
         if os.getenv("DB_PASSWORD"):
             config.database.password = os.getenv("DB_PASSWORD")
-        
+
         # Security overrides
         if os.getenv("JWT_SECRET_KEY"):
             config.security.jwt_secret_key = os.getenv("JWT_SECRET_KEY")
         if os.getenv("ENCRYPTION_KEY_PATH"):
             config.security.encryption_key_path = os.getenv("ENCRYPTION_KEY_PATH")
-        
+
         # API overrides
         if os.getenv("API_HOST"):
             config.api.host = os.getenv("API_HOST")
         if os.getenv("API_PORT"):
             config.api.port = int(os.getenv("API_PORT"))
-        
+
         return config
-    
+
     def save_config(self, config: Config, filename: str) -> None:
         """Save configuration to file."""
         config_dict = self._config_to_dict(config)
         config_file = Path(self.config_path) / filename
-        
+
         # Ensure directory exists
         config_file.parent.mkdir(parents=True, exist_ok=True)
-        
-        with open(config_file, 'w') as f:
+
+        with open(config_file, "w") as f:
             yaml.dump(config_dict, f, default_flow_style=False)
-    
+
     def _config_to_dict(self, config: Config) -> Dict[str, Any]:
         """Convert Config object to dictionary."""
         result = {}
         for field_name in config.__dataclass_fields__:
             field_value = getattr(config, field_name)
-            if hasattr(field_value, '__dataclass_fields__'):
+            if hasattr(field_value, "__dataclass_fields__"):
                 # Handle nested dataclass
                 result[field_name] = self._config_to_dict(field_value)
             elif isinstance(field_value, Enum):

@@ -21,7 +21,7 @@ app = FastAPI(
     description="AI system for credit risk assessment with sustainability features",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # Add CORS middleware
@@ -36,15 +36,18 @@ app.add_middleware(
 # Initialize logger
 logger = get_logger(__name__)
 
+
 @app.get("/")
 async def root():
     """Root endpoint."""
     return {"message": "Sustainable Credit Risk AI System", "version": "1.0.0"}
 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "credit-risk-ai"}
+
 
 @app.get("/ready")
 async def readiness_check():
@@ -56,6 +59,7 @@ async def readiness_check():
         logger.error(f"Readiness check failed: {e}")
         raise HTTPException(status_code=503, detail="Service not ready")
 
+
 @app.get("/api/v1/status")
 async def api_status():
     """API status endpoint."""
@@ -66,18 +70,19 @@ async def api_status():
             "credit-risk-assessment",
             "sustainability-monitoring",
             "federated-learning",
-            "explainable-ai"
-        ]
+            "explainable-ai",
+        ],
     }
+
 
 if __name__ == "__main__":
     # Load configuration
     config = load_config()
-    
+
     # Run the application
     uvicorn.run(
         "app.api.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=config.environment.value == "development"
+        reload=config.environment.value == "development",
     )

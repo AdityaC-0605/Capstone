@@ -6,12 +6,12 @@ import sys
 import os
 
 # Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 
 class TestPerformanceBenchmarks:
     """Performance benchmark tests."""
-    
+
     def test_prediction_latency(self):
         """Test prediction latency benchmark."""
         # Mock latency test
@@ -19,16 +19,16 @@ class TestPerformanceBenchmarks:
         # Simulate prediction
         time.sleep(0.001)  # 1ms simulation
         end_time = time.time()
-        
+
         latency_ms = (end_time - start_time) * 1000
         assert latency_ms < 100  # Should be under 100ms
-    
+
     def test_throughput(self):
         """Test prediction throughput."""
         # Mock throughput test
         mock_predictions_per_second = 1000
         assert mock_predictions_per_second > 100
-    
+
     def test_memory_efficiency(self):
         """Test memory efficiency."""
         # Mock memory test
@@ -37,12 +37,12 @@ class TestPerformanceBenchmarks:
 
 class TestScalabilityBenchmarks:
     """Scalability benchmark tests."""
-    
+
     def test_concurrent_requests(self):
         """Test concurrent request handling."""
         # Mock concurrency test
         assert True
-    
+
     def test_batch_processing(self):
         """Test batch processing performance."""
         # Mock batch processing test
@@ -52,13 +52,13 @@ class TestScalabilityBenchmarks:
 @pytest.mark.benchmark
 class TestEnergyEfficiency:
     """Energy efficiency benchmark tests."""
-    
+
     def test_energy_consumption(self):
         """Test energy consumption during inference."""
         # Mock energy test
         mock_energy_kwh = 0.0001
         assert mock_energy_kwh < 0.001  # Should be very low
-    
+
     def test_carbon_footprint(self):
         """Test carbon footprint."""
         # Mock carbon footprint test

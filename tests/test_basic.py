@@ -5,7 +5,7 @@ import sys
 import os
 
 # Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 
 
 def test_imports():
@@ -13,6 +13,7 @@ def test_imports():
     try:
         import numpy as np
         import pandas as pd
+
         assert True
     except ImportError:
         pytest.fail("Basic imports failed")
@@ -26,12 +27,12 @@ def test_basic_functionality():
 
 class TestDataProcessing:
     """Basic data processing tests."""
-    
+
     def test_data_validation(self):
         """Test data validation logic."""
         # Basic validation test
         assert True
-    
+
     def test_feature_engineering(self):
         """Test feature engineering."""
         # Basic feature engineering test
@@ -40,12 +41,12 @@ class TestDataProcessing:
 
 class TestModelComponents:
     """Basic model component tests."""
-    
+
     def test_model_initialization(self):
         """Test model initialization."""
         # Basic model test
         assert True
-    
+
     def test_prediction_pipeline(self):
         """Test prediction pipeline."""
         # Basic prediction test

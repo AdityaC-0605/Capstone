@@ -154,6 +154,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements-minimal.txt
 
+    - name: Install system dependencies for integration tests
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client redis-tools
+
     - name: Wait for services
       run: |
         sleep 10
@@ -232,6 +237,7 @@ jobs:
         load: true
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        platforms: linux/amd64
 
     - name: Clean up disk space before Trivy scan
       run: |
