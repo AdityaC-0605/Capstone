@@ -37,7 +37,11 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from core.logging import get_logger
-    from federated.federated_server import ClientInfo, FederatedConfig, ModelUpdate
+    from federated.federated_server import (
+        ClientInfo,
+        FederatedConfig,
+        ModelUpdate,
+    )
 
 logger = get_logger(__name__)
 
@@ -147,7 +151,9 @@ class MessageSerializer:
             raise
 
     @staticmethod
-    def deserialize_model_weights(encoded_weights: str) -> Dict[str, torch.Tensor]:
+    def deserialize_model_weights(
+        encoded_weights: str,
+    ) -> Dict[str, torch.Tensor]:
         """
         Deserialize model weights from base64 string.
 
@@ -159,7 +165,9 @@ class MessageSerializer:
         """
         try:
             # Decode from base64
-            serialized_bytes = base64.b64decode(encoded_weights.encode("utf-8"))
+            serialized_bytes = base64.b64decode(
+                encoded_weights.encode("utf-8")
+            )
 
             # Try decompression first
             try:
@@ -193,7 +201,9 @@ class MessageSerializer:
         """
         try:
             message_dict = message.to_dict()
-            json_str = json.dumps(message_dict, indent=None, separators=(",", ":"))
+            json_str = json.dumps(
+                message_dict, indent=None, separators=(",", ":")
+            )
 
             if message.compression:
                 # Compress JSON if requested
@@ -280,7 +290,9 @@ class SecureCommunicator:
             Base64 encoded encrypted message
         """
         if recipient_id not in self.peer_public_keys:
-            raise ValueError(f"No public key found for recipient {recipient_id}")
+            raise ValueError(
+                f"No public key found for recipient {recipient_id}"
+            )
 
         try:
             recipient_key = self.peer_public_keys[recipient_id]
@@ -316,7 +328,9 @@ class SecureCommunicator:
             Decrypted message
         """
         try:
-            encrypted_bytes = base64.b64decode(encrypted_message.encode("utf-8"))
+            encrypted_bytes = base64.b64decode(
+                encrypted_message.encode("utf-8")
+            )
 
             # Check if this is hybrid encryption
             if len(encrypted_bytes) > 256:  # Likely hybrid encryption
@@ -337,7 +351,9 @@ class SecureCommunicator:
             logger.error(f"Failed to decrypt message from {sender_id}: {e}")
             raise
 
-    def _hybrid_encrypt(self, message: str, recipient_key: rsa.RSAPublicKey) -> str:
+    def _hybrid_encrypt(
+        self, message: str, recipient_key: rsa.RSAPublicKey
+    ) -> str:
         """Hybrid encryption for large messages."""
         # Generate symmetric key
         symmetric_key = secrets.token_bytes(32)  # 256-bit key
@@ -345,16 +361,22 @@ class SecureCommunicator:
 
         # Encrypt message with symmetric key
         cipher = Cipher(
-            algorithms.AES(symmetric_key), modes.CBC(iv), backend=default_backend()
+            algorithms.AES(symmetric_key),
+            modes.CBC(iv),
+            backend=default_backend(),
         )
         encryptor = cipher.encryptor()
 
         # Pad message to block size
         message_bytes = message.encode("utf-8")
         padding_length = 16 - (len(message_bytes) % 16)
-        padded_message = message_bytes + bytes([padding_length] * padding_length)
+        padded_message = message_bytes + bytes(
+            [padding_length] * padding_length
+        )
 
-        encrypted_message = encryptor.update(padded_message) + encryptor.finalize()
+        encrypted_message = (
+            encryptor.update(padded_message) + encryptor.finalize()
+        )
 
         # Encrypt symmetric key with RSA
         encrypted_key = recipient_key.encrypt(
@@ -389,10 +411,14 @@ class SecureCommunicator:
 
         # Decrypt message
         cipher = Cipher(
-            algorithms.AES(symmetric_key), modes.CBC(iv), backend=default_backend()
+            algorithms.AES(symmetric_key),
+            modes.CBC(iv),
+            backend=default_backend(),
         )
         decryptor = cipher.decryptor()
-        decrypted_padded = decryptor.update(encrypted_message) + decryptor.finalize()
+        decrypted_padded = (
+            decryptor.update(encrypted_message) + decryptor.finalize()
+        )
 
         # Remove padding
         padding_length = decrypted_padded[-1]
@@ -425,7 +451,9 @@ class SecureCommunicator:
             logger.error(f"Failed to sign message: {e}")
             raise
 
-    def verify_signature(self, message: str, signature: str, sender_id: str) -> bool:
+    def verify_signature(
+        self, message: str, signature: str, sender_id: str
+    ) -> bool:
         """
         Verify a message signature.
 
@@ -457,7 +485,9 @@ class SecureCommunicator:
             return True
 
         except Exception as e:
-            logger.warning(f"Signature verification failed for sender {sender_id}: {e}")
+            logger.warning(
+                f"Signature verification failed for sender {sender_id}: {e}"
+            )
             return False
 
 
@@ -486,10 +516,14 @@ class FederatedCommunicationManager:
             await self.session.close()
             self.session = None
 
-    def register_message_handler(self, message_type: MessageType, handler: Callable):
+    def register_message_handler(
+        self, message_type: MessageType, handler: Callable
+    ):
         """Register a handler for a specific message type."""
         self.message_handlers[message_type] = handler
-        logger.debug(f"Registered handler for message type: {message_type.value}")
+        logger.debug(
+            f"Registered handler for message type: {message_type.value}"
+        )
 
     async def send_message(
         self, message: FederatedMessage, target_url: str
@@ -511,19 +545,26 @@ class FederatedCommunicationManager:
             serialized_message = MessageSerializer.serialize_message(message)
 
             # Encrypt if required
-            if self.config.enable_encryption and message.recipient_id != "broadcast":
+            if (
+                self.config.enable_encryption
+                and message.recipient_id != "broadcast"
+            ):
                 encrypted_message = self.communicator.encrypt_message(
                     serialized_message, message.recipient_id
                 )
                 message.encrypted = True
                 message.payload = {"encrypted_data": encrypted_message}
-                serialized_message = MessageSerializer.serialize_message(message)
+                serialized_message = MessageSerializer.serialize_message(
+                    message
+                )
 
             # Sign message
             if message.sender_id:
                 signature = self.communicator.sign_message(serialized_message)
                 message.signature = signature
-                serialized_message = MessageSerializer.serialize_message(message)
+                serialized_message = MessageSerializer.serialize_message(
+                    message
+                )
 
             # Send HTTP request
             headers = {
@@ -538,12 +579,17 @@ class FederatedCommunicationManager:
                 if response.status == 200:
                     response_data = await response.text()
                     if response_data:
-                        response_message = MessageSerializer.deserialize_message(
-                            response_data
+                        response_message = (
+                            MessageSerializer.deserialize_message(
+                                response_data
+                            )
                         )
 
                         # Verify signature if present
-                        if response_message.signature and response_message.sender_id:
+                        if (
+                            response_message.signature
+                            and response_message.sender_id
+                        ):
                             if not self.communicator.verify_signature(
                                 response_data,
                                 response_message.signature,
@@ -560,8 +606,11 @@ class FederatedCommunicationManager:
                                 "encrypted_data"
                             )
                             if encrypted_data:
-                                decrypted_data = self.communicator.decrypt_message(
-                                    encrypted_data, response_message.sender_id
+                                decrypted_data = (
+                                    self.communicator.decrypt_message(
+                                        encrypted_data,
+                                        response_message.sender_id,
+                                    )
                                 )
                                 response_message = (
                                     MessageSerializer.deserialize_message(
@@ -605,7 +654,9 @@ class FederatedCommunicationManager:
                     logger.warning(
                         f"Invalid signature from {message.sender_id} at {sender_ip}"
                     )
-                    return self._create_error_response(message, "Invalid signature")
+                    return self._create_error_response(
+                        message, "Invalid signature"
+                    )
 
             # Decrypt if encrypted
             if message.encrypted:
@@ -614,7 +665,9 @@ class FederatedCommunicationManager:
                     decrypted_data = self.communicator.decrypt_message(
                         encrypted_data, message.sender_id
                     )
-                    message = MessageSerializer.deserialize_message(decrypted_data)
+                    message = MessageSerializer.deserialize_message(
+                        decrypted_data
+                    )
 
             # Handle message based on type
             if message.message_type in self.message_handlers:
@@ -625,10 +678,14 @@ class FederatedCommunicationManager:
                 logger.warning(
                     f"No handler for message type: {message.message_type.value}"
                 )
-                return self._create_error_response(message, "Unknown message type")
+                return self._create_error_response(
+                    message, "Unknown message type"
+                )
 
         except Exception as e:
-            logger.error(f"Failed to handle incoming message from {sender_ip}: {e}")
+            logger.error(
+                f"Failed to handle incoming message from {sender_ip}: {e}"
+            )
             return None
 
     def _create_error_response(
@@ -689,7 +746,9 @@ class FederatedCommunicationManager:
             payload=payload,
         )
 
-    def parse_model_update_message(self, message: FederatedMessage) -> ModelUpdate:
+    def parse_model_update_message(
+        self, message: FederatedMessage
+    ) -> ModelUpdate:
         """
         Parse a model update message.
 

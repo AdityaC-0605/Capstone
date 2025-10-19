@@ -23,7 +23,10 @@ import torch.nn.utils.prune as prune
 
 try:
     from ..core.logging import get_logger
-    from ..sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from ..sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from ..sustainability.carbon_intensity_api import CarbonIntensityAPI
     from ..sustainability.energy_tracker import EnergyReport, EnergyTracker
 except ImportError:
@@ -32,7 +35,10 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent.parent))
     from src.core.logging import get_logger
-    from src.sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from src.sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from src.sustainability.carbon_intensity_api import CarbonIntensityAPI
     from src.sustainability.energy_tracker import EnergyReport, EnergyTracker
 
@@ -44,7 +50,9 @@ class OptimizationStrategy(Enum):
 
     AGGRESSIVE = "aggressive"  # High carbon intensity - maximum compression
     MODERATE = "moderate"  # Medium carbon intensity - balanced optimization
-    CONSERVATIVE = "conservative"  # Low carbon intensity - minimal optimization
+    CONSERVATIVE = (
+        "conservative"  # Low carbon intensity - minimal optimization
+    )
     ADAPTIVE = "adaptive"  # Dynamic based on real-time conditions
 
 
@@ -78,7 +86,9 @@ class ModelOptimizationConfig:
     quantization_levels: List[str] = field(
         default_factory=lambda: ["fp32", "fp16", "int8", "int4"]
     )
-    quantization_threshold: float = 0.95  # Quantize when carbon > 95th percentile
+    quantization_threshold: float = (
+        0.95  # Quantize when carbon > 95th percentile
+    )
 
     # Knowledge distillation settings
     enable_knowledge_distillation: bool = True
@@ -158,7 +168,9 @@ class AdaptivePruner:
             optimized_size = self._get_model_size_mb(pruned_model)
 
             # Estimate performance impact
-            performance_impact = self._estimate_performance_impact(pruning_ratio)
+            performance_impact = self._estimate_performance_impact(
+                pruning_ratio
+            )
 
             # Calculate energy and carbon savings
             compression_ratio = optimized_size / original_size
@@ -179,7 +191,9 @@ class AdaptivePruner:
                 carbon_savings_percent=carbon_savings * 100,
                 optimization_timestamp=datetime.now(),
                 carbon_intensity_at_optimization=carbon_intensity,
-                strategy_used=self._get_strategy_for_carbon_intensity(carbon_intensity),
+                strategy_used=self._get_strategy_for_carbon_intensity(
+                    carbon_intensity
+                ),
                 success=True,
             )
 
@@ -243,13 +257,17 @@ class AdaptivePruner:
         # Prune linear layers
         for name, module in pruned_model.named_modules():
             if isinstance(module, nn.Linear):
-                prune.l1_unstructured(module, name="weight", amount=pruning_ratio)
+                prune.l1_unstructured(
+                    module, name="weight", amount=pruning_ratio
+                )
                 prune.remove(module, "weight")
 
         # Prune convolutional layers
         for name, module in pruned_model.named_modules():
             if isinstance(module, (nn.Conv2d, nn.Conv1d)):
-                prune.l1_unstructured(module, name="weight", amount=pruning_ratio)
+                prune.l1_unstructured(
+                    module, name="weight", amount=pruning_ratio
+                )
                 prune.remove(module, "weight")
 
         return pruned_model
@@ -264,7 +282,9 @@ class AdaptivePruner:
     def _estimate_performance_impact(self, pruning_ratio: float) -> float:
         """Estimate performance impact of pruning."""
         # Empirical relationship: performance drops roughly with square of pruning ratio
-        return -(pruning_ratio**2) * 0.1  # Max 10% performance drop for 100% pruning
+        return (
+            -(pruning_ratio**2) * 0.1
+        )  # Max 10% performance drop for 100% pruning
 
     def _get_strategy_for_carbon_intensity(
         self, carbon_intensity: float
@@ -297,7 +317,9 @@ class AdaptiveQuantizer:
             original_size = self._get_model_size_mb(model)
 
             # Determine quantization level based on carbon intensity
-            quantization_level = self._select_quantization_level(carbon_intensity)
+            quantization_level = self._select_quantization_level(
+                carbon_intensity
+            )
 
             if quantization_level == "fp32":
                 logger.info(
@@ -319,11 +341,15 @@ class AdaptiveQuantizer:
                 )
 
             # Apply quantization
-            quantized_model = self._apply_quantization(model, quantization_level)
+            quantized_model = self._apply_quantization(
+                model, quantization_level
+            )
             optimized_size = self._get_model_size_mb(quantized_model)
 
             # Estimate performance impact
-            performance_impact = self._estimate_quantization_impact(quantization_level)
+            performance_impact = self._estimate_quantization_impact(
+                quantization_level
+            )
 
             # Calculate energy and carbon savings
             compression_ratio = optimized_size / original_size
@@ -516,7 +542,9 @@ class KnowledgeDistillationManager:
                 error_message=str(e),
             )
 
-    def _create_compressed_architecture(self, teacher_model: nn.Module) -> nn.Module:
+    def _create_compressed_architecture(
+        self, teacher_model: nn.Module
+    ) -> nn.Module:
         """Create a compressed architecture based on teacher model."""
         # Simple compression: reduce layer sizes by compression ratio
         compression_ratio = self.config.student_model_compression_ratio
@@ -587,7 +615,10 @@ class SustainableModelLifecycleManager:
         logger.info("Sustainable model lifecycle manager initialized")
 
     def register_model(
-        self, model_id: str, model: nn.Module, initial_performance: Dict[str, float]
+        self,
+        model_id: str,
+        model: nn.Module,
+        initial_performance: Dict[str, float],
     ) -> bool:
         """Register a new model for lifecycle management."""
         try:
@@ -604,7 +635,9 @@ class SustainableModelLifecycleManager:
                 "energy_efficiency_score": 0.0,
             }
 
-            logger.info(f"Model {model_id} registered for lifecycle management")
+            logger.info(
+                f"Model {model_id} registered for lifecycle management"
+            )
             return True
 
         except Exception as e:
@@ -634,7 +667,9 @@ class SustainableModelLifecycleManager:
 
         try:
             # Get current carbon intensity
-            carbon_intensity = self.carbon_api.get_current_carbon_intensity("US")
+            carbon_intensity = self.carbon_api.get_current_carbon_intensity(
+                "US"
+            )
 
             # Get model info
             model_info = self.model_registry[model_id]
@@ -655,13 +690,17 @@ class SustainableModelLifecycleManager:
                     model, carbon_intensity, current_performance
                 )
             elif optimization_type == "knowledge_distillation":
-                student_model, result = self.distillation_manager.create_student_model(
-                    model, carbon_intensity
+                student_model, result = (
+                    self.distillation_manager.create_student_model(
+                        model, carbon_intensity
+                    )
                 )
                 if result.success:
                     # Replace model with student model
                     self.model_registry[model_id]["model"] = student_model
-                    self.model_registry[model_id]["size_mb"] = result.optimized_size_mb
+                    self.model_registry[model_id][
+                        "size_mb"
+                    ] = result.optimized_size_mb
             else:
                 result = ModelOptimizationResult(
                     optimization_type="none",
@@ -680,13 +719,17 @@ class SustainableModelLifecycleManager:
 
             # Update model registry
             if result.success:
-                self.model_registry[model_id]["optimization_history"].append(result)
+                self.model_registry[model_id]["optimization_history"].append(
+                    result
+                )
                 self.model_registry[model_id]["performance_history"].append(
                     current_performance
                 )
 
             self.optimization_history.append(result)
-            logger.info(f"Model {model_id} optimized: {result.optimization_type}")
+            logger.info(
+                f"Model {model_id} optimized: {result.optimization_type}"
+            )
             return result
 
         except Exception as e:
@@ -748,13 +791,18 @@ class SustainableModelLifecycleManager:
             for metric in recent_performance:
                 if metric in initial_performance:
                     decay = (
-                        initial_performance[metric] - recent_performance[metric]
+                        initial_performance[metric]
+                        - recent_performance[metric]
                     ) / initial_performance[metric]
                     performance_decay = max(performance_decay, decay)
 
-            if performance_decay > self.config.model_performance_decay_threshold:
+            if (
+                performance_decay
+                > self.config.model_performance_decay_threshold
+            ):
                 logger.info(
-                    f"Model {model_id} marked for retirement due to performance decay: {performance_decay:.1%}"
+                    f"Model {model_id} marked for retirement due to performance "
+                    f"decay: {performance_decay:.1%}"
                 )
                 return True
 
@@ -800,10 +848,12 @@ class SustainableModelLifecycleManager:
 
         # Calculate total energy and carbon savings
         total_energy_savings = sum(
-            opt.energy_savings_percent for opt in model_info["optimization_history"]
+            opt.energy_savings_percent
+            for opt in model_info["optimization_history"]
         )
         total_carbon_savings = sum(
-            opt.carbon_savings_percent for opt in model_info["optimization_history"]
+            opt.carbon_savings_percent
+            for opt in model_info["optimization_history"]
         )
 
         # Calculate average performance
@@ -811,7 +861,8 @@ class SustainableModelLifecycleManager:
             avg_performance = {}
             for metric in model_info["performance_history"][0]:
                 values = [
-                    perf.get(metric, 0) for perf in model_info["performance_history"]
+                    perf.get(metric, 0)
+                    for perf in model_info["performance_history"]
                 ]
                 avg_performance[metric] = np.mean(values)
         else:
@@ -921,7 +972,11 @@ def demo_sustainable_model_lifecycle() -> Dict[str, Any]:
             return self.layers(x)
 
     model = SampleModel()
-    initial_performance = {"accuracy": 0.85, "f1_score": 0.82, "precision": 0.88}
+    initial_performance = {
+        "accuracy": 0.85,
+        "f1_score": 0.82,
+        "precision": 0.88,
+    }
 
     # Register model
     model_id = "demo_credit_model"
@@ -931,7 +986,12 @@ def demo_sustainable_model_lifecycle() -> Dict[str, Any]:
         return {"error": "Failed to register model"}
 
     # Simulate optimization over time with different carbon intensities
-    carbon_scenarios = [150.0, 350.0, 550.0, 750.0]  # Different carbon intensities
+    carbon_scenarios = [
+        150.0,
+        350.0,
+        550.0,
+        750.0,
+    ]  # Different carbon intensities
     optimization_results = []
 
     for i, carbon_intensity in enumerate(carbon_scenarios):
@@ -943,7 +1003,9 @@ def demo_sustainable_model_lifecycle() -> Dict[str, Any]:
         }
 
         # Optimize model
-        result = manager.optimize_model_for_carbon(model_id, current_performance)
+        result = manager.optimize_model_for_carbon(
+            model_id, current_performance
+        )
         optimization_results.append(result)
 
         logger.info(

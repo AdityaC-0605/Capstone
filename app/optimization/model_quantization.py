@@ -34,7 +34,10 @@ from torch.quantization import (
     quantize_dynamic,
 )
 from torch.quantization.fake_quantize import FakeQuantize
-from torch.quantization.observer import MinMaxObserver, MovingAverageMinMaxObserver
+from torch.quantization.observer import (
+    MinMaxObserver,
+    MovingAverageMinMaxObserver,
+)
 
 try:
     from ..core.interfaces import BaseModel, TrainingMetrics
@@ -189,7 +192,9 @@ class BaseQuantizer(ABC):
         pass
 
     @abstractmethod
-    def prepare_model(self, model: nn.Module, config: QuantizationConfig) -> nn.Module:
+    def prepare_model(
+        self, model: nn.Module, config: QuantizationConfig
+    ) -> nn.Module:
         """Prepare model for quantization."""
         pass
 
@@ -212,14 +217,18 @@ class QATQuantizer(BaseQuantizer):
         prepared_model = self.prepare_model(model, config)
 
         # Train with fake quantization
-        trained_model = self._train_qat_model(prepared_model, X_train, y_train, config)
+        trained_model = self._train_qat_model(
+            prepared_model, X_train, y_train, config
+        )
 
         # Convert to quantized model
         quantized_model = convert(trained_model, inplace=False)
 
         return quantized_model
 
-    def prepare_model(self, model: nn.Module, config: QuantizationConfig) -> nn.Module:
+    def prepare_model(
+        self, model: nn.Module, config: QuantizationConfig
+    ) -> nn.Module:
         """Prepare model for QAT."""
         try:
             # Wrap model to make it quantizable
@@ -243,10 +252,14 @@ class QATQuantizer(BaseQuantizer):
             # Set quantization configuration
             if config.qconfig_type == "default":
                 try:
-                    quantizable_model.qconfig = get_default_qat_qconfig(config.backend)
+                    quantizable_model.qconfig = get_default_qat_qconfig(
+                        config.backend
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to get default QAT config: {e}")
-                    quantizable_model.qconfig = self._create_custom_qconfig(config)
+                    quantizable_model.qconfig = self._create_custom_qconfig(
+                        config
+                    )
             else:
                 quantizable_model.qconfig = self._create_custom_qconfig(config)
 
@@ -305,7 +318,9 @@ class QATQuantizer(BaseQuantizer):
 
         from torch.quantization.qconfig import QConfig
 
-        return QConfig(activation=activation_fake_quantize, weight=weight_fake_quantize)
+        return QConfig(
+            activation=activation_fake_quantize, weight=weight_fake_quantize
+        )
 
     def _train_qat_model(
         self,
@@ -365,14 +380,18 @@ class PostTrainingStaticQuantizer(BaseQuantizer):
         prepared_model = self.prepare_model(model, config)
 
         # Calibrate model
-        calibrated_model = self._calibrate_model(prepared_model, X_train, config)
+        calibrated_model = self._calibrate_model(
+            prepared_model, X_train, config
+        )
 
         # Convert to quantized model
         quantized_model = convert(calibrated_model, inplace=False)
 
         return quantized_model
 
-    def prepare_model(self, model: nn.Module, config: QuantizationConfig) -> nn.Module:
+    def prepare_model(
+        self, model: nn.Module, config: QuantizationConfig
+    ) -> nn.Module:
         """Prepare model for static quantization."""
         try:
             # Wrap model to make it quantizable
@@ -396,10 +415,14 @@ class PostTrainingStaticQuantizer(BaseQuantizer):
             # Set quantization configuration
             if config.qconfig_type == "default":
                 try:
-                    quantizable_model.qconfig = get_default_qconfig(config.backend)
+                    quantizable_model.qconfig = get_default_qconfig(
+                        config.backend
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to get default config: {e}")
-                    quantizable_model.qconfig = self._create_custom_qconfig(config)
+                    quantizable_model.qconfig = self._create_custom_qconfig(
+                        config
+                    )
             else:
                 quantizable_model.qconfig = self._create_custom_qconfig(config)
 
@@ -416,7 +439,9 @@ class PostTrainingStaticQuantizer(BaseQuantizer):
             return prepared_model
 
         except Exception as e:
-            logger.error(f"Failed to prepare model for static quantization: {e}")
+            logger.error(
+                f"Failed to prepare model for static quantization: {e}"
+            )
             raise
 
     def _create_custom_qconfig(self, config: QuantizationConfig):
@@ -445,13 +470,18 @@ class PostTrainingStaticQuantizer(BaseQuantizer):
         return QConfig(activation=activation_observer, weight=weight_observer)
 
     def _calibrate_model(
-        self, model: nn.Module, X_calibration: torch.Tensor, config: QuantizationConfig
+        self,
+        model: nn.Module,
+        X_calibration: torch.Tensor,
+        config: QuantizationConfig,
     ) -> nn.Module:
         """Calibrate model with representative data."""
         model.eval()
 
         # Use subset of data for calibration
-        calibration_size = min(config.calibration_dataset_size, len(X_calibration))
+        calibration_size = min(
+            config.calibration_dataset_size, len(X_calibration)
+        )
         X_cal = X_calibration[:calibration_size]
 
         logger.info(f"Calibrating model with {calibration_size} samples")
@@ -491,7 +521,9 @@ class PostTrainingDynamicQuantizer(BaseQuantizer):
             # Fallback: return a manually quantized version
             return self._manual_quantize_model(model, config)
 
-    def prepare_model(self, model: nn.Module, config: QuantizationConfig) -> nn.Module:
+    def prepare_model(
+        self, model: nn.Module, config: QuantizationConfig
+    ) -> nn.Module:
         """Dynamic quantization doesn't need preparation."""
         return model
 
@@ -592,7 +624,9 @@ class ModelQuantizer:
             return available_backends[0]
 
         # If no backends available, use qnnpack as fallback
-        logger.warning("No quantization backends detected, using qnnpack as fallback")
+        logger.warning(
+            "No quantization backends detected, using qnnpack as fallback"
+        )
         return "qnnpack"
 
     def quantize_and_validate(
@@ -632,7 +666,9 @@ class ModelQuantizer:
                 model, X_val_tensor, y_val_tensor
             )
             original_size = self._calculate_model_size(model)
-            original_inference_time = self._measure_inference_time(model, X_val_tensor)
+            original_inference_time = self._measure_inference_time(
+                model, X_val_tensor
+            )
 
             logger.info(
                 f"Original model - AUC: {original_performance.get('roc_auc', 0.0):.4f}, "
@@ -656,7 +692,9 @@ class ModelQuantizer:
                 model, self.config, train_data, train_targets
             )
 
-            quantization_time = (datetime.now() - quantization_start).total_seconds()
+            quantization_time = (
+                datetime.now() - quantization_start
+            ).total_seconds()
 
             # Evaluate quantized model
             quantized_performance = self._evaluate_model(
@@ -672,7 +710,9 @@ class ModelQuantizer:
                 original_size / quantized_size if quantized_size > 0 else 1.0
             )
             size_reduction = (
-                1.0 - (quantized_size / original_size) if original_size > 0 else 0.0
+                1.0 - (quantized_size / original_size)
+                if original_size > 0
+                else 0.0
             )
             speedup_ratio = (
                 original_inference_time / quantized_inference_time
@@ -681,7 +721,8 @@ class ModelQuantizer:
             )
 
             performance_drop = {
-                key: original_performance[key] - quantized_performance.get(key, 0.0)
+                key: original_performance[key]
+                - quantized_performance.get(key, 0.0)
                 for key in original_performance.keys()
             }
 
@@ -697,7 +738,9 @@ class ModelQuantizer:
             # Save quantized model
             quantized_model_path = None
             if self.config.save_quantized_model and success:
-                quantized_model_path = self._save_quantized_model(quantized_model)
+                quantized_model_path = self._save_quantized_model(
+                    quantized_model
+                )
 
             total_time = (datetime.now() - start_time).total_seconds()
 
@@ -798,7 +841,9 @@ class ModelQuantizer:
         for buffer in model.buffers():
             buffer_size += buffer.nelement() * buffer.element_size()
 
-        model_size = (param_size + buffer_size) / (1024 * 1024)  # Convert to MB
+        model_size = (param_size + buffer_size) / (
+            1024 * 1024
+        )  # Convert to MB
         return model_size
 
     def _measure_inference_time(

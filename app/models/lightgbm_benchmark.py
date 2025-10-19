@@ -133,7 +133,9 @@ class LightGBMBenchmark:
         self.experiment_tracker = ExperimentTracker()
         self.results: List[BenchmarkResult] = []
 
-    def run_benchmark(self, X: pd.DataFrame, y: pd.Series) -> List[BenchmarkResult]:
+    def run_benchmark(
+        self, X: pd.DataFrame, y: pd.Series
+    ) -> List[BenchmarkResult]:
         """Run comprehensive benchmark on dataset."""
         logger.info(
             f"Starting LightGBM benchmark with {len(self.config.lightgbm_configs)} configurations"
@@ -145,7 +147,9 @@ class LightGBMBenchmark:
             config_name = f"lightgbm_config_{i}"
             logger.info(f"Benchmarking configuration: {config_name}")
 
-            result = self._benchmark_single_config(X, y, lgb_config, config_name)
+            result = self._benchmark_single_config(
+                X, y, lgb_config, config_name
+            )
             self.results.append(result)
 
         # Save results if requested
@@ -199,7 +203,9 @@ class LightGBMBenchmark:
                     result.auc_scores.append(
                         trial_result.test_metrics.get("roc_auc", 0.0)
                     )
-                    result.training_times.append(trial_result.training_time_seconds)
+                    result.training_times.append(
+                        trial_result.training_time_seconds
+                    )
 
                     # Measure inference time
                     inference_time = self._measure_inference_time(
@@ -232,7 +238,11 @@ class LightGBMBenchmark:
         return result
 
     def _run_single_trial(
-        self, X: pd.DataFrame, y: pd.Series, lgb_config: LightGBMConfig, run_id: int
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        lgb_config: LightGBMConfig,
+        run_id: int,
     ) -> LightGBMResult:
         """Run a single training trial."""
         # Add run-specific randomization
@@ -415,7 +425,10 @@ class LightGBMBenchmark:
 # Factory functions for common benchmark configurations
 def create_fast_benchmark_config() -> BenchmarkConfig:
     """Create a fast benchmark configuration for testing."""
-    from .lightgbm_model import get_default_lightgbm_config, get_fast_lightgbm_config
+    from .lightgbm_model import (
+        get_default_lightgbm_config,
+        get_fast_lightgbm_config,
+    )
 
     configs = [get_fast_lightgbm_config(), get_default_lightgbm_config()]
 

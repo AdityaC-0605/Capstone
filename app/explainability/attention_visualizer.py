@@ -151,14 +151,20 @@ class AttentionExplanation:
 class AttentionExtractor:
     """Base class for extracting attention weights from models."""
 
-    def __init__(self, model: nn.Module, config: Optional[AttentionConfig] = None):
+    def __init__(
+        self, model: nn.Module, config: Optional[AttentionConfig] = None
+    ):
         self.model = model
         self.config = config or AttentionConfig()
         self.model.eval()
 
-    def extract_attention(self, X: torch.Tensor, **kwargs) -> Dict[str, torch.Tensor]:
+    def extract_attention(
+        self, X: torch.Tensor, **kwargs
+    ) -> Dict[str, torch.Tensor]:
         """Extract attention weights from model. To be implemented by subclasses."""
-        raise NotImplementedError("Subclasses must implement extract_attention method")
+        raise NotImplementedError(
+            "Subclasses must implement extract_attention method"
+        )
 
     def get_model_prediction(self, X: torch.Tensor, **kwargs) -> float:
         """Get model prediction for the input."""
@@ -174,7 +180,9 @@ class AttentionExtractor:
                     lengths = kwargs.get("lengths")
                     if lengths is None:
                         # Create default lengths if not provided
-                        lengths = torch.full((X.shape[0],), X.shape[1], device=X.device)
+                        lengths = torch.full(
+                            (X.shape[0],), X.shape[1], device=X.device
+                        )
                     output = self.model(X, lengths)
                 else:
                     output = self.model(X)
@@ -225,12 +233,16 @@ class LSTMAttentionExtractor(AttentionExtractor):
                 attention_weights = self.model.attention.last_attention_weights
             else:
                 # Try to extract attention from forward hooks
-                attention_weights = self._extract_attention_with_hooks(X, lengths)
+                attention_weights = self._extract_attention_with_hooks(
+                    X, lengths
+                )
 
                 if attention_weights is None:
                     # If no attention weights available, create uniform weights
                     batch_size, seq_len = X.shape[:2]
-                    attention_weights = torch.ones(batch_size, seq_len) / seq_len
+                    attention_weights = (
+                        torch.ones(batch_size, seq_len) / seq_len
+                    )
                     logger.warning(
                         "No attention weights found in LSTM model, using uniform weights"
                     )
@@ -292,7 +304,9 @@ class GNNAttentionExtractor(AttentionExtractor):
                 _ = self.model(data)
             else:
                 # Handle different data formats
-                _ = self.model(data.x, data.edge_index, getattr(data, "batch", None))
+                _ = self.model(
+                    data.x, data.edge_index, getattr(data, "batch", None)
+                )
 
             attention_weights = {}
 
@@ -303,8 +317,12 @@ class GNNAttentionExtractor(AttentionExtractor):
                         attention_weights[f"layer_{i}_attention"] = (
                             layer.attention_weights
                         )
-                    elif hasattr(layer, "_alpha"):  # GAT attention coefficients
-                        attention_weights[f"layer_{i}_attention"] = layer._alpha
+                    elif hasattr(
+                        layer, "_alpha"
+                    ):  # GAT attention coefficients
+                        attention_weights[f"layer_{i}_attention"] = (
+                            layer._alpha
+                        )
 
             # Extract pooling attention weights if available
             if hasattr(self.model, "pooling"):
@@ -316,7 +334,9 @@ class GNNAttentionExtractor(AttentionExtractor):
                     # Try to get attention from pooling layer
                     pooling_attention = self._extract_pooling_attention(data)
                     if pooling_attention is not None:
-                        attention_weights["pooling_attention"] = pooling_attention
+                        attention_weights["pooling_attention"] = (
+                            pooling_attention
+                        )
 
             # Try to extract attention using hooks if nothing found
             if not attention_weights:
@@ -346,7 +366,9 @@ class GNNAttentionExtractor(AttentionExtractor):
                 # Calculate attention scores manually
                 x = data.x
                 attention_scores = self.model.pooling.attention(x)
-                attention_weights = torch.softmax(attention_scores.squeeze(-1), dim=0)
+                attention_weights = torch.softmax(
+                    attention_scores.squeeze(-1), dim=0
+                )
                 return attention_weights
         except Exception as e:
             logger.debug(f"Could not extract pooling attention: {e}")
@@ -381,7 +403,9 @@ class GNNAttentionExtractor(AttentionExtractor):
             if hasattr(data, "batch"):
                 _ = self.model(data)
             else:
-                _ = self.model(data.x, data.edge_index, getattr(data, "batch", None))
+                _ = self.model(
+                    data.x, data.edge_index, getattr(data, "batch", None)
+                )
         finally:
             # Remove hooks
             for hook in hooks:
@@ -432,17 +456,22 @@ class AttentionVisualizer:
             attention_weights = temporal_attention.cpu().numpy()
 
         # Calculate attention statistics
-        attention_stats = self._calculate_attention_statistics(attention_weights)
+        attention_stats = self._calculate_attention_statistics(
+            attention_weights
+        )
 
         # Get top attended timesteps
-        top_indices = np.argsort(attention_weights)[-self.config.top_k_features :][::-1]
+        top_indices = np.argsort(attention_weights)[
+            -self.config.top_k_features :
+        ][::-1]
         top_attended_features = [
             (f"timestep_{i}", float(attention_weights[i])) for i in top_indices
         ]
 
         # Create attention distribution
         attention_distribution = {
-            f"timestep_{i}": float(weight) for i, weight in enumerate(attention_weights)
+            f"timestep_{i}": float(weight)
+            for i, weight in enumerate(attention_weights)
         }
 
         # Find peak attention timesteps
@@ -510,9 +539,13 @@ class AttentionVisualizer:
 
         # Process attention weights
         if "pooling_attention" in attention_data:
-            attention_weights = attention_data["pooling_attention"].cpu().numpy()
+            attention_weights = (
+                attention_data["pooling_attention"].cpu().numpy()
+            )
         elif "layer_0_attention" in attention_data:
-            attention_weights = attention_data["layer_0_attention"].cpu().numpy()
+            attention_weights = (
+                attention_data["layer_0_attention"].cpu().numpy()
+            )
         else:
             attention_weights = list(attention_data.values())[0].cpu().numpy()
 
@@ -521,17 +554,22 @@ class AttentionVisualizer:
             attention_weights = attention_weights.flatten()
 
         # Calculate attention statistics
-        attention_stats = self._calculate_attention_statistics(attention_weights)
+        attention_stats = self._calculate_attention_statistics(
+            attention_weights
+        )
 
         # Get top attended nodes
-        top_indices = np.argsort(attention_weights)[-self.config.top_k_features :][::-1]
+        top_indices = np.argsort(attention_weights)[
+            -self.config.top_k_features :
+        ][::-1]
         top_attended_features = [
             (f"node_{i}", float(attention_weights[i])) for i in top_indices
         ]
 
         # Create attention distribution
         attention_distribution = {
-            f"node_{i}": float(weight) for i, weight in enumerate(attention_weights)
+            f"node_{i}": float(weight)
+            for i, weight in enumerate(attention_weights)
         }
 
         explanation_time = (datetime.now() - start_time).total_seconds()
@@ -585,7 +623,9 @@ class AttentionVisualizer:
 
         return stats
 
-    def _calculate_gini_coefficient(self, attention_weights: np.ndarray) -> float:
+    def _calculate_gini_coefficient(
+        self, attention_weights: np.ndarray
+    ) -> float:
         """Calculate Gini coefficient to measure attention concentration."""
         sorted_weights = np.sort(attention_weights)
         n = len(sorted_weights)
@@ -599,7 +639,10 @@ class AttentionVisualizer:
     ) -> Optional[str]:
         """Create temporal attention heatmap for LSTM explanations."""
 
-        if explanation.model_type != "LSTM" or explanation.temporal_attention is None:
+        if (
+            explanation.model_type != "LSTM"
+            or explanation.temporal_attention is None
+        ):
             logger.warning(
                 "Temporal heatmap only available for LSTM models with temporal attention"
             )
@@ -612,10 +655,14 @@ class AttentionVisualizer:
             attention_data = explanation.temporal_attention.reshape(1, -1)
 
             # Create heatmap
-            im = ax.imshow(attention_data, cmap=self.config.heatmap_cmap, aspect="auto")
+            im = ax.imshow(
+                attention_data, cmap=self.config.heatmap_cmap, aspect="auto"
+            )
 
             # Customize plot
-            ax.set_title(f"Temporal Attention Heatmap - {explanation.instance_id}")
+            ax.set_title(
+                f"Temporal Attention Heatmap - {explanation.instance_id}"
+            )
             ax.set_xlabel("Timestep")
             ax.set_ylabel("Sequence")
 
@@ -678,7 +725,9 @@ class AttentionVisualizer:
             features = [f[0] for f in top_features]
             weights = [f[1] for f in top_features]
 
-            bars = ax1.barh(range(len(features)), weights, color="skyblue", alpha=0.7)
+            bars = ax1.barh(
+                range(len(features)), weights, color="skyblue", alpha=0.7
+            )
             ax1.set_yticks(range(len(features)))
             ax1.set_yticklabels(features)
             ax1.set_xlabel("Attention Weight")
@@ -698,7 +747,10 @@ class AttentionVisualizer:
 
             # Plot 2: Attention distribution histogram
             ax2.hist(
-                explanation.attention_weights, bins=20, alpha=0.7, color="lightcoral"
+                explanation.attention_weights,
+                bins=20,
+                alpha=0.7,
+                color="lightcoral",
             )
             ax2.set_xlabel("Attention Weight")
             ax2.set_ylabel("Frequency")
@@ -777,7 +829,12 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
 
         # Plot 1: Attention flow over time
         ax1.plot(
-            timesteps, attention_weights, "b-", linewidth=2, marker="o", markersize=4
+            timesteps,
+            attention_weights,
+            "b-",
+            linewidth=2,
+            marker="o",
+            markersize=4,
         )
         ax1.fill_between(timesteps, attention_weights, alpha=0.3)
         ax1.set_xlabel("Timestep")
@@ -788,7 +845,8 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
         # Highlight peak attention timesteps
         if explanation.peak_attention_timesteps:
             peak_weights = [
-                attention_weights[i] for i in explanation.peak_attention_timesteps
+                attention_weights[i]
+                for i in explanation.peak_attention_timesteps
             ]
             ax1.scatter(
                 explanation.peak_attention_timesteps,
@@ -849,7 +907,11 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
         sorted_weights = attention_weights[sorted_indices]
 
         ax2.plot(
-            range(len(sorted_weights)), sorted_weights, "ro-", linewidth=2, markersize=4
+            range(len(sorted_weights)),
+            sorted_weights,
+            "ro-",
+            linewidth=2,
+            markersize=4,
         )
         ax2.set_xlabel("Node Rank")
         ax2.set_ylabel("Attention Weight")
@@ -861,14 +923,18 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
 
         # Save plot
         if self.config.save_plots:
-            plot_path = self._save_plot(fig, f"node_flow_{explanation.instance_id}")
+            plot_path = self._save_plot(
+                fig, f"node_flow_{explanation.instance_id}"
+            )
             plt.close(fig)
             return plot_path
 
         plt.show()
         return None
 
-    def generate_attention_report(self, explanation: AttentionExplanation) -> str:
+    def generate_attention_report(
+        self, explanation: AttentionExplanation
+    ) -> str:
         """Generate comprehensive attention-based explanation report."""
 
         report_lines = [
@@ -953,7 +1019,9 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
             ]
         )
 
-        for i, (feature, weight) in enumerate(explanation.top_attended_features[:5], 1):
+        for i, (feature, weight) in enumerate(
+            explanation.top_attended_features[:5], 1
+        ):
             percentage = (weight / np.sum(explanation.attention_weights)) * 100
             report_lines.append(
                 f"{i}. **{feature}**: {weight:.4f} ({percentage:.1f}% of total attention)"
@@ -1000,7 +1068,9 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
                 f"focuses on a small number of key elements for its decision."
             )
         elif attention_pattern == "moderately concentrated":
-            report_lines.append(f"balances focus between several important elements.")
+            report_lines.append(
+                f"balances focus between several important elements."
+            )
         else:
             report_lines.append(
                 f"considers many elements with relatively equal importance."
@@ -1067,10 +1137,14 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
             )
 
             # Generate insights
-            analysis["insights"] = self._generate_attention_insights(explanation)
+            analysis["insights"] = self._generate_attention_insights(
+                explanation
+            )
 
             # Generate compliance data
-            analysis["compliance_data"] = self._generate_compliance_data(explanation)
+            analysis["compliance_data"] = self._generate_compliance_data(
+                explanation
+            )
 
             # Generate report
             analysis["report"] = self.generate_attention_report(explanation)
@@ -1103,7 +1177,9 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
 
         insights["attention_concentration"] = {
             "level": (
-                "high" if entropy < 2.0 else "moderate" if entropy < 3.0 else "low"
+                "high"
+                if entropy < 2.0
+                else "moderate" if entropy < 3.0 else "low"
             ),
             "entropy_score": entropy,
             "gini_coefficient": gini,
@@ -1128,7 +1204,9 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
 
             # Identify attention phases
             early_attention = np.mean(attention_weights[: seq_len // 3])
-            mid_attention = np.mean(attention_weights[seq_len // 3 : 2 * seq_len // 3])
+            mid_attention = np.mean(
+                attention_weights[seq_len // 3 : 2 * seq_len // 3]
+            )
             late_attention = np.mean(attention_weights[2 * seq_len // 3 :])
 
             dominant_phase = (
@@ -1143,7 +1221,9 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
                 "mid_attention": mid_attention,
                 "late_attention": late_attention,
                 "attention_trend": (
-                    "increasing" if late_attention > early_attention else "decreasing"
+                    "increasing"
+                    if late_attention > early_attention
+                    else "decreasing"
                 ),
             }
 
@@ -1173,7 +1253,9 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
             ),
             "attention_variance": explanation.attention_statistics["std"],
             "uniformity": (
-                "uniform" if explanation.attention_statistics["std"] < 0.1 else "varied"
+                "uniform"
+                if explanation.attention_statistics["std"] < 0.1
+                else "varied"
             ),
         }
 
@@ -1298,7 +1380,9 @@ Gini: {explanation.attention_statistics['gini']:.4f}"""
             with open(save_path, "w") as f:
                 json.dump(explanations_data, f, indent=2)
 
-            logger.info(f"Saved {len(explanations)} explanations to {save_path}")
+            logger.info(
+                f"Saved {len(explanations)} explanations to {save_path}"
+            )
             return str(save_path)
 
         except Exception as e:
@@ -1350,7 +1434,8 @@ def visualize_gnn_attention(
 
 
 def create_attention_dashboard(
-    explanations: List[AttentionExplanation], config: Optional[AttentionConfig] = None
+    explanations: List[AttentionExplanation],
+    config: Optional[AttentionConfig] = None,
 ) -> str:
     """
     Create comprehensive attention analysis dashboard.
@@ -1412,7 +1497,9 @@ def create_attention_dashboard(
         )
 
     # Update layout
-    fig.update_layout(title="Attention Analysis Dashboard", height=800, showlegend=True)
+    fig.update_layout(
+        title="Attention Analysis Dashboard", height=800, showlegend=True
+    )
 
     # Save dashboard
     try:
@@ -1473,7 +1560,9 @@ def batch_explain_attention(
                     model, X, lengths, instance_id
                 )
             else:  # GNN
-                explanation = visualizer.explain_gnn_attention(model, data, instance_id)
+                explanation = visualizer.explain_gnn_attention(
+                    model, data, instance_id
+                )
 
             explanations.append(explanation)
 
@@ -1481,12 +1570,15 @@ def batch_explain_attention(
             logger.error(f"Failed to explain instance {i}: {e}")
             continue
 
-    logger.info(f"Successfully generated {len(explanations)} attention explanations")
+    logger.info(
+        f"Successfully generated {len(explanations)} attention explanations"
+    )
     return explanations
 
 
 def compare_attention_patterns(
-    explanations: List[AttentionExplanation], config: Optional[AttentionConfig] = None
+    explanations: List[AttentionExplanation],
+    config: Optional[AttentionConfig] = None,
 ) -> Dict[str, Any]:
     """
     Compare attention patterns across multiple explanations.
@@ -1503,23 +1595,39 @@ def compare_attention_patterns(
 
     config = config or AttentionConfig()
 
-    comparison = {"summary": {}, "statistics": {}, "patterns": {}, "insights": []}
+    comparison = {
+        "summary": {},
+        "statistics": {},
+        "patterns": {},
+        "insights": [],
+    }
 
     # Basic summary
     comparison["summary"] = {
         "num_explanations": len(explanations),
         "model_types": list(set(exp.model_type for exp in explanations)),
-        "avg_prediction": np.mean([exp.model_prediction for exp in explanations]),
-        "prediction_std": np.std([exp.model_prediction for exp in explanations]),
+        "avg_prediction": np.mean(
+            [exp.model_prediction for exp in explanations]
+        ),
+        "prediction_std": np.std(
+            [exp.model_prediction for exp in explanations]
+        ),
     }
 
     # Statistical comparison
-    all_entropies = [exp.attention_statistics["entropy"] for exp in explanations]
+    all_entropies = [
+        exp.attention_statistics["entropy"] for exp in explanations
+    ]
     all_ginis = [exp.attention_statistics["gini"] for exp in explanations]
-    all_max_attentions = [exp.attention_statistics["max"] for exp in explanations]
+    all_max_attentions = [
+        exp.attention_statistics["max"] for exp in explanations
+    ]
 
     comparison["statistics"] = {
-        "entropy": {"mean": np.mean(all_entropies), "std": np.std(all_entropies)},
+        "entropy": {
+            "mean": np.mean(all_entropies),
+            "std": np.std(all_entropies),
+        },
         "gini": {"mean": np.mean(all_ginis), "std": np.std(all_ginis)},
         "max_attention": {
             "mean": np.mean(all_max_attentions),
@@ -1547,7 +1655,9 @@ def compare_attention_patterns(
             "Most instances show distributed attention patterns"
         )
     else:
-        comparison["insights"].append("Mixed attention patterns across instances")
+        comparison["insights"].append(
+            "Mixed attention patterns across instances"
+        )
 
     if comparison["patterns"]["consistent_patterns"]:
         comparison["insights"].append(

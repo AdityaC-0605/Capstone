@@ -15,7 +15,9 @@ def test_imports():
         import numpy as np
         import pandas as pd
 
-        assert True
+        # Test that imports work
+        assert np is not None
+        assert pd is not None
     except ImportError:
         pytest.fail("Basic imports failed")
 

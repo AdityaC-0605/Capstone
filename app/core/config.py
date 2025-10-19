@@ -105,7 +105,9 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
     federated: FederatedConfig = field(default_factory=FederatedConfig)
-    sustainability: SustainabilityConfig = field(default_factory=SustainabilityConfig)
+    sustainability: SustainabilityConfig = field(
+        default_factory=SustainabilityConfig
+    )
     api: APIConfig = field(default_factory=APIConfig)
 
     # Paths
@@ -163,7 +165,9 @@ class ConfigManager:
                 return yaml.safe_load(f) or {}
         return {}
 
-    def _merge_configs(self, base: Dict[str, Any], override: Dict[str, Any]) -> Config:
+    def _merge_configs(
+        self, base: Dict[str, Any], override: Dict[str, Any]
+    ) -> Config:
         """Merge base and override configurations."""
         merged = {**base, **override}
 
@@ -198,7 +202,9 @@ class ConfigManager:
         if os.getenv("JWT_SECRET_KEY"):
             config.security.jwt_secret_key = os.getenv("JWT_SECRET_KEY")
         if os.getenv("ENCRYPTION_KEY_PATH"):
-            config.security.encryption_key_path = os.getenv("ENCRYPTION_KEY_PATH")
+            config.security.encryption_key_path = os.getenv(
+                "ENCRYPTION_KEY_PATH"
+            )
 
         # API overrides
         if os.getenv("API_HOST"):

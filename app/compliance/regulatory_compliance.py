@@ -238,7 +238,9 @@ class FCRAComplianceChecker:
             ]
 
             missing_elements = [
-                elem for elem in required_elements if elem not in notice_content
+                elem
+                for elem in required_elements
+                if elem not in notice_content
             ]
 
             if missing_elements:
@@ -264,7 +266,9 @@ class FCRAComplianceChecker:
         data_validation = context.get("data_validation_performed", False)
         source_verification = context.get("source_verification", False)
         update_frequency = context.get("update_frequency_days", 0)
-        error_correction_process = context.get("error_correction_process", False)
+        error_correction_process = context.get(
+            "error_correction_process", False
+        )
 
         issues = []
 
@@ -302,8 +306,12 @@ class FCRAComplianceChecker:
         """Check dispute resolution procedures."""
 
         dispute_process = context.get("dispute_process_exists", False)
-        investigation_timeframe = context.get("investigation_timeframe_days", 0)
-        consumer_notification = context.get("consumer_notification_process", False)
+        investigation_timeframe = context.get(
+            "investigation_timeframe_days", 0
+        )
+        consumer_notification = context.get(
+            "consumer_notification_process", False
+        )
 
         if not dispute_process:
             return ComplianceStatus.NON_COMPLIANT, {
@@ -418,7 +426,9 @@ class ECOAComplianceChecker:
                         significant_bias.append(
                             {
                                 "attribute": attribute,
-                                "bias_level": results.get("bias_level", "unknown"),
+                                "bias_level": results.get(
+                                    "bias_level", "unknown"
+                                ),
                                 "metric_value": results.get("metric_value", 0),
                             }
                         )
@@ -499,7 +509,9 @@ class ECOAComplianceChecker:
 
         collected_data = context.get("collected_data_fields", [])
         monitoring_purpose = context.get("monitoring_purpose", False)
-        consumer_consent = context.get("consumer_consent_for_monitoring", False)
+        consumer_consent = context.get(
+            "consumer_consent_for_monitoring", False
+        )
 
         prohibited_collected = []
         for field in collected_data:
@@ -532,9 +544,13 @@ class ECOAComplianceChecker:
     ) -> Tuple[ComplianceStatus, Dict[str, Any]]:
         """Check record retention compliance."""
 
-        application_records = context.get("application_records_retained", False)
+        application_records = context.get(
+            "application_records_retained", False
+        )
         retention_period_months = context.get("retention_period_months", 0)
-        adverse_action_records = context.get("adverse_action_records_retained", False)
+        adverse_action_records = context.get(
+            "adverse_action_records_retained", False
+        )
 
         required_retention_months = 25  # ECOA requirement
 
@@ -672,7 +688,9 @@ class GDPRComplianceChecker:
 
         data_collected = context.get("data_fields_collected", [])
         processing_purpose = context.get("processing_purpose", "")
-        necessity_assessment = context.get("necessity_assessment_performed", False)
+        necessity_assessment = context.get(
+            "necessity_assessment_performed", False
+        )
         unnecessary_data = context.get("unnecessary_data_identified", [])
 
         if not necessity_assessment:
@@ -777,8 +795,12 @@ class GDPRComplianceChecker:
     ) -> Tuple[ComplianceStatus, Dict[str, Any]]:
         """Check privacy by design implementation."""
 
-        privacy_impact_assessment = context.get("privacy_impact_assessment", False)
-        default_privacy_settings = context.get("default_privacy_settings", False)
+        privacy_impact_assessment = context.get(
+            "privacy_impact_assessment", False
+        )
+        default_privacy_settings = context.get(
+            "default_privacy_settings", False
+        )
         data_encryption = context.get("data_encryption", False)
         access_controls = context.get("access_controls", False)
 
@@ -805,7 +827,9 @@ class GDPRComplianceChecker:
                 "recommendation": "Address remaining privacy by design issues",
             }
 
-        return ComplianceStatus.COMPLIANT, {"privacy_by_design_status": "implemented"}
+        return ComplianceStatus.COMPLIANT, {
+            "privacy_by_design_status": "implemented"
+        }
 
 
 class AuditTrailManager:
@@ -928,7 +952,9 @@ class AuditTrailManager:
         filtered_entries = self.audit_trail
 
         if compliance_relevant_only:
-            filtered_entries = [e for e in filtered_entries if e.compliance_relevant]
+            filtered_entries = [
+                e for e in filtered_entries if e.compliance_relevant
+            ]
 
         if start_date:
             filtered_entries = [
@@ -936,13 +962,19 @@ class AuditTrailManager:
             ]
 
         if end_date:
-            filtered_entries = [e for e in filtered_entries if e.timestamp <= end_date]
+            filtered_entries = [
+                e for e in filtered_entries if e.timestamp <= end_date
+            ]
 
         if user_id:
-            filtered_entries = [e for e in filtered_entries if e.user_id == user_id]
+            filtered_entries = [
+                e for e in filtered_entries if e.user_id == user_id
+            ]
 
         if action:
-            filtered_entries = [e for e in filtered_entries if e.action == action]
+            filtered_entries = [
+                e for e in filtered_entries if e.action == action
+            ]
 
         return filtered_entries
 
@@ -954,7 +986,9 @@ class AuditTrailManager:
         records = list(self.data_processing_records.values())
 
         if data_subject_id:
-            records = [r for r in records if r.data_subject_id == data_subject_id]
+            records = [
+                r for r in records if r.data_subject_id == data_subject_id
+            ]
 
         return records
 
@@ -973,9 +1007,15 @@ class AuditTrailManager:
         resource_access = {}
 
         for entry in entries:
-            action_counts[entry.action] = action_counts.get(entry.action, 0) + 1
-            user_activity[entry.user_id] = user_activity.get(entry.user_id, 0) + 1
-            resource_access[entry.resource] = resource_access.get(entry.resource, 0) + 1
+            action_counts[entry.action] = (
+                action_counts.get(entry.action, 0) + 1
+            )
+            user_activity[entry.user_id] = (
+                user_activity.get(entry.user_id, 0) + 1
+            )
+            resource_access[entry.resource] = (
+                resource_access.get(entry.resource, 0) + 1
+            )
 
         return {
             "report_period": {
@@ -1072,7 +1112,9 @@ class RegulatoryComplianceValidator:
 
                 elif status == ComplianceStatus.WARNING:
                     # Log warning
-                    logger.warning(f"Compliance warning: {rule.rule_id} - {details}")
+                    logger.warning(
+                        f"Compliance warning: {rule.rule_id} - {details}"
+                    )
 
                     self.audit_manager.log_action(
                         user_id="compliance_system",
@@ -1086,7 +1128,9 @@ class RegulatoryComplianceValidator:
                     )
 
             except Exception as e:
-                logger.error(f"Error checking compliance rule {rule.rule_id}: {e}")
+                logger.error(
+                    f"Error checking compliance rule {rule.rule_id}: {e}"
+                )
 
                 # Create violation for check failure
                 violation = ComplianceViolation(
@@ -1096,7 +1140,10 @@ class RegulatoryComplianceValidator:
                     severity=ViolationSeverity.HIGH,
                     title=f"Compliance Check Failed: {rule.title}",
                     description=f"Failed to execute compliance check: {str(e)}",
-                    details={"error": str(e), "check_function": rule.check_function},
+                    details={
+                        "error": str(e),
+                        "check_function": rule.check_function,
+                    },
                     timestamp=datetime.now(),
                 )
                 violations.append(violation)
@@ -1124,7 +1171,9 @@ class RegulatoryComplianceValidator:
                 violations = self.validate_compliance(framework, context)
                 results[framework] = violations
             except Exception as e:
-                logger.error(f"Error validating {framework.value} compliance: {e}")
+                logger.error(
+                    f"Error validating {framework.value} compliance: {e}"
+                )
                 results[framework] = []
 
         # Store compliance check in history
@@ -1133,7 +1182,10 @@ class RegulatoryComplianceValidator:
                 "timestamp": datetime.now().isoformat(),
                 "frameworks_checked": [f.value for f in frameworks],
                 "total_violations": sum(len(v) for v in results.values()),
-                "context_summary": {"keys": list(context.keys()), "size": len(context)},
+                "context_summary": {
+                    "keys": list(context.keys()),
+                    "size": len(context),
+                },
             }
         )
 
@@ -1145,7 +1197,9 @@ class RegulatoryComplianceValidator:
             f"{rule_id}_{datetime.now().isoformat()}".encode()
         ).hexdigest()
 
-    def resolve_violation(self, violation_id: str, resolution_notes: str) -> bool:
+    def resolve_violation(
+        self, violation_id: str, resolution_notes: str
+    ) -> bool:
         """Mark a violation as resolved."""
 
         for violation in self.violations:
@@ -1246,7 +1300,9 @@ class RegulatoryComplianceValidator:
 
         violations_to_include = self.violations
         if not include_resolved:
-            violations_to_include = [v for v in self.violations if not v.resolved]
+            violations_to_include = [
+                v for v in self.violations if not v.resolved
+            ]
 
         # Group violations by framework and severity
         framework_breakdown = {}
@@ -1269,7 +1325,9 @@ class RegulatoryComplianceValidator:
                 }
             )
 
-            severity_breakdown[severity] = severity_breakdown.get(severity, 0) + 1
+            severity_breakdown[severity] = (
+                severity_breakdown.get(severity, 0) + 1
+            )
 
         # Recent compliance history
         recent_history = (

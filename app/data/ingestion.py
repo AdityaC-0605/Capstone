@@ -269,7 +269,9 @@ class BankingDataValidator:
 
         return issues
 
-    def _validate_required_columns(self, data: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_required_columns(
+        self, data: pd.DataFrame
+    ) -> List[ValidationIssue]:
         """Validate required columns are present."""
         issues = []
         missing_columns = set(self.required_columns) - set(data.columns)
@@ -288,14 +290,17 @@ class BankingDataValidator:
 
         return issues
 
-    def _validate_data_types(self, data: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_data_types(
+        self, data: pd.DataFrame
+    ) -> List[ValidationIssue]:
         """Validate data types."""
         issues = []
 
         for column in self.numeric_columns:
             if column in data.columns:
                 non_numeric = data[column].apply(
-                    lambda x: not pd.api.types.is_numeric_dtype(type(x)) and pd.notna(x)
+                    lambda x: not pd.api.types.is_numeric_dtype(type(x))
+                    and pd.notna(x)
                 )
                 if non_numeric.any():
                     count = non_numeric.sum()
@@ -309,13 +314,17 @@ class BankingDataValidator:
                             message=f"Column '{column}' contains non-numeric values",
                             count=count,
                             percentage=percentage,
-                            sample_values=data[column][non_numeric].head(5).tolist(),
+                            sample_values=data[column][non_numeric]
+                            .head(5)
+                            .tolist(),
                         )
                     )
 
         return issues
 
-    def _validate_missing_values(self, data: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_missing_values(
+        self, data: pd.DataFrame
+    ) -> List[ValidationIssue]:
         """Validate missing values."""
         issues = []
 
@@ -342,7 +351,9 @@ class BankingDataValidator:
 
         return issues
 
-    def _validate_duplicates(self, data: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_duplicates(
+        self, data: pd.DataFrame
+    ) -> List[ValidationIssue]:
         """Validate duplicate records."""
         issues = []
 
@@ -379,7 +390,9 @@ class BankingDataValidator:
 
         return issues
 
-    def _validate_value_ranges(self, data: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_value_ranges(
+        self, data: pd.DataFrame
+    ) -> List[ValidationIssue]:
         """Validate numeric value ranges."""
         issues = []
 
@@ -405,7 +418,9 @@ class BankingDataValidator:
                             message=f"Column '{column}' has values outside range [{rules['min']}, {rules['max']}]",
                             count=count,
                             percentage=percentage,
-                            sample_values=data[column][out_of_range].head(5).tolist(),
+                            sample_values=data[column][out_of_range]
+                            .head(5)
+                            .tolist(),
                         )
                     )
 
@@ -434,7 +449,9 @@ class BankingDataValidator:
 
         return issues
 
-    def _validate_categorical_values(self, data: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_categorical_values(
+        self, data: pd.DataFrame
+    ) -> List[ValidationIssue]:
         """Validate categorical values."""
         issues = []
 
@@ -442,7 +459,9 @@ class BankingDataValidator:
             if column not in data.columns:
                 continue
 
-            invalid_values = ~data[column].isin(valid_values) & data[column].notna()
+            invalid_values = (
+                ~data[column].isin(valid_values) & data[column].notna()
+            )
 
             if invalid_values.any():
                 count = invalid_values.sum()
@@ -464,13 +483,20 @@ class BankingDataValidator:
 
         return issues
 
-    def _validate_business_logic(self, data: pd.DataFrame) -> List[ValidationIssue]:
+    def _validate_business_logic(
+        self, data: pd.DataFrame
+    ) -> List[ValidationIssue]:
         """Validate business logic rules."""
         issues = []
 
         # Check if loan amount is reasonable compared to income
-        if all(col in data.columns for col in ["loan_amount_inr", "annual_income_inr"]):
-            loan_to_income_ratio = data["loan_amount_inr"] / data["annual_income_inr"]
+        if all(
+            col in data.columns
+            for col in ["loan_amount_inr", "annual_income_inr"]
+        ):
+            loan_to_income_ratio = (
+                data["loan_amount_inr"] / data["annual_income_inr"]
+            )
             unreasonable_ratio = (
                 loan_to_income_ratio > 10
             )  # More than 10x annual income
@@ -493,10 +519,18 @@ class BankingDataValidator:
         # Check if debt-to-income ratio is consistent
         if all(
             col in data.columns
-            for col in ["debt_to_income_ratio", "loan_amount_inr", "annual_income_inr"]
+            for col in [
+                "debt_to_income_ratio",
+                "loan_amount_inr",
+                "annual_income_inr",
+            ]
         ):
-            calculated_ratio = data["loan_amount_inr"] / data["annual_income_inr"]
-            ratio_difference = abs(data["debt_to_income_ratio"] - calculated_ratio)
+            calculated_ratio = (
+                data["loan_amount_inr"] / data["annual_income_inr"]
+            )
+            ratio_difference = abs(
+                data["debt_to_income_ratio"] - calculated_ratio
+            )
             inconsistent_ratio = ratio_difference > 0.5  # Allow some tolerance
 
             if inconsistent_ratio.any():
@@ -531,11 +565,15 @@ class DataProfiler:
         duplicate_rows = data.duplicated().sum()
 
         # Column type classification
-        numeric_columns = data.select_dtypes(include=[np.number]).columns.tolist()
+        numeric_columns = data.select_dtypes(
+            include=[np.number]
+        ).columns.tolist()
         categorical_columns = data.select_dtypes(
             include=["object", "category"]
         ).columns.tolist()
-        datetime_columns = data.select_dtypes(include=["datetime64"]).columns.tolist()
+        datetime_columns = data.select_dtypes(
+            include=["datetime64"]
+        ).columns.tolist()
 
         # Column-level profiling
         column_profiles = {}
@@ -543,7 +581,9 @@ class DataProfiler:
             column_profiles[column] = self._profile_column(data[column])
 
         # Calculate data quality score
-        data_quality_score = self._calculate_quality_score(data, column_profiles)
+        data_quality_score = self._calculate_quality_score(
+            data, column_profiles
+        )
 
         return DataProfile(
             total_rows=total_rows,
@@ -588,7 +628,9 @@ class DataProfiler:
                 {
                     "top_values": value_counts.to_dict(),
                     "most_frequent": (
-                        series.mode().iloc[0] if not series.mode().empty else None
+                        series.mode().iloc[0]
+                        if not series.mode().empty
+                        else None
                     ),
                 }
             )
@@ -603,7 +645,9 @@ class DataProfiler:
 
         # Completeness score (based on missing data)
         completeness = (
-            100 - (data.isnull().sum().sum() / (len(data) * len(data.columns))) * 100
+            100
+            - (data.isnull().sum().sum() / (len(data) * len(data.columns)))
+            * 100
         )
         scores.append(completeness)
 
@@ -746,7 +790,10 @@ class DataIngestionProcessor(DataProcessor):
                 resource=source_path,
                 action="data_ingestion",
                 success=False,
-                details={"error": str(e), "processing_time_seconds": processing_time},
+                details={
+                    "error": str(e),
+                    "processing_time_seconds": processing_time,
+                },
             )
 
             return IngestionResult(
@@ -802,7 +849,11 @@ class DataIngestionProcessor(DataProcessor):
         issues_by_severity = {}
         for severity in ValidationSeverity:
             issues_by_severity[severity.value] = len(
-                [issue for issue in validation_issues if issue.severity == severity]
+                [
+                    issue
+                    for issue in validation_issues
+                    if issue.severity == severity
+                ]
             )
 
         # Group by type
@@ -813,7 +864,9 @@ class DataIngestionProcessor(DataProcessor):
             issues_by_type[issue.issue_type] += 1
 
         # Get affected columns
-        affected_columns = list(set(issue.column for issue in validation_issues))
+        affected_columns = list(
+            set(issue.column for issue in validation_issues)
+        )
 
         return {
             "summary": f"Found {len(validation_issues)} validation issues",
@@ -835,7 +888,9 @@ class DataIngestionProcessor(DataProcessor):
             ],
         }
 
-    def generate_data_profile_report(self, data_profile: DataProfile) -> Dict[str, Any]:
+    def generate_data_profile_report(
+        self, data_profile: DataProfile
+    ) -> Dict[str, Any]:
         """Generate comprehensive data profile report."""
         return {
             "overview": {
@@ -845,7 +900,9 @@ class DataIngestionProcessor(DataProcessor):
                     data_profile.missing_data_percentage, 2
                 ),
                 "duplicate_rows": data_profile.duplicate_rows,
-                "data_quality_score": round(data_profile.data_quality_score, 2),
+                "data_quality_score": round(
+                    data_profile.data_quality_score, 2
+                ),
             },
             "column_types": {
                 "numeric_columns": data_profile.numeric_columns,
@@ -858,7 +915,9 @@ class DataIngestionProcessor(DataProcessor):
                     "missing_percentage": round(
                         profile.get("missing_percentage", 0), 2
                     ),
-                    "unique_percentage": round(profile.get("unique_percentage", 0), 2),
+                    "unique_percentage": round(
+                        profile.get("unique_percentage", 0), 2
+                    ),
                 }
                 for column, profile in data_profile.column_profiles.items()
             },

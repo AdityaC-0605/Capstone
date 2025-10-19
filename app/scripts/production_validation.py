@@ -56,7 +56,9 @@ class ProductionValidator:
                 )
                 return False
 
-            self.log_result("API Health", True, "Health and readiness checks passed")
+            self.log_result(
+                "API Health", True, "Health and readiness checks passed"
+            )
             return True
 
         except Exception as e:
@@ -108,10 +110,14 @@ class ProductionValidator:
                 "confidence",
                 "explanation",
             ]
-            missing_fields = [field for field in required_fields if field not in result]
+            missing_fields = [
+                field for field in required_fields if field not in result
+            ]
             if missing_fields:
                 self.log_result(
-                    "Prediction Accuracy", False, f"Missing fields: {missing_fields}"
+                    "Prediction Accuracy",
+                    False,
+                    f"Missing fields: {missing_fields}",
                 )
                 return False
 
@@ -142,7 +148,9 @@ class ProductionValidator:
             return True
 
         except Exception as e:
-            self.log_result("Prediction Accuracy", False, f"Exception: {str(e)}")
+            self.log_result(
+                "Prediction Accuracy", False, f"Exception: {str(e)}"
+            )
             return False
 
     def validate_batch_processing(self) -> bool:
@@ -160,7 +168,9 @@ class ProductionValidator:
                         "home_ownership": "RENT",
                         "debt_to_income_ratio": 0.25,
                         "credit_history_length": 8,
-                        "behavioral_features": {"avg_monthly_spending": 2800.0},
+                        "behavioral_features": {
+                            "avg_monthly_spending": 2800.0
+                        },
                         "temporal_features": [],
                         "relational_features": {},
                     },
@@ -174,7 +184,9 @@ class ProductionValidator:
                         "home_ownership": "OWN",
                         "debt_to_income_ratio": 0.20,
                         "credit_history_length": 12,
-                        "behavioral_features": {"avg_monthly_spending": 3200.0},
+                        "behavioral_features": {
+                            "avg_monthly_spending": 3200.0
+                        },
                         "temporal_features": [],
                         "relational_features": {},
                     },
@@ -199,7 +211,9 @@ class ProductionValidator:
 
             if "predictions" not in result:
                 self.log_result(
-                    "Batch Processing", False, "Missing 'predictions' in response"
+                    "Batch Processing",
+                    False,
+                    "Missing 'predictions' in response",
                 )
                 return False
 
@@ -221,7 +235,9 @@ class ProductionValidator:
                     "confidence",
                 ]
                 missing_fields = [
-                    field for field in required_fields if field not in prediction
+                    field
+                    for field in required_fields
+                    if field not in prediction
                 ]
                 if missing_fields:
                     self.log_result(
@@ -338,7 +354,9 @@ class ProductionValidator:
             # Check for explanation fields
             if "explanation" not in result:
                 self.log_result(
-                    "Model Explainability", False, "Missing explanation in response"
+                    "Model Explainability",
+                    False,
+                    "Missing explanation in response",
                 )
                 return False
 
@@ -346,7 +364,9 @@ class ProductionValidator:
 
             # Check for SHAP values or feature importance
             required_explanation_fields = ["feature_importance", "shap_values"]
-            if not any(field in explanation for field in required_explanation_fields):
+            if not any(
+                field in explanation for field in required_explanation_fields
+            ):
                 self.log_result(
                     "Model Explainability",
                     False,
@@ -360,7 +380,9 @@ class ProductionValidator:
             return True
 
         except Exception as e:
-            self.log_result("Model Explainability", False, f"Exception: {str(e)}")
+            self.log_result(
+                "Model Explainability", False, f"Exception: {str(e)}"
+            )
             return False
 
     def validate_sustainability_metrics(self) -> bool:
@@ -388,12 +410,16 @@ class ProductionValidator:
             ]
 
             found_metrics = [
-                metric for metric in sustainability_metrics if metric in metrics_content
+                metric
+                for metric in sustainability_metrics
+                if metric in metrics_content
             ]
 
             if not found_metrics:
                 self.log_result(
-                    "Sustainability Metrics", False, "No sustainability metrics found"
+                    "Sustainability Metrics",
+                    False,
+                    "No sustainability metrics found",
                 )
                 return False
 
@@ -405,7 +431,9 @@ class ProductionValidator:
             return True
 
         except Exception as e:
-            self.log_result("Sustainability Metrics", False, f"Exception: {str(e)}")
+            self.log_result(
+                "Sustainability Metrics", False, f"Exception: {str(e)}"
+            )
             return False
 
     def validate_security_headers(self) -> bool:
@@ -451,7 +479,9 @@ class ProductionValidator:
                 return False
 
             self.log_result(
-                "Security Headers", True, "Security headers are properly configured"
+                "Security Headers",
+                True,
+                "Security headers are properly configured",
             )
             return True
 
@@ -483,7 +513,9 @@ class ProductionValidator:
                 if validation_func():
                     passed_count += 1
             except Exception as e:
-                self.log_result(validation_name, False, f"Unexpected error: {str(e)}")
+                self.log_result(
+                    validation_name, False, f"Unexpected error: {str(e)}"
+                )
 
         print("\n" + "=" * 60)
         print(f"📊 Validation Results: {passed_count}/{total_count} passed")
@@ -499,7 +531,9 @@ class ProductionValidator:
             "timestamp": datetime.now().isoformat(),
             "base_url": self.base_url,
             "total_tests": len(self.validation_results),
-            "passed_tests": len([r for r in self.validation_results if r["passed"]]),
+            "passed_tests": len(
+                [r for r in self.validation_results if r["passed"]]
+            ),
             "failed_tests": len(
                 [r for r in self.validation_results if not r["passed"]]
             ),

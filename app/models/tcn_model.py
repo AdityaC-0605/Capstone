@@ -153,8 +153,12 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.reduction = reduction
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        ce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+    def forward(
+        self, inputs: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
+        ce_loss = F.binary_cross_entropy_with_logits(
+            inputs, targets, reduction="none"
+        )
         pt = torch.exp(-ce_loss)
         focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
 
@@ -254,12 +258,16 @@ class TemporalBlock(nn.Module):
         else:
             self.norm2 = nn.Identity()
 
-        self.activation2 = self.activation1.__class__()  # Same activation as first
+        self.activation2 = (
+            self.activation1.__class__()
+        )  # Same activation as first
         self.dropout2 = nn.Dropout(dropout)
 
         # Residual connection
         self.downsample = (
-            nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
+            nn.Conv1d(n_inputs, n_outputs, 1)
+            if n_inputs != n_outputs
+            else None
         )
 
         # Initialize weights
@@ -427,7 +435,10 @@ class TCNModel(BaseModel):
         if self.config.device == "auto":
             if torch.cuda.is_available():
                 return torch.device("cuda")
-            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            elif (
+                hasattr(torch.backends, "mps")
+                and torch.backends.mps.is_available()
+            ):
                 return torch.device("mps")
             else:
                 return torch.device("cpu")
@@ -562,20 +573,30 @@ class TCNModel(BaseModel):
             output = self.forward(dummy_input)
 
             # Compute gradients
-            gradients = torch.autograd.grad(output, dummy_input, create_graph=False)[0]
-            importance_scores = torch.abs(gradients).mean(dim=(0, 1)).cpu().numpy()
+            gradients = torch.autograd.grad(
+                output, dummy_input, create_graph=False
+            )[0]
+            importance_scores = (
+                torch.abs(gradients).mean(dim=(0, 1)).cpu().numpy()
+            )
 
             # Create feature importance dictionary
             feature_importance = {}
             for i, score in enumerate(importance_scores):
                 feature_name = (
-                    self.feature_names[i] if self.feature_names else f"feature_{i}"
+                    self.feature_names[i]
+                    if self.feature_names
+                    else f"feature_{i}"
                 )
                 feature_importance[feature_name] = float(score)
 
             # Sort by importance
             feature_importance = dict(
-                sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
+                sorted(
+                    feature_importance.items(),
+                    key=lambda x: x[1],
+                    reverse=True,
+                )
             )
 
             return feature_importance
@@ -585,7 +606,8 @@ class TCNModel(BaseModel):
             # Fallback: uniform importance
             if self.feature_names:
                 return {
-                    name: 1.0 / len(self.feature_names) for name in self.feature_names
+                    name: 1.0 / len(self.feature_names)
+                    for name in self.feature_names
                 }
             else:
                 return {
@@ -722,17 +744,23 @@ class SequenceDataProcessor:
         y_np = y.values
 
         # Create sequences using sliding window
-        for i in range(0, len(X_np) - self.sequence_length + 1, self.step_size):
+        for i in range(
+            0, len(X_np) - self.sequence_length + 1, self.step_size
+        ):
             end_idx = min(i + self.sequence_length, len(X_np))
             seq_len = end_idx - i
 
             if seq_len >= 3:  # Minimum sequence length
                 sequence = X_np[i:end_idx]
-                target = y_np[end_idx - 1]  # Use the last target in the sequence
+                target = y_np[
+                    end_idx - 1
+                ]  # Use the last target in the sequence
 
                 # Pad sequence if necessary
                 if seq_len < self.sequence_length:
-                    padding = np.zeros((self.sequence_length - seq_len, X_np.shape[1]))
+                    padding = np.zeros(
+                        (self.sequence_length - seq_len, X_np.shape[1])
+                    )
                     sequence = np.vstack([padding, sequence])
 
                 sequences.append(sequence)
@@ -779,7 +807,11 @@ class TCNTrainer:
             )
 
             X_train, X_val, y_train, y_val = train_test_split(
-                X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+                X_train,
+                y_train,
+                test_size=0.2,
+                random_state=42,
+                stratify=y_train,
             )
 
             logger.info(
@@ -794,10 +826,14 @@ class TCNTrainer:
             model.feature_names = list(X.columns)
 
             # Train model
-            training_metrics = self._train_model(model, X_train, y_train, X_val, y_val)
+            training_metrics = self._train_model(
+                model, X_train, y_train, X_val, y_val
+            )
 
             # Evaluate model
-            validation_metrics = self._evaluate_model(model, X_val, y_val, "Validation")
+            validation_metrics = self._evaluate_model(
+                model, X_val, y_val, "Validation"
+            )
             test_metrics = self._evaluate_model(model, X_test, y_test, "Test")
 
             # Get feature importance
@@ -829,13 +865,17 @@ class TCNTrainer:
                     "training_time_seconds": training_time,
                     "test_auc": test_metrics.get("roc_auc", 0.0),
                     "best_epoch": best_epoch,
-                    "num_parameters": sum(p.numel() for p in model.parameters()),
+                    "num_parameters": sum(
+                        p.numel() for p in model.parameters()
+                    ),
                     "receptive_field_size": model.get_receptive_field_size(),
                     "num_sequences": len(sequences),
                 },
             )
 
-            logger.info(f"TCN training completed in {training_time:.2f} seconds")
+            logger.info(
+                f"TCN training completed in {training_time:.2f} seconds"
+            )
 
             return TCNResult(
                 success=True,
@@ -998,11 +1038,15 @@ class TCNTrainer:
 
                         # Add L1/L2 regularization
                         if self.config.l1_lambda > 0:
-                            l1_reg = sum(p.abs().sum() for p in model.parameters())
+                            l1_reg = sum(
+                                p.abs().sum() for p in model.parameters()
+                            )
                             loss += self.config.l1_lambda * l1_reg
 
                         if self.config.l2_lambda > 0:
-                            l2_reg = sum(p.pow(2).sum() for p in model.parameters())
+                            l2_reg = sum(
+                                p.pow(2).sum() for p in model.parameters()
+                            )
                             loss += self.config.l2_lambda * l2_reg
 
                     scaler.scale(loss).backward()
@@ -1026,7 +1070,9 @@ class TCNTrainer:
                         loss += self.config.l1_lambda * l1_reg
 
                     if self.config.l2_lambda > 0:
-                        l2_reg = sum(p.pow(2).sum() for p in model.parameters())
+                        l2_reg = sum(
+                            p.pow(2).sum() for p in model.parameters()
+                        )
                         loss += self.config.l2_lambda * l2_reg
 
                     loss.backward()
@@ -1067,10 +1113,16 @@ class TCNTrainer:
             val_auc = roc_auc_score(val_targets, val_predictions)
             val_f1 = f1_score(val_targets, val_pred_binary, average="weighted")
             val_precision = precision_score(
-                val_targets, val_pred_binary, average="weighted", zero_division=0
+                val_targets,
+                val_pred_binary,
+                average="weighted",
+                zero_division=0,
             )
             val_recall = recall_score(
-                val_targets, val_pred_binary, average="weighted", zero_division=0
+                val_targets,
+                val_pred_binary,
+                average="weighted",
+                zero_division=0,
             )
 
             # Create training metrics

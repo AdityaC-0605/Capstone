@@ -44,7 +44,10 @@ try:
     from ..core.config import get_config
     from ..core.interfaces import BaseModel
     from ..core.logging import get_audit_logger, get_logger
-    from ..data.cross_validation import get_imbalanced_cv_config, validate_model_cv
+    from ..data.cross_validation import (
+        get_imbalanced_cv_config,
+        validate_model_cv,
+    )
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -162,9 +165,7 @@ class LightGBMOptimizer:
 
         try:
             # Create study
-            study_name = (
-                f"lightgbm_optimization_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            )
+            study_name = f"lightgbm_optimization_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             self.study = optuna.create_study(
                 direction="maximize",
                 study_name=study_name,
@@ -177,7 +178,9 @@ class LightGBMOptimizer:
 
                 # Create datasets
                 train_data = lgb.Dataset(X_train, label=y_train)
-                val_data = lgb.Dataset(X_val, label=y_val, reference=train_data)
+                val_data = lgb.Dataset(
+                    X_val, label=y_val, reference=train_data
+                )
 
                 # Train model
                 model = lgb.train(
@@ -192,7 +195,9 @@ class LightGBMOptimizer:
                 )
 
                 # Predict and evaluate
-                y_pred_proba = model.predict(X_val, num_iteration=model.best_iteration)
+                y_pred_proba = model.predict(
+                    X_val, num_iteration=model.best_iteration
+                )
                 auc_score = roc_auc_score(y_val, y_pred_proba)
 
                 return auc_score
@@ -228,11 +233,19 @@ class LightGBMOptimizer:
             "verbose": -1,
             # Hyperparameters to optimize
             "num_leaves": trial.suggest_int("num_leaves", 10, 300),
-            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
-            "feature_fraction": trial.suggest_float("feature_fraction", 0.4, 1.0),
-            "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
+            "learning_rate": trial.suggest_float(
+                "learning_rate", 0.01, 0.3, log=True
+            ),
+            "feature_fraction": trial.suggest_float(
+                "feature_fraction", 0.4, 1.0
+            ),
+            "bagging_fraction": trial.suggest_float(
+                "bagging_fraction", 0.4, 1.0
+            ),
             "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
-            "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
+            "min_child_samples": trial.suggest_int(
+                "min_child_samples", 5, 100
+            ),
             "min_child_weight": trial.suggest_float(
                 "min_child_weight", 0.001, 10.0, log=True
             ),
@@ -326,14 +339,20 @@ class LightGBMModel(BaseEstimator):
             # Create validation split if not provided
             if X_val is None or y_val is None:
                 X_train, X_val, y_train, y_val = train_test_split(
-                    X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+                    X,
+                    y_encoded,
+                    test_size=0.2,
+                    random_state=42,
+                    stratify=y_encoded,
                 )
             else:
                 X_train, y_train = X, y_encoded
                 y_val = y_val_encoded
 
             # Optimize hyperparameters
-            best_params = self.optimizer.optimize(X_train, y_train, X_val, y_val)
+            best_params = self.optimizer.optimize(
+                X_train, y_train, X_val, y_val
+            )
 
             # Create datasets
             train_data = lgb.Dataset(X_train, label=y_train)
@@ -377,7 +396,9 @@ class LightGBMModel(BaseEstimator):
             X = X[self.feature_names]
 
         # Get probabilities
-        y_pred_proba = self.model.predict(X, num_iteration=self.model.best_iteration)
+        y_pred_proba = self.model.predict(
+            X, num_iteration=self.model.best_iteration
+        )
 
         # Convert to binary predictions
         y_pred = (y_pred_proba > 0.5).astype(int)
@@ -398,7 +419,9 @@ class LightGBMModel(BaseEstimator):
             X = X[self.feature_names]
 
         # Get probabilities
-        y_pred_proba = self.model.predict(X, num_iteration=self.model.best_iteration)
+        y_pred_proba = self.model.predict(
+            X, num_iteration=self.model.best_iteration
+        )
 
         # Return as 2D array for binary classification
         return np.column_stack([1 - y_pred_proba, y_pred_proba])
@@ -408,7 +431,9 @@ class LightGBMModel(BaseEstimator):
     ) -> Dict[str, float]:
         """Get feature importance scores."""
         if not self.is_trained or self.model is None:
-            raise ValueError("Model must be trained before getting feature importance")
+            raise ValueError(
+                "Model must be trained before getting feature importance"
+            )
 
         importance_type = importance_type or self.config.importance_type
 
@@ -427,7 +452,9 @@ class LightGBMModel(BaseEstimator):
 
         # Sort by importance
         feature_importance = dict(
-            sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
+            sorted(
+                feature_importance.items(), key=lambda x: x[1], reverse=True
+            )
         )
 
         return feature_importance
@@ -517,7 +544,11 @@ class LightGBMTrainer:
 
             # Further split training data for validation
             X_train_split, X_val, y_train_split, y_val = train_test_split(
-                X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+                X_train,
+                y_train,
+                test_size=0.2,
+                random_state=42,
+                stratify=y_train,
             )
 
             logger.info(
@@ -530,14 +561,17 @@ class LightGBMTrainer:
 
             # Get best parameters
             best_params = (
-                model.optimizer.best_params or model.optimizer._get_default_params()
+                model.optimizer.best_params
+                or model.optimizer._get_default_params()
             )
 
             # Evaluate on different sets
             training_metrics = self._evaluate_model(
                 model, X_train_split, y_train_split, "Training"
             )
-            validation_metrics = self._evaluate_model(model, X_val, y_val, "Validation")
+            validation_metrics = self._evaluate_model(
+                model, X_val, y_val, "Validation"
+            )
             test_metrics = self._evaluate_model(model, X_test, y_test, "Test")
 
             # Get feature importance
@@ -570,7 +604,9 @@ class LightGBMTrainer:
                 },
             )
 
-            logger.info(f"LightGBM training completed in {training_time:.2f} seconds")
+            logger.info(
+                f"LightGBM training completed in {training_time:.2f} seconds"
+            )
 
             return LightGBMResult(
                 success=True,
@@ -606,7 +642,11 @@ class LightGBMTrainer:
             )
 
     def _evaluate_model(
-        self, model: LightGBMModel, X: pd.DataFrame, y: pd.Series, dataset_name: str
+        self,
+        model: LightGBMModel,
+        X: pd.DataFrame,
+        y: pd.Series,
+        dataset_name: str,
     ) -> Dict[str, float]:
         """Evaluate model on a dataset."""
         try:
@@ -620,8 +660,12 @@ class LightGBMTrainer:
                 "precision": precision_score(
                     y, y_pred, average="weighted", zero_division=0
                 ),
-                "recall": recall_score(y, y_pred, average="weighted", zero_division=0),
-                "f1_score": f1_score(y, y_pred, average="weighted", zero_division=0),
+                "recall": recall_score(
+                    y, y_pred, average="weighted", zero_division=0
+                ),
+                "f1_score": f1_score(
+                    y, y_pred, average="weighted", zero_division=0
+                ),
                 "roc_auc": roc_auc_score(y, y_pred_proba),
             }
 
@@ -640,7 +684,9 @@ class LightGBMTrainer:
     ) -> Dict[str, Any]:
         """Perform cross-validation."""
         try:
-            logger.info(f"Performing {self.config.cv_folds}-fold cross-validation")
+            logger.info(
+                f"Performing {self.config.cv_folds}-fold cross-validation"
+            )
 
             # Create temporary model for CV
             temp_model = LightGBMModel(self.config)
@@ -670,7 +716,9 @@ class LightGBMTrainer:
 
 
 # Factory functions and utilities
-def create_lightgbm_model(config: Optional[LightGBMConfig] = None) -> LightGBMModel:
+def create_lightgbm_model(
+    config: Optional[LightGBMConfig] = None,
+) -> LightGBMModel:
     """Create a LightGBM model instance."""
     return LightGBMModel(config)
 
@@ -691,7 +739,10 @@ def get_default_lightgbm_config() -> LightGBMConfig:
 def get_fast_lightgbm_config() -> LightGBMConfig:
     """Get fast LightGBM configuration for testing."""
     return LightGBMConfig(
-        num_boost_round=100, early_stopping_rounds=20, enable_hyperopt=False, cv_folds=3
+        num_boost_round=100,
+        early_stopping_rounds=20,
+        enable_hyperopt=False,
+        cv_folds=3,
     )
 
 

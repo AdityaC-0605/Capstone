@@ -152,28 +152,39 @@ class ModelComparison:
             if lgb_result.success:
                 # Extract metrics
                 result.accuracy = lgb_result.test_metrics.get("accuracy", 0.0)
-                result.precision = lgb_result.test_metrics.get("precision", 0.0)
+                result.precision = lgb_result.test_metrics.get(
+                    "precision", 0.0
+                )
                 result.recall = lgb_result.test_metrics.get("recall", 0.0)
                 result.f1_score = lgb_result.test_metrics.get("f1_score", 0.0)
                 result.auc_roc = lgb_result.test_metrics.get("roc_auc", 0.0)
 
                 result.training_time_seconds = lgb_result.training_time_seconds
-                result.model_size_mb = self._estimate_lightgbm_size(lgb_result.model)
+                result.model_size_mb = self._estimate_lightgbm_size(
+                    lgb_result.model
+                )
                 result.num_parameters = self._estimate_lightgbm_parameters(
                     lgb_result.model
                 )
 
                 # Measure inference time
                 if self.config.measure_inference_time:
-                    result.inference_time_ms = self._measure_lightgbm_inference(
-                        lgb_result.model, X.head(self.config.inference_samples)
+                    result.inference_time_ms = (
+                        self._measure_lightgbm_inference(
+                            lgb_result.model,
+                            X.head(self.config.inference_samples),
+                        )
                     )
 
                 result.success = True
-                logger.info(f"LightGBM benchmark completed - AUC: {result.auc_roc:.4f}")
+                logger.info(
+                    f"LightGBM benchmark completed - AUC: {result.auc_roc:.4f}"
+                )
             else:
                 result.error_message = lgb_result.message
-                logger.error(f"LightGBM benchmark failed: {result.error_message}")
+                logger.error(
+                    f"LightGBM benchmark failed: {result.error_message}"
+                )
 
         except Exception as e:
             result.error_message = str(e)
@@ -181,7 +192,9 @@ class ModelComparison:
 
         return result
 
-    def _benchmark_dnn(self, X: pd.DataFrame, y: pd.Series) -> ModelBenchmarkResult:
+    def _benchmark_dnn(
+        self, X: pd.DataFrame, y: pd.Series
+    ) -> ModelBenchmarkResult:
         """Benchmark DNN model."""
         logger.info("Benchmarking DNN...")
 
@@ -202,14 +215,18 @@ class ModelComparison:
             if dnn_result.success:
                 # Extract metrics
                 result.accuracy = dnn_result.test_metrics.get("accuracy", 0.0)
-                result.precision = dnn_result.test_metrics.get("precision", 0.0)
+                result.precision = dnn_result.test_metrics.get(
+                    "precision", 0.0
+                )
                 result.recall = dnn_result.test_metrics.get("recall", 0.0)
                 result.f1_score = dnn_result.test_metrics.get("f1_score", 0.0)
                 result.auc_roc = dnn_result.test_metrics.get("roc_auc", 0.0)
 
                 result.training_time_seconds = dnn_result.training_time_seconds
                 result.best_epoch = dnn_result.best_epoch
-                result.model_size_mb = self._estimate_dnn_size(dnn_result.model)
+                result.model_size_mb = self._estimate_dnn_size(
+                    dnn_result.model
+                )
                 result.num_parameters = sum(
                     p.numel() for p in dnn_result.model.parameters()
                 )
@@ -221,7 +238,9 @@ class ModelComparison:
                     )
 
                 result.success = True
-                logger.info(f"DNN benchmark completed - AUC: {result.auc_roc:.4f}")
+                logger.info(
+                    f"DNN benchmark completed - AUC: {result.auc_roc:.4f}"
+                )
             else:
                 result.error_message = dnn_result.message
                 logger.error(f"DNN benchmark failed: {result.error_message}")
@@ -268,14 +287,18 @@ class ModelComparison:
                 param_size = sum(
                     p.numel() * p.element_size() for p in model.parameters()
                 )
-                buffer_size = sum(b.numel() * b.element_size() for b in model.buffers())
+                buffer_size = sum(
+                    b.numel() * b.element_size() for b in model.buffers()
+                )
                 total_size = param_size + buffer_size
                 return total_size / (1024 * 1024)  # Convert to MB
             return 0.0
         except:
             return 0.0
 
-    def _measure_lightgbm_inference(self, model, X_sample: pd.DataFrame) -> float:
+    def _measure_lightgbm_inference(
+        self, model, X_sample: pd.DataFrame
+    ) -> float:
         """Measure LightGBM inference time per sample."""
         try:
             if not model or not model.is_trained:
@@ -365,7 +388,9 @@ class ModelComparison:
         # Performance comparison
         report.append("📊 Performance Metrics:")
         report.append("-" * 40)
-        report.append(f"{'Model':<20} {'AUC-ROC':<8} {'F1-Score':<8} {'Accuracy':<8}")
+        report.append(
+            f"{'Model':<20} {'AUC-ROC':<8} {'F1-Score':<8} {'Accuracy':<8}"
+        )
         report.append("-" * 40)
 
         for result in self.results:
@@ -451,15 +476,23 @@ class ModelComparison:
                 + (1 / max(r.inference_time_ms, 0.1)) * 0.3,
             )
 
-            report.append(f"• For production deployment: {best_overall.model_name}")
-            report.append(f"  (Best balance of accuracy, speed, and efficiency)")
+            report.append(
+                f"• For production deployment: {best_overall.model_name}"
+            )
+            report.append(
+                f"  (Best balance of accuracy, speed, and efficiency)"
+            )
 
             if len(successful_results) > 1:
                 lgb_results = [
-                    r for r in successful_results if r.model_type == "gradient_boosting"
+                    r
+                    for r in successful_results
+                    if r.model_type == "gradient_boosting"
                 ]
                 dnn_results = [
-                    r for r in successful_results if r.model_type == "deep_learning"
+                    r
+                    for r in successful_results
+                    if r.model_type == "deep_learning"
                 ]
 
                 if lgb_results and dnn_results:
@@ -467,13 +500,17 @@ class ModelComparison:
                     dnn = dnn_results[0]
 
                     if lgb.training_time_seconds < dnn.training_time_seconds:
-                        report.append(f"• For rapid prototyping: {lgb.model_name}")
+                        report.append(
+                            f"• For rapid prototyping: {lgb.model_name}"
+                        )
                         report.append(
                             f"  (Faster training: {lgb.training_time_seconds:.2f}s vs {dnn.training_time_seconds:.2f}s)"
                         )
 
                     if dnn.auc_roc > lgb.auc_roc:
-                        report.append(f"• For maximum accuracy: {dnn.model_name}")
+                        report.append(
+                            f"• For maximum accuracy: {dnn.model_name}"
+                        )
                         report.append(
                             f"  (Higher AUC: {dnn.auc_roc:.4f} vs {lgb.auc_roc:.4f})"
                         )

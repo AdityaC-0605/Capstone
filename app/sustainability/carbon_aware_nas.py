@@ -38,7 +38,10 @@ except ImportError:
 
     from core.logging import get_audit_logger, get_logger
     from nas.neural_architecture_search import ArchitectureSpec, NASConfig
-    from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprintConfig
+    from sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprintConfig,
+    )
     from sustainability.energy_tracker import EnergyConfig, EnergyTracker
 
 logger = get_logger(__name__)
@@ -50,7 +53,9 @@ class CarbonOptimizationObjective(Enum):
 
     MINIMIZE_CARBON_FOOTPRINT = "minimize_carbon_footprint"
     MINIMIZE_ENERGY_CONSUMPTION = "minimize_energy_consumption"
-    MAXIMIZE_CARBON_EFFICIENCY = "maximize_carbon_efficiency"  # Performance per CO2
+    MAXIMIZE_CARBON_EFFICIENCY = (
+        "maximize_carbon_efficiency"  # Performance per CO2
+    )
     MINIMIZE_TRAINING_TIME = "minimize_training_time"
     BALANCED_SUSTAINABILITY = "balanced_sustainability"
 
@@ -73,12 +78,18 @@ class CarbonAwareNASConfig:
     max_carbon_budget_kg: float = (
         0.1  # Maximum CO2 emissions per architecture evaluation
     )
-    max_energy_budget_kwh: float = 0.05  # Maximum energy consumption per evaluation
-    carbon_intensity_threshold: float = 400.0  # gCO2/kWh - avoid training above this
+    max_energy_budget_kwh: float = (
+        0.05  # Maximum energy consumption per evaluation
+    )
+    carbon_intensity_threshold: float = (
+        400.0  # gCO2/kWh - avoid training above this
+    )
 
     # Real-time carbon integration
     enable_real_time_carbon: bool = True
-    carbon_api_url: str = "https://api.electricitymap.org/v3/carbon-intensity/latest"
+    carbon_api_url: str = (
+        "https://api.electricitymap.org/v3/carbon-intensity/latest"
+    )
     carbon_api_key: Optional[str] = None
     carbon_check_interval: int = 300  # seconds
 
@@ -156,10 +167,15 @@ class CarbonAwareArchitecture:
             "estimated_latency_ms": convert_numpy(self.estimated_latency_ms),
             "estimated_energy_mj": convert_numpy(self.estimated_energy_mj),
             "estimated_carbon_kg": convert_numpy(self.estimated_carbon_kg),
-            "carbon_efficiency_score": convert_numpy(self.carbon_efficiency_score),
-            "energy_efficiency_score": convert_numpy(self.energy_efficiency_score),
+            "carbon_efficiency_score": convert_numpy(
+                self.carbon_efficiency_score
+            ),
+            "energy_efficiency_score": convert_numpy(
+                self.energy_efficiency_score
+            ),
             "performance_metrics": {
-                k: convert_numpy(v) for k, v in self.performance_metrics.items()
+                k: convert_numpy(v)
+                for k, v in self.performance_metrics.items()
             },
             "training_time": convert_numpy(self.training_time),
             "is_evaluated": bool(self.is_evaluated),
@@ -168,7 +184,9 @@ class CarbonAwareArchitecture:
             ),
             "training_region": str(self.training_region),
             "training_timestamp": (
-                self.training_timestamp.isoformat() if self.training_timestamp else None
+                self.training_timestamp.isoformat()
+                if self.training_timestamp
+                else None
             ),
             "fitness_score": convert_numpy(self.fitness_score),
         }
@@ -209,12 +227,16 @@ class CarbonIntensityAPI:
 
             # Add some randomness
             intensity = base_intensity + np.random.normal(0, 50)
-            intensity = max(100, min(600, intensity))  # Clamp to realistic range
+            intensity = max(
+                100, min(600, intensity)
+            )  # Clamp to realistic range
 
             self.cached_intensity = intensity
             self.last_check = datetime.now()
 
-            logger.debug(f"Carbon intensity for {region}: {intensity:.1f} gCO2/kWh")
+            logger.debug(
+                f"Carbon intensity for {region}: {intensity:.1f} gCO2/kWh"
+            )
             return intensity
 
         except Exception as e:
@@ -243,7 +265,10 @@ class CarbonAwareArchitectureEvaluator:
         self.best_architectures = []
 
     def evaluate_architecture(
-        self, architecture: CarbonAwareArchitecture, X: pd.DataFrame, y: pd.Series
+        self,
+        architecture: CarbonAwareArchitecture,
+        X: pd.DataFrame,
+        y: pd.Series,
     ) -> CarbonAwareArchitecture:
         """Evaluate architecture with carbon-aware metrics."""
 
@@ -279,22 +304,28 @@ class CarbonAwareArchitectureEvaluator:
             )
 
             # Create and train model
-            model = self._create_model_from_architecture(architecture, X.shape[1])
+            model = self._create_model_from_architecture(
+                architecture, X.shape[1]
+            )
             performance_metrics = self._train_and_evaluate_model(model, X, y)
 
             # Stop energy tracking
             energy_report = self.energy_tracker.stop_tracking()
 
             # Calculate carbon footprint
-            carbon_footprint = self.carbon_calculator.calculate_carbon_footprint(
-                energy_report, region="US"  # Could be made configurable
+            carbon_footprint = (
+                self.carbon_calculator.calculate_carbon_footprint(
+                    energy_report, region="US"  # Could be made configurable
+                )
             )
 
             # Update architecture with metrics
             architecture.estimated_energy_mj = (
                 energy_report.total_energy_kwh * 3.6
             )  # Convert to MJ
-            architecture.estimated_carbon_kg = carbon_footprint.total_emissions_kg
+            architecture.estimated_carbon_kg = (
+                carbon_footprint.total_emissions_kg
+            )
             architecture.performance_metrics = performance_metrics
             architecture.training_time = time.time() - start_time
             architecture.is_evaluated = True
@@ -313,7 +344,10 @@ class CarbonAwareArchitectureEvaluator:
                 )
 
             # Check carbon budget
-            if architecture.estimated_carbon_kg > self.config.max_carbon_budget_kg:
+            if (
+                architecture.estimated_carbon_kg
+                > self.config.max_carbon_budget_kg
+            ):
                 logger.warning(
                     f"Architecture {architecture.architecture_id} exceeded carbon budget: "
                     f"{architecture.estimated_carbon_kg:.4f} kg > {self.config.max_carbon_budget_kg:.4f} kg"
@@ -353,7 +387,9 @@ class CarbonAwareArchitectureEvaluator:
 
         for layer_spec in architecture.layers:
             if layer_spec["type"] == "linear":
-                layers.append(nn.Linear(current_dim, layer_spec["hidden_size"]))
+                layers.append(
+                    nn.Linear(current_dim, layer_spec["hidden_size"])
+                )
                 current_dim = layer_spec["hidden_size"]
 
                 # Add normalization if specified
@@ -454,7 +490,9 @@ class CarbonAwareNAS:
         # Evolution loop
         for generation in range(self.config.generations):
             self.generation = generation
-            logger.info(f"Generation {generation + 1}/{self.config.generations}")
+            logger.info(
+                f"Generation {generation + 1}/{self.config.generations}"
+            )
 
             # Evaluate population
             self._evaluate_population(X, y)
@@ -489,10 +527,14 @@ class CarbonAwareNAS:
         self.population = []
 
         for i in range(self.config.population_size):
-            architecture = self._generate_random_architecture(input_dim, f"arch_{i}")
+            architecture = self._generate_random_architecture(
+                input_dim, f"arch_{i}"
+            )
             self.population.append(architecture)
 
-        logger.info(f"Initialized population of {len(self.population)} architectures")
+        logger.info(
+            f"Initialized population of {len(self.population)} architectures"
+        )
 
     def _generate_random_architecture(
         self, input_dim: int, architecture_id: str
@@ -506,7 +548,9 @@ class CarbonAwareNAS:
         for i in range(num_layers):
             # Random layer size
             hidden_size = np.random.choice([32, 64, 128, 256, 512])
-            hidden_size = min(hidden_size, current_dim * 2)  # Don't expand too much
+            hidden_size = min(
+                hidden_size, current_dim * 2
+            )  # Don't expand too much
 
             layer_spec = {
                 "type": "linear",
@@ -514,7 +558,11 @@ class CarbonAwareNAS:
                 "activation": np.random.choice(["relu", "tanh", "sigmoid"]),
                 "use_batch_norm": np.random.random() < 0.3,
                 "use_layer_norm": np.random.random() < 0.2,
-                "dropout": np.random.uniform(0, 0.5) if np.random.random() < 0.4 else 0,
+                "dropout": (
+                    np.random.uniform(0, 0.5)
+                    if np.random.random() < 0.4
+                    else 0
+                ),
             }
 
             layers.append(layer_spec)
@@ -567,14 +615,19 @@ class CarbonAwareNAS:
             for architecture in self.population:
                 if not architecture.is_evaluated:
                     future = executor.submit(
-                        self.evaluator.evaluate_architecture, architecture, X, y
+                        self.evaluator.evaluate_architecture,
+                        architecture,
+                        X,
+                        y,
                     )
                     futures.append(future)
 
             # Wait for all evaluations to complete
             for future in futures:
                 try:
-                    future.result(timeout=300)  # 5 minute timeout per architecture
+                    future.result(
+                        timeout=300
+                    )  # 5 minute timeout per architecture
                 except Exception as e:
                     logger.error(f"Architecture evaluation failed: {e}")
 
@@ -584,11 +637,17 @@ class CarbonAwareNAS:
         # Calculate fitness scores
         for architecture in self.population:
             if architecture.is_evaluated:
-                architecture.fitness_score = self._calculate_fitness(architecture)
+                architecture.fitness_score = self._calculate_fitness(
+                    architecture
+                )
 
         # Sort by fitness
-        evaluated_architectures = [a for a in self.population if a.is_evaluated]
-        evaluated_architectures.sort(key=lambda x: x.fitness_score, reverse=True)
+        evaluated_architectures = [
+            a for a in self.population if a.is_evaluated
+        ]
+        evaluated_architectures.sort(
+            key=lambda x: x.fitness_score, reverse=True
+        )
 
         # Keep top 50% for next generation
         num_keep = max(2, len(evaluated_architectures) // 2)
@@ -596,7 +655,9 @@ class CarbonAwareNAS:
 
         logger.info(f"Selected {len(self.population)} best architectures")
 
-    def _calculate_fitness(self, architecture: CarbonAwareArchitecture) -> float:
+    def _calculate_fitness(
+        self, architecture: CarbonAwareArchitecture
+    ) -> float:
         """Calculate fitness score based on carbon-aware objectives."""
 
         if not architecture.is_evaluated:
@@ -614,7 +675,9 @@ class CarbonAwareNAS:
                 architecture.estimated_carbon_kg
                 - self.config.max_carbon_budget_kg * 0.5,
             )
-            return performance - self.config.carbon_weight * carbon_penalty * 10
+            return (
+                performance - self.config.carbon_weight * carbon_penalty * 10
+            )
 
         elif (
             self.config.primary_objective
@@ -633,7 +696,9 @@ class CarbonAwareNAS:
             # Balanced multi-objective optimization
             carbon_score = max(
                 0,
-                1 - architecture.estimated_carbon_kg / self.config.max_carbon_budget_kg,
+                1
+                - architecture.estimated_carbon_kg
+                / self.config.max_carbon_budget_kg,
             )
             energy_score = max(
                 0,
@@ -725,7 +790,9 @@ class CarbonAwareNAS:
 
             # Random mutations
             if np.random.random() < 0.1:  # 10% chance to change layer size
-                mutated_layer["hidden_size"] = np.random.choice([32, 64, 128, 256, 512])
+                mutated_layer["hidden_size"] = np.random.choice(
+                    [32, 64, 128, 256, 512]
+                )
 
             if np.random.random() < 0.1:  # 10% chance to change activation
                 mutated_layer["activation"] = np.random.choice(
@@ -756,16 +823,21 @@ class CarbonAwareNAS:
     def _update_best_architecture(self):
         """Update the best architecture found so far."""
 
-        evaluated_architectures = [a for a in self.population if a.is_evaluated]
+        evaluated_architectures = [
+            a for a in self.population if a.is_evaluated
+        ]
         if not evaluated_architectures:
             return
 
         # Find best by fitness
-        best_in_generation = max(evaluated_architectures, key=lambda x: x.fitness_score)
+        best_in_generation = max(
+            evaluated_architectures, key=lambda x: x.fitness_score
+        )
 
         if (
             self.best_architecture is None
-            or best_in_generation.fitness_score > self.best_architecture.fitness_score
+            or best_in_generation.fitness_score
+            > self.best_architecture.fitness_score
         ):
             self.best_architecture = best_in_generation
             logger.info(
@@ -776,7 +848,9 @@ class CarbonAwareNAS:
     def _log_generation_progress(self):
         """Log progress for current generation."""
 
-        evaluated_architectures = [a for a in self.population if a.is_evaluated]
+        evaluated_architectures = [
+            a for a in self.population if a.is_evaluated
+        ]
 
         if evaluated_architectures:
             avg_performance = np.mean(
@@ -806,8 +880,12 @@ class CarbonAwareNAS:
         self._evaluate_population(X, y)
 
         # Rank all evaluated architectures
-        evaluated_architectures = [a for a in self.population if a.is_evaluated]
-        evaluated_architectures.sort(key=lambda x: x.fitness_score, reverse=True)
+        evaluated_architectures = [
+            a for a in self.population if a.is_evaluated
+        ]
+        evaluated_architectures.sort(
+            key=lambda x: x.fitness_score, reverse=True
+        )
 
         # Update best architecture
         if evaluated_architectures:
@@ -830,10 +908,14 @@ class CarbonAwareNAS:
                 json.dump(self.best_architecture.to_dict(), f, indent=2)
 
         # Save all evaluated architectures
-        evaluated_architectures = [a for a in self.population if a.is_evaluated]
+        evaluated_architectures = [
+            a for a in self.population if a.is_evaluated
+        ]
         all_architectures_file = self.results_dir / "all_architectures.json"
         with open(all_architectures_file, "w") as f:
-            json.dump([a.to_dict() for a in evaluated_architectures], f, indent=2)
+            json.dump(
+                [a.to_dict() for a in evaluated_architectures], f, indent=2
+            )
 
         # Save search summary
         summary = {
@@ -859,7 +941,9 @@ class CarbonAwareNAS:
                     else 0.0
                 ),
                 "best_performance": (
-                    self.best_architecture.performance_metrics.get("roc_auc", 0.0)
+                    self.best_architecture.performance_metrics.get(
+                        "roc_auc", 0.0
+                    )
                     if self.best_architecture
                     else 0.0
                 ),
@@ -888,7 +972,9 @@ class CarbonAwareNAS:
     ) -> List[Tuple[CarbonAwareArchitecture, float]]:
         """Get architectures ranked by carbon efficiency (performance per CO2)."""
 
-        evaluated_architectures = [a for a in self.population if a.is_evaluated]
+        evaluated_architectures = [
+            a for a in self.population if a.is_evaluated
+        ]
 
         carbon_efficiency_ranking = []
         for arch in evaluated_architectures:
@@ -907,7 +993,9 @@ class CarbonAwareNAS:
     ) -> List[Tuple[CarbonAwareArchitecture, float]]:
         """Get architectures ranked by energy efficiency (performance per kWh)."""
 
-        evaluated_architectures = [a for a in self.population if a.is_evaluated]
+        evaluated_architectures = [
+            a for a in self.population if a.is_evaluated
+        ]
 
         energy_efficiency_ranking = []
         for arch in evaluated_architectures:
@@ -933,7 +1021,9 @@ def create_carbon_aware_nas(
 
 
 def run_carbon_aware_search(
-    X: pd.DataFrame, y: pd.Series, config: Optional[CarbonAwareNASConfig] = None
+    X: pd.DataFrame,
+    y: pd.Series,
+    config: Optional[CarbonAwareNASConfig] = None,
 ) -> CarbonAwareArchitecture:
     """Run carbon-aware neural architecture search."""
 
@@ -953,7 +1043,9 @@ def compare_carbon_efficiency(
             comparison_data.append(
                 {
                     "architecture_id": arch.architecture_id,
-                    "performance_auc": arch.performance_metrics.get("roc_auc", 0.0),
+                    "performance_auc": arch.performance_metrics.get(
+                        "roc_auc", 0.0
+                    ),
                     "carbon_kg": arch.estimated_carbon_kg,
                     "energy_mj": arch.estimated_energy_mj,
                     "carbon_efficiency": arch.carbon_efficiency_score,

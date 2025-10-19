@@ -134,7 +134,9 @@ class RoleBasedAccessControl:
             Role.API_USER: {Permission.READ_DATA, Permission.VIEW_PREDICTIONS},
         }
 
-    def has_permission(self, user_roles: Set[Role], permission: Permission) -> bool:
+    def has_permission(
+        self, user_roles: Set[Role], permission: Permission
+    ) -> bool:
         """Check if user roles have the specified permission."""
         for role in user_roles:
             if permission in self.role_permissions.get(role, set()):
@@ -177,9 +179,13 @@ class PasswordManager:
 
     def verify_password(self, password: str, password_hash: str) -> bool:
         """Verify a password against its hash."""
-        return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+        return bcrypt.checkpw(
+            password.encode("utf-8"), password_hash.encode("utf-8")
+        )
 
-    def validate_password_strength(self, password: str) -> Tuple[bool, List[str]]:
+    def validate_password_strength(
+        self, password: str
+    ) -> Tuple[bool, List[str]]:
         """Validate password strength."""
         errors = []
 
@@ -189,10 +195,14 @@ class PasswordManager:
             )
 
         if self.require_uppercase and not any(c.isupper() for c in password):
-            errors.append("Password must contain at least one uppercase letter")
+            errors.append(
+                "Password must contain at least one uppercase letter"
+            )
 
         if self.require_lowercase and not any(c.islower() for c in password):
-            errors.append("Password must contain at least one lowercase letter")
+            errors.append(
+                "Password must contain at least one lowercase letter"
+            )
 
         if self.require_digits and not any(c.isdigit() for c in password):
             errors.append("Password must contain at least one digit")
@@ -200,7 +210,9 @@ class PasswordManager:
         if self.require_special and not any(
             c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password
         ):
-            errors.append("Password must contain at least one special character")
+            errors.append(
+                "Password must contain at least one special character"
+            )
 
         return len(errors) == 0, errors
 
@@ -218,7 +230,9 @@ class MultiFactorAuth:
     def generate_qr_code_url(self, user_email: str, secret: str) -> str:
         """Generate QR code URL for MFA setup."""
         totp = pyotp.TOTP(secret)
-        return totp.provisioning_uri(name=user_email, issuer_name=self.issuer_name)
+        return totp.provisioning_uri(
+            name=user_email, issuer_name=self.issuer_name
+        )
 
     def verify_token(self, secret: str, token: str, window: int = 1) -> bool:
         """Verify TOTP token."""
@@ -295,7 +309,10 @@ class APIKeyManager:
             if (
                 api_key.key_hash == key_hash
                 and api_key.is_active
-                and (api_key.expires_at is None or api_key.expires_at > datetime.now())
+                and (
+                    api_key.expires_at is None
+                    or api_key.expires_at > datetime.now()
+                )
             ):
 
                 # Update usage
@@ -343,8 +360,12 @@ class APIKeyManager:
                         key_hash=key_info["key_hash"],
                         user_id=key_info["user_id"],
                         name=key_info["name"],
-                        permissions={Permission(p) for p in key_info["permissions"]},
-                        created_at=datetime.fromisoformat(key_info["created_at"]),
+                        permissions={
+                            Permission(p) for p in key_info["permissions"]
+                        },
+                        created_at=datetime.fromisoformat(
+                            key_info["created_at"]
+                        ),
                         expires_at=(
                             datetime.fromisoformat(key_info["expires_at"])
                             if key_info.get("expires_at")
@@ -381,10 +402,14 @@ class APIKeyManager:
                 "permissions": [p.value for p in api_key.permissions],
                 "created_at": api_key.created_at.isoformat(),
                 "expires_at": (
-                    api_key.expires_at.isoformat() if api_key.expires_at else None
+                    api_key.expires_at.isoformat()
+                    if api_key.expires_at
+                    else None
                 ),
                 "last_used": (
-                    api_key.last_used.isoformat() if api_key.last_used else None
+                    api_key.last_used.isoformat()
+                    if api_key.last_used
+                    else None
                 ),
                 "is_active": api_key.is_active,
                 "usage_count": api_key.usage_count,
@@ -399,7 +424,9 @@ class JWTManager:
 
     def __init__(self):
         self.config = get_config()
-        self.secret_key = self.config.security.jwt_secret_key or secrets.token_hex(32)
+        self.secret_key = (
+            self.config.security.jwt_secret_key or secrets.token_hex(32)
+        )
         self.algorithm = "HS256"
         self.expiration_hours = self.config.security.jwt_expiration_hours
 
@@ -427,7 +454,9 @@ class JWTManager:
     def validate_token(self, token: str) -> Optional[Dict[str, Any]]:
         """Validate and decode a JWT token."""
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            payload = jwt.decode(
+                token, self.secret_key, algorithms=[self.algorithm]
+            )
             return payload
         except jwt.ExpiredSignatureError:
             logger.warning("JWT token expired")
@@ -465,7 +494,9 @@ class AuthenticationManager:
     ) -> Tuple[bool, str]:
         """Create a new user."""
         # Validate password
-        is_valid, errors = self.password_manager.validate_password_strength(password)
+        is_valid, errors = self.password_manager.validate_password_strength(
+            password
+        )
         if not is_valid:
             return False, "; ".join(errors)
 
@@ -514,12 +545,17 @@ class AuthenticationManager:
                 event_type="authentication_failed",
                 user_id=user.user_id if user else None,
                 severity="WARNING",
-                details={"username": username, "reason": "user_not_found_or_inactive"},
+                details={
+                    "username": username,
+                    "reason": "user_not_found_or_inactive",
+                },
             )
             return None
 
         # Check password
-        if not self.password_manager.verify_password(password, user.password_hash):
+        if not self.password_manager.verify_password(
+            password, user.password_hash
+        ):
             user.failed_login_attempts += 1
             self._save_users()
 
@@ -533,12 +569,17 @@ class AuthenticationManager:
 
         # Check MFA if enabled
         if user.mfa_enabled:
-            if not mfa_token or not self.mfa.verify_token(user.mfa_secret, mfa_token):
+            if not mfa_token or not self.mfa.verify_token(
+                user.mfa_secret, mfa_token
+            ):
                 audit_logger.log_security_event(
                     event_type="authentication_failed",
                     user_id=user.user_id,
                     severity="WARNING",
-                    details={"username": username, "reason": "invalid_mfa_token"},
+                    details={
+                        "username": username,
+                        "reason": "invalid_mfa_token",
+                    },
                 )
                 return None
 
@@ -556,7 +597,9 @@ class AuthenticationManager:
 
         return user
 
-    def create_session(self, user: User, ip_address: str, user_agent: str) -> str:
+    def create_session(
+        self, user: User, ip_address: str, user_agent: str
+    ) -> str:
         """Create a new session for a user."""
         session_id = secrets.token_hex(32)
         session = Session(
@@ -574,7 +617,11 @@ class AuthenticationManager:
     def validate_session(self, session_id: str) -> Optional[User]:
         """Validate a session and return the user."""
         session = self.sessions.get(session_id)
-        if not session or not session.is_active or session.expires_at < datetime.now():
+        if (
+            not session
+            or not session.is_active
+            or session.expires_at < datetime.now()
+        ):
             return None
 
         return self.users.get(session.user_id)
@@ -630,13 +677,17 @@ class AuthenticationManager:
                         password_hash=user_info["password_hash"],
                         roles={Role(role) for role in user_info["roles"]},
                         is_active=user_info["is_active"],
-                        created_at=datetime.fromisoformat(user_info["created_at"]),
+                        created_at=datetime.fromisoformat(
+                            user_info["created_at"]
+                        ),
                         last_login=(
                             datetime.fromisoformat(user_info["last_login"])
                             if user_info.get("last_login")
                             else None
                         ),
-                        failed_login_attempts=user_info["failed_login_attempts"],
+                        failed_login_attempts=user_info[
+                            "failed_login_attempts"
+                        ],
                         mfa_enabled=user_info["mfa_enabled"],
                         mfa_secret=user_info.get("mfa_secret"),
                         api_keys=user_info.get("api_keys", []),
@@ -664,7 +715,9 @@ class AuthenticationManager:
                 "roles": [role.value for role in user.roles],
                 "is_active": user.is_active,
                 "created_at": user.created_at.isoformat(),
-                "last_login": user.last_login.isoformat() if user.last_login else None,
+                "last_login": (
+                    user.last_login.isoformat() if user.last_login else None
+                ),
                 "failed_login_attempts": user.failed_login_attempts,
                 "mfa_enabled": user.mfa_enabled,
                 "mfa_secret": user.mfa_secret,

@@ -17,6 +17,7 @@ class TestPrivacyValidation:
         # Mock differential privacy test
         mock_epsilon = 1.0
         assert mock_epsilon <= 2.0  # Privacy budget constraint
+        pytest.skip("Privacy test placeholder")
 
     def test_data_anonymization(self):
         """Test data anonymization effectiveness."""

@@ -20,7 +20,10 @@ import pandas as pd
 
 try:
     from ..core.logging import get_logger
-    from ..sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from ..sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from ..sustainability.energy_tracker import EnergyReport, EnergyTracker
     from ..sustainability.sustainability_monitor import SustainabilityMonitor
     from ..sustainability.sustainable_model_lifecycle import (
@@ -32,7 +35,10 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent.parent))
     from src.core.logging import get_logger
-    from src.sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from src.sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from src.sustainability.energy_tracker import EnergyReport, EnergyTracker
     from src.sustainability.sustainability_monitor import SustainabilityMonitor
     from src.sustainability.sustainable_model_lifecycle import (
@@ -244,7 +250,9 @@ class EnvironmentalValidator:
         """Validate energy efficiency of the AI model."""
         try:
             # Get energy metrics
-            energy_consumption = model_metrics.get("energy_consumption_kwh", 0.0)
+            energy_consumption = model_metrics.get(
+                "energy_consumption_kwh", 0.0
+            )
             model_accuracy = model_metrics.get("accuracy", 0.0)
             inference_count = model_metrics.get("inference_count", 1)
 
@@ -323,7 +331,9 @@ class EnvironmentalValidator:
             if net_carbon <= 0 and neutrality_ratio >= 1.0:
                 status = ValidationStatus.PASSED
                 score = 100.0
-                details = f"Carbon neutral: {net_carbon:.3f} kg CO2 net emissions"
+                details = (
+                    f"Carbon neutral: {net_carbon:.3f} kg CO2 net emissions"
+                )
             elif neutrality_ratio >= 0.8:
                 status = ValidationStatus.WARNING
                 score = neutrality_ratio * 100
@@ -405,14 +415,10 @@ class PerformanceValidator:
                 details = f"Excellent model efficiency: {efficiency_score:.3f} accuracy/(MB*ms)"
             elif score >= 60:
                 status = ValidationStatus.WARNING
-                details = (
-                    f"Good model efficiency: {efficiency_score:.3f} accuracy/(MB*ms)"
-                )
+                details = f"Good model efficiency: {efficiency_score:.3f} accuracy/(MB*ms)"
             else:
                 status = ValidationStatus.FAILED
-                details = (
-                    f"Poor model efficiency: {efficiency_score:.3f} accuracy/(MB*ms)"
-                )
+                details = f"Poor model efficiency: {efficiency_score:.3f} accuracy/(MB*ms)"
 
             evidence = [
                 f"Model size: {model_size_mb:.1f} MB",
@@ -474,15 +480,17 @@ class PerformanceValidator:
 
             if score >= 80:
                 status = ValidationStatus.PASSED
-                details = (
-                    f"Excellent inference speed: {throughput:.1f} inferences/second"
-                )
+                details = f"Excellent inference speed: {throughput:.1f} inferences/second"
             elif score >= 60:
                 status = ValidationStatus.WARNING
-                details = f"Good inference speed: {throughput:.1f} inferences/second"
+                details = (
+                    f"Good inference speed: {throughput:.1f} inferences/second"
+                )
             else:
                 status = ValidationStatus.FAILED
-                details = f"Poor inference speed: {throughput:.1f} inferences/second"
+                details = (
+                    f"Poor inference speed: {throughput:.1f} inferences/second"
+                )
 
             evidence = [
                 f"Inference time: {inference_time_ms:.1f} ms",
@@ -528,17 +536,27 @@ class GovernanceValidator:
         self.config = config
         logger.info("Governance validator initialized")
 
-    def validate_transparency(self, model_metrics: Dict[str, Any]) -> ValidationResult:
+    def validate_transparency(
+        self, model_metrics: Dict[str, Any]
+    ) -> ValidationResult:
         """Validate model transparency and explainability."""
         try:
             # Get transparency metrics
-            explainability_score = model_metrics.get("explainability_score", 0.0)
-            documentation_quality = model_metrics.get("documentation_quality", 0.0)
-            model_interpretability = model_metrics.get("model_interpretability", 0.0)
+            explainability_score = model_metrics.get(
+                "explainability_score", 0.0
+            )
+            documentation_quality = model_metrics.get(
+                "documentation_quality", 0.0
+            )
+            model_interpretability = model_metrics.get(
+                "model_interpretability", 0.0
+            )
 
             # Calculate overall transparency score
             transparency_score = (
-                explainability_score + documentation_quality + model_interpretability
+                explainability_score
+                + documentation_quality
+                + model_interpretability
             ) / 3
 
             # Industry benchmark: >0.8 transparency score
@@ -547,9 +565,7 @@ class GovernanceValidator:
 
             if score >= 80:
                 status = ValidationStatus.PASSED
-                details = (
-                    f"Excellent transparency: {transparency_score:.2f} overall score"
-                )
+                details = f"Excellent transparency: {transparency_score:.2f} overall score"
             elif score >= 60:
                 status = ValidationStatus.WARNING
                 details = f"Good transparency: {transparency_score:.2f} overall score"
@@ -600,7 +616,9 @@ class GovernanceValidator:
         """Validate bias mitigation measures."""
         try:
             # Get bias metrics
-            bias_score = model_metrics.get("bias_score", 0.0)  # Lower is better
+            bias_score = model_metrics.get(
+                "bias_score", 0.0
+            )  # Lower is better
             fairness_metrics = model_metrics.get("fairness_metrics", {})
 
             # Calculate fairness score (inverse of bias)
@@ -612,7 +630,9 @@ class GovernanceValidator:
 
             if score >= 80:
                 status = ValidationStatus.PASSED
-                details = f"Excellent bias mitigation: {bias_score:.3f} bias score"
+                details = (
+                    f"Excellent bias mitigation: {bias_score:.3f} bias score"
+                )
             elif score >= 60:
                 status = ValidationStatus.WARNING
                 details = f"Good bias mitigation: {bias_score:.3f} bias score"
@@ -687,21 +707,31 @@ class SustainableAICertificationFramework:
 
             # Environmental validations
             validation_results.append(
-                self.environmental_validator.validate_carbon_efficiency(model_metrics)
+                self.environmental_validator.validate_carbon_efficiency(
+                    model_metrics
+                )
             )
             validation_results.append(
-                self.environmental_validator.validate_energy_efficiency(model_metrics)
+                self.environmental_validator.validate_energy_efficiency(
+                    model_metrics
+                )
             )
             validation_results.append(
-                self.environmental_validator.validate_carbon_neutrality(model_metrics)
+                self.environmental_validator.validate_carbon_neutrality(
+                    model_metrics
+                )
             )
 
             # Performance validations
             validation_results.append(
-                self.performance_validator.validate_model_efficiency(model_metrics)
+                self.performance_validator.validate_model_efficiency(
+                    model_metrics
+                )
             )
             validation_results.append(
-                self.performance_validator.validate_inference_speed(model_metrics)
+                self.performance_validator.validate_inference_speed(
+                    model_metrics
+                )
             )
 
             # Governance validations
@@ -709,7 +739,9 @@ class SustainableAICertificationFramework:
                 self.governance_validator.validate_transparency(model_metrics)
             )
             validation_results.append(
-                self.governance_validator.validate_bias_mitigation(model_metrics)
+                self.governance_validator.validate_bias_mitigation(
+                    model_metrics
+                )
             )
 
             logger.info(
@@ -744,14 +776,20 @@ class SustainableAICertificationFramework:
             r
             for r in validation_results
             if r.criterion
-            in [ValidationCriteria.MODEL_EFFICIENCY, ValidationCriteria.INFERENCE_SPEED]
+            in [
+                ValidationCriteria.MODEL_EFFICIENCY,
+                ValidationCriteria.INFERENCE_SPEED,
+            ]
         ]
 
         governance_results = [
             r
             for r in validation_results
             if r.criterion
-            in [ValidationCriteria.TRANSPARENCY, ValidationCriteria.BIAS_MITIGATION]
+            in [
+                ValidationCriteria.TRANSPARENCY,
+                ValidationCriteria.BIAS_MITIGATION,
+            ]
         ]
 
         # Calculate weighted scores
@@ -780,7 +818,9 @@ class SustainableAICertificationFramework:
 
         return overall_score
 
-    def determine_certification_level(self, overall_score: float) -> CertificationLevel:
+    def determine_certification_level(
+        self, overall_score: float
+    ) -> CertificationLevel:
         """Determine certification level based on overall score."""
         if overall_score >= self.config.carbon_neutral_threshold:
             return CertificationLevel.CARBON_NEUTRAL
@@ -808,7 +848,9 @@ class SustainableAICertificationFramework:
             overall_score = self.calculate_overall_score(validation_results)
 
             # Determine certification level
-            certification_level = self.determine_certification_level(overall_score)
+            certification_level = self.determine_certification_level(
+                overall_score
+            )
 
             if certification_level is None:
                 logger.warning(
@@ -825,7 +867,9 @@ class SustainableAICertificationFramework:
 
             # Create certificate hash for verification
             certificate_data = f"{certificate_id}{model_id}{organization}{overall_score}{issued_at.isoformat()}"
-            certificate_hash = hashlib.sha256(certificate_data.encode()).hexdigest()
+            certificate_hash = hashlib.sha256(
+                certificate_data.encode()
+            ).hexdigest()
 
             # Generate verification URL
             verification_url = (
@@ -902,7 +946,9 @@ class SustainableAICertificationFramework:
             return certificate
 
         except Exception as e:
-            logger.error(f"Certificate issuance failed for model {model_id}: {e}")
+            logger.error(
+                f"Certificate issuance failed for model {model_id}: {e}"
+            )
             return None
 
     def _save_certificate(self, certificate: SustainableAICertificate) -> bool:
@@ -1012,9 +1058,9 @@ class SustainableAICertificationFramework:
                 ]
             )
         else:
-            avg_overall_score = avg_environmental_score = avg_performance_score = (
-                avg_governance_score
-            ) = 0.0
+            avg_overall_score = avg_environmental_score = (
+                avg_performance_score
+            ) = avg_governance_score = 0.0
 
         return {
             "total_certificates": total_certificates,
@@ -1073,7 +1119,10 @@ def demo_sustainable_ai_certification() -> Dict[str, Any]:
         "documentation_quality": 0.90,
         "model_interpretability": 0.88,
         "bias_score": 0.05,
-        "fairness_metrics": {"demographic_parity": 0.95, "equalized_odds": 0.93},
+        "fairness_metrics": {
+            "demographic_parity": 0.95,
+            "equalized_odds": 0.93,
+        },
     }
 
     # Validate model
@@ -1105,14 +1154,24 @@ def demo_sustainable_ai_certification() -> Dict[str, Any]:
         ],
         "certificate": (
             {
-                "certificate_id": certificate.certificate_id if certificate else None,
-                "certification_level": (
-                    certificate.certification_level.value if certificate else None
+                "certificate_id": (
+                    certificate.certificate_id if certificate else None
                 ),
-                "overall_score": certificate.overall_score if certificate else None,
-                "issued_at": certificate.issued_at.isoformat() if certificate else None,
+                "certification_level": (
+                    certificate.certification_level.value
+                    if certificate
+                    else None
+                ),
+                "overall_score": (
+                    certificate.overall_score if certificate else None
+                ),
+                "issued_at": (
+                    certificate.issued_at.isoformat() if certificate else None
+                ),
                 "valid_until": (
-                    certificate.valid_until.isoformat() if certificate else None
+                    certificate.valid_until.isoformat()
+                    if certificate
+                    else None
                 ),
                 "verification_url": (
                     certificate.verification_url if certificate else None

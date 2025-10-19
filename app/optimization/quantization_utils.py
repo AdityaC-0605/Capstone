@@ -10,7 +10,11 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
-from .model_quantization import ModelQuantizer, QuantizationConfig, QuantizationResult
+from .model_quantization import (
+    ModelQuantizer,
+    QuantizationConfig,
+    QuantizationResult,
+)
 
 
 # Utility functions
@@ -53,7 +57,9 @@ def get_qat_config(epochs: int = 20) -> QuantizationConfig:
     )
 
 
-def get_static_quantization_config(calibration_size: int = 1000) -> QuantizationConfig:
+def get_static_quantization_config(
+    calibration_size: int = 1000,
+) -> QuantizationConfig:
     """Get post-training static quantization configuration."""
     return QuantizationConfig(
         quantization_method="post_training_static",
@@ -106,7 +112,9 @@ def analyze_quantization_impact(
     y_test_tensor = torch.FloatTensor(y_test.values)
 
     # Evaluate both models
-    original_perf = _evaluate_model_simple(original_model, X_test_tensor, y_test_tensor)
+    original_perf = _evaluate_model_simple(
+        original_model, X_test_tensor, y_test_tensor
+    )
     quantized_perf = _evaluate_model_simple(
         quantized_model, X_test_tensor, y_test_tensor
     )
@@ -116,15 +124,23 @@ def analyze_quantization_impact(
     quantized_size = _calculate_model_size_simple(quantized_model)
 
     # Measure inference times
-    original_time = _measure_inference_time_simple(original_model, X_test_tensor)
-    quantized_time = _measure_inference_time_simple(quantized_model, X_test_tensor)
+    original_time = _measure_inference_time_simple(
+        original_model, X_test_tensor
+    )
+    quantized_time = _measure_inference_time_simple(
+        quantized_model, X_test_tensor
+    )
 
     # Compression metrics
-    compression_ratio = original_size / quantized_size if quantized_size > 0 else 1.0
+    compression_ratio = (
+        original_size / quantized_size if quantized_size > 0 else 1.0
+    )
     size_reduction = (
         1.0 - (quantized_size / original_size) if original_size > 0 else 0.0
     )
-    speedup_ratio = original_time / quantized_time if quantized_time > 0 else 1.0
+    speedup_ratio = (
+        original_time / quantized_time if quantized_time > 0 else 1.0
+    )
 
     # Performance impact
     performance_drop = {
@@ -182,7 +198,9 @@ def compare_quantization_methods(
     # Static quantization
     try:
         static_config = get_static_quantization_config(calibration_size=500)
-        static_result = quantize_model(copy.deepcopy(model), X, y, static_config)
+        static_result = quantize_model(
+            copy.deepcopy(model), X, y, static_config
+        )
         results["static"] = static_result
     except Exception as e:
         print(f"Static quantization failed: {e}")
@@ -191,7 +209,9 @@ def compare_quantization_methods(
     # Dynamic quantization
     try:
         dynamic_config = get_dynamic_quantization_config()
-        dynamic_result = quantize_model(copy.deepcopy(model), X, y, dynamic_config)
+        dynamic_result = quantize_model(
+            copy.deepcopy(model), X, y, dynamic_config
+        )
         results["dynamic"] = dynamic_result
     except Exception as e:
         print(f"Dynamic quantization failed: {e}")
@@ -221,7 +241,9 @@ def load_quantized_model(model_path: str) -> Tuple[nn.Module, Dict[str, Any]]:
 
     # Note: This is a placeholder - actual implementation would need to reconstruct
     # the quantized model architecture based on the saved configuration
-    print(f"Loaded quantized model with method: {metadata['quantization_method']}")
+    print(
+        f"Loaded quantized model with method: {metadata['quantization_method']}"
+    )
 
     return None, metadata
 
@@ -297,7 +319,9 @@ def validate_quantized_model_accuracy(
     y_test_tensor = torch.FloatTensor(y_test.values)
 
     # Evaluate both models
-    original_perf = _evaluate_model_simple(original_model, X_test_tensor, y_test_tensor)
+    original_perf = _evaluate_model_simple(
+        original_model, X_test_tensor, y_test_tensor
+    )
     quantized_perf = _evaluate_model_simple(
         quantized_model, X_test_tensor, y_test_tensor
     )
@@ -355,7 +379,9 @@ def _evaluate_model_simple(
 
 def _calculate_model_size_simple(model: nn.Module) -> float:
     """Simple model size calculation in MB."""
-    param_size = sum(p.nelement() * p.element_size() for p in model.parameters())
+    param_size = sum(
+        p.nelement() * p.element_size() for p in model.parameters()
+    )
     buffer_size = sum(b.nelement() * b.element_size() for b in model.buffers())
     return (param_size + buffer_size) / (1024 * 1024)
 

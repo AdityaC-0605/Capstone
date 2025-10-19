@@ -47,7 +47,9 @@ class PerformanceValidator:
         end_time = time.time()
 
         if response.status_code != 200:
-            raise Exception(f"Request failed with status {response.status_code}")
+            raise Exception(
+                f"Request failed with status {response.status_code}"
+            )
 
         return (end_time - start_time) * 1000  # Convert to milliseconds
 
@@ -67,7 +69,9 @@ class PerformanceValidator:
         start_time = time.time()
 
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
-            futures = [executor.submit(make_request) for _ in range(num_requests)]
+            futures = [
+                executor.submit(make_request) for _ in range(num_requests)
+            ]
 
             for future in as_completed(futures):
                 result = future.result()
@@ -140,7 +144,9 @@ class PerformanceValidator:
                     )
             else:
                 if results[metric] > threshold:
-                    violations.append(f"{metric}: {results[metric]:.2f} > {threshold}")
+                    violations.append(
+                        f"{metric}: {results[metric]:.2f} > {threshold}"
+                    )
 
         if violations:
             print("❌ SLA Violations:")
@@ -205,7 +211,9 @@ class PerformanceValidator:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Validate production performance")
+    parser = argparse.ArgumentParser(
+        description="Validate production performance"
+    )
     parser.add_argument("--url", required=True, help="Base URL of the API")
     parser.add_argument(
         "--requests", type=int, default=100, help="Number of requests to send"

@@ -16,6 +16,7 @@ class TestSystemIntegration:
         """Test API health check."""
         # Mock health check test
         assert True
+        pytest.skip("Integration test placeholder")
 
     def test_database_connection(self):
         """Test database connection."""

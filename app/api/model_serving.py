@@ -43,7 +43,9 @@ except ImportError:
 
     # Mock classes for testing
     class MockEnsembleModel:
-        def __init__(self, model_id: str = "mock_model", version: str = "1.0.0"):
+        def __init__(
+            self, model_id: str = "mock_model", version: str = "1.0.0"
+        ):
             self.model_id = model_id
             self.version = version
             self.loaded_at = datetime.now()
@@ -146,14 +148,18 @@ class ModelMetadata:
             "accuracy": self.accuracy,
             "latency_ms": self.latency_ms,
             "memory_mb": self.memory_mb,
-            "loaded_at": self.loaded_at.isoformat() if self.loaded_at else None,
+            "loaded_at": (
+                self.loaded_at.isoformat() if self.loaded_at else None
+            ),
             "status": self.status.value,
             "traffic_percentage": self.traffic_percentage,
             "is_champion": self.is_champion,
             "is_challenger": self.is_challenger,
             "request_count": self.request_count,
             "error_count": self.error_count,
-            "last_used": self.last_used.isoformat() if self.last_used else None,
+            "last_used": (
+                self.last_used.isoformat() if self.last_used else None
+            ),
             "error_rate": self.error_count / max(self.request_count, 1),
         }
 
@@ -298,14 +304,18 @@ class PredictionCache:
         self.config = config
 
         if config.cache_backend == "redis" and REDIS_AVAILABLE:
-            self.cache = redis.from_url(config.redis_url or "redis://localhost:6379")
+            self.cache = redis.from_url(
+                config.redis_url or "redis://localhost:6379"
+            )
             self.backend = "redis"
         else:
             self.cache = {}
             self.cache_timestamps = {}
             self.backend = "memory"
 
-        logger.info(f"Prediction cache initialized with {self.backend} backend")
+        logger.info(
+            f"Prediction cache initialized with {self.backend} backend"
+        )
 
     def get(self, key: str) -> Optional[Any]:
         """Get cached prediction."""
@@ -560,9 +570,12 @@ class ModelLoader:
         for full_model_id, metadata in self.metadata.items():
             model_health = {
                 "status": metadata.status.value,
-                "error_rate": metadata.error_count / max(metadata.request_count, 1),
+                "error_rate": metadata.error_count
+                / max(metadata.request_count, 1),
                 "last_used": (
-                    metadata.last_used.isoformat() if metadata.last_used else None
+                    metadata.last_used.isoformat()
+                    if metadata.last_used
+                    else None
                 ),
                 "circuit_breaker": (
                     self.circuit_breakers[full_model_id].get_state()
@@ -610,7 +623,9 @@ class ModelLoader:
         registry_file = Path(self.config.model_registry_file)
 
         if not registry_file.exists():
-            logger.info("Model registry file not found, starting with empty registry")
+            logger.info(
+                "Model registry file not found, starting with empty registry"
+            )
             return
 
         try:
@@ -618,7 +633,9 @@ class ModelLoader:
                 registry_data = json.load(f)
 
             for model_data in registry_data.get("models", []):
-                full_model_id = f"{model_data['model_id']}:{model_data['version']}"
+                full_model_id = (
+                    f"{model_data['model_id']}:{model_data['version']}"
+                )
 
                 metadata = ModelMetadata(
                     model_id=model_data["model_id"],
@@ -628,14 +645,18 @@ class ModelLoader:
                     accuracy=model_data.get("accuracy"),
                     latency_ms=model_data.get("latency_ms"),
                     memory_mb=model_data.get("memory_mb"),
-                    traffic_percentage=model_data.get("traffic_percentage", 0.0),
+                    traffic_percentage=model_data.get(
+                        "traffic_percentage", 0.0
+                    ),
                     is_champion=model_data.get("is_champion", False),
                     is_challenger=model_data.get("is_challenger", False),
                     status=ModelStatus.READY,  # Will be updated when actually loaded
                 )
 
                 if model_data.get("loaded_at"):
-                    metadata.loaded_at = datetime.fromisoformat(model_data["loaded_at"])
+                    metadata.loaded_at = datetime.fromisoformat(
+                        model_data["loaded_at"]
+                    )
 
                 self.metadata[full_model_id] = metadata
 
@@ -651,7 +672,9 @@ class ModelLoader:
         try:
             registry_data = {
                 "updated_at": datetime.now().isoformat(),
-                "models": [metadata.to_dict() for metadata in self.metadata.values()],
+                "models": [
+                    metadata.to_dict() for metadata in self.metadata.values()
+                ],
             }
 
             with open(self.config.model_registry_file, "w") as f:
@@ -738,7 +761,9 @@ class ModelRouter:
 
         return models[-1]  # Fallback
 
-    def _ab_test_routing(self, models: List[str], user_id: Optional[str]) -> str:
+    def _ab_test_routing(
+        self, models: List[str], user_id: Optional[str]
+    ) -> str:
         """A/B test routing based on user ID hash."""
         if not user_id:
             # Fallback to weighted routing
@@ -851,7 +876,9 @@ class ModelServingManager:
         self.last_health_check = datetime.now()
 
         # Request tracking
-        self.request_semaphore = asyncio.Semaphore(self.config.max_concurrent_requests)
+        self.request_semaphore = asyncio.Semaphore(
+            self.config.max_concurrent_requests
+        )
 
         logger.info("Model serving manager initialized")
 
@@ -869,7 +896,9 @@ class ModelServingManager:
 
             try:
                 # Get available models
-                available_models = self._get_available_models(model_id, version)
+                available_models = self._get_available_models(
+                    model_id, version
+                )
                 if not available_models:
                     raise ValueError("No available models for prediction")
 
@@ -877,7 +906,9 @@ class ModelServingManager:
                 selected_model = self.model_router.route_request(
                     available_models, user_id
                 )
-                selected_model_id, selected_version = selected_model.split(":", 1)
+                selected_model_id, selected_version = selected_model.split(
+                    ":", 1
+                )
 
                 # Check cache first
                 cache_key = self.prediction_cache.generate_key(
@@ -893,8 +924,10 @@ class ModelServingManager:
                     return cached_result
 
                 # Make prediction with circuit breaker
-                prediction_result = self.model_loader.predict_with_circuit_breaker(
-                    selected_model_id, selected_version, input_data
+                prediction_result = (
+                    self.model_loader.predict_with_circuit_breaker(
+                        selected_model_id, selected_version, input_data
+                    )
                 )
 
                 # Format response
@@ -1015,7 +1048,9 @@ class ModelServingManager:
     def get_readiness_status(self) -> Dict[str, Any]:
         """Get readiness status for load balancer."""
         ready_models = sum(
-            1 for m in self.model_loader.list_models() if m.status == ModelStatus.READY
+            1
+            for m in self.model_loader.list_models()
+            if m.status == ModelStatus.READY
         )
 
         is_ready = ready_models > 0 and self.is_healthy
@@ -1078,7 +1113,9 @@ def create_model_serving_manager(
 
 
 async def serve_prediction(
-    input_data: Dict[str, Any], manager: Optional[ModelServingManager] = None, **kwargs
+    input_data: Dict[str, Any],
+    manager: Optional[ModelServingManager] = None,
+    **kwargs,
 ) -> Dict[str, Any]:
     """Serve prediction with full infrastructure."""
     if manager is None:

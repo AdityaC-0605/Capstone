@@ -101,7 +101,11 @@ class KeyManager:
             event_type="key_generation",
             user_id=None,
             severity="INFO",
-            details={"key_id": key_id, "algorithm": algorithm, "key_size": key_size},
+            details={
+                "key_id": key_id,
+                "algorithm": algorithm,
+                "key_size": key_size,
+            },
         )
 
         logger.info(f"Generated new encryption key: {key_id}")
@@ -159,7 +163,10 @@ class KeyManager:
         warning_threshold = datetime.now() + timedelta(days=30)
 
         for key_id, key_metadata in self._keys.items():
-            if key_metadata.expires_at and key_metadata.expires_at <= warning_threshold:
+            if (
+                key_metadata.expires_at
+                and key_metadata.expires_at <= warning_threshold
+            ):
                 expiring_keys.append(key_id)
 
         return expiring_keys
@@ -176,7 +183,9 @@ class KeyManager:
                     # Load metadata
                     metadata = EncryptionKey(
                         key_id=key_info["key_id"],
-                        created_at=datetime.fromisoformat(key_info["created_at"]),
+                        created_at=datetime.fromisoformat(
+                            key_info["created_at"]
+                        ),
                         expires_at=(
                             datetime.fromisoformat(key_info["expires_at"])
                             if key_info.get("expires_at")
@@ -259,7 +268,9 @@ class DataEncryption:
         iv = secrets.token_bytes(16)
 
         # Create cipher
-        cipher = Cipher(algorithms.AES(key_data), modes.CBC(iv), backend=self.backend)
+        cipher = Cipher(
+            algorithms.AES(key_data), modes.CBC(iv), backend=self.backend
+        )
 
         # Pad data to block size
         padded_data = self._pad_data(data)
@@ -284,17 +295,23 @@ class DataEncryption:
 
         # Create cipher
         cipher = Cipher(
-            algorithms.AES(key_data), modes.CBC(encrypted_data.iv), backend=self.backend
+            algorithms.AES(key_data),
+            modes.CBC(encrypted_data.iv),
+            backend=self.backend,
         )
 
         # Decrypt
         decryptor = cipher.decryptor()
-        padded_data = decryptor.update(encrypted_data.data) + decryptor.finalize()
+        padded_data = (
+            decryptor.update(encrypted_data.data) + decryptor.finalize()
+        )
 
         # Remove padding
         return self._unpad_data(padded_data)
 
-    def encrypt_file(self, file_path: str, output_path: Optional[str] = None) -> str:
+    def encrypt_file(
+        self, file_path: str, output_path: Optional[str] = None
+    ) -> str:
         """Encrypt a file."""
         input_path = Path(file_path)
         if not input_path.exists():
@@ -338,7 +355,9 @@ class DataEncryption:
         """Decrypt a file."""
         encrypted_path = Path(encrypted_file_path)
         if not encrypted_path.exists():
-            raise FileNotFoundError(f"Encrypted file not found: {encrypted_file_path}")
+            raise FileNotFoundError(
+                f"Encrypted file not found: {encrypted_file_path}"
+            )
 
         with open(encrypted_path, "r") as f:
             encrypted_container = json.load(f)
@@ -353,7 +372,9 @@ class DataEncryption:
 
         decrypted_data = self.decrypt_data(encrypted_data)
 
-        output_path = output_path or encrypted_file_path.replace(".encrypted", "")
+        output_path = output_path or encrypted_file_path.replace(
+            ".encrypted", ""
+        )
 
         with open(output_path, "wb") as f:
             f.write(decrypted_data)
@@ -423,7 +444,8 @@ class BackupEncryption:
                 if file_path.is_file():
                     relative_path = file_path.relative_to(source)
                     encrypted_file = self.encryption.encrypt_file(
-                        str(file_path), str(backup / f"{relative_path}.encrypted")
+                        str(file_path),
+                        str(backup / f"{relative_path}.encrypted"),
                     )
                     backup_metadata["files"].append(
                         {
@@ -463,7 +485,9 @@ class BackupEncryption:
         # Load backup metadata
         metadata_file = backup / "backup_metadata.json"
         if not metadata_file.exists():
-            raise FileNotFoundError(f"Backup metadata not found: {metadata_file}")
+            raise FileNotFoundError(
+                f"Backup metadata not found: {metadata_file}"
+            )
 
         with open(metadata_file, "r") as f:
             backup_metadata = json.load(f)

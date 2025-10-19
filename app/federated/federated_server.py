@@ -99,7 +99,9 @@ class ClientInfo:
 
     def is_active(self, timeout_minutes: int = 30) -> bool:
         """Check if client is considered active."""
-        return (datetime.now() - self.last_seen).total_seconds() < timeout_minutes * 60
+        return (
+            datetime.now() - self.last_seen
+        ).total_seconds() < timeout_minutes * 60
 
     def update_last_seen(self):
         """Update the last seen timestamp."""
@@ -192,7 +194,9 @@ class FederatedConfig:
     # Client management
     client_timeout_minutes: int = 30
     max_failed_connections: int = 3
-    client_selection_strategy: str = "random"  # "random", "performance", "data_size"
+    client_selection_strategy: str = (
+        "random"  # "random", "performance", "data_size"
+    )
 
     # Security settings
     require_authentication: bool = True
@@ -228,7 +232,9 @@ class SecureAggregator:
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         ).decode("utf-8")
 
-    def decrypt_model_update(self, encrypted_update: bytes) -> Dict[str, torch.Tensor]:
+    def decrypt_model_update(
+        self, encrypted_update: bytes
+    ) -> Dict[str, torch.Tensor]:
         """Decrypt an encrypted model update."""
         try:
             decrypted_data = self.private_key.decrypt(
@@ -272,7 +278,9 @@ class FederatedAggregator:
     """Implements various federated aggregation algorithms."""
 
     @staticmethod
-    def federated_averaging(updates: List[ModelUpdate]) -> Dict[str, torch.Tensor]:
+    def federated_averaging(
+        updates: List[ModelUpdate],
+    ) -> Dict[str, torch.Tensor]:
         """
         Implement FedAvg algorithm for model aggregation.
 
@@ -292,21 +300,27 @@ class FederatedAggregator:
             logger.warning("Total data size is 0, using uniform weights")
             weights = [1.0 / len(updates) for _ in updates]
         else:
-            weights = [update.data_size / total_data_size for update in updates]
+            weights = [
+                update.data_size / total_data_size for update in updates
+            ]
 
         # Initialize aggregated weights with zeros
         aggregated_weights = {}
         first_update = updates[0]
 
         for key in first_update.model_weights.keys():
-            aggregated_weights[key] = torch.zeros_like(first_update.model_weights[key])
+            aggregated_weights[key] = torch.zeros_like(
+                first_update.model_weights[key]
+            )
 
         # Weighted aggregation
         for i, update in enumerate(updates):
             weight = weights[i]
             for key in aggregated_weights.keys():
                 if key in update.model_weights:
-                    aggregated_weights[key] += weight * update.model_weights[key]
+                    aggregated_weights[key] += (
+                        weight * update.model_weights[key]
+                    )
                 else:
                     logger.warning(
                         f"Missing weight key {key} in update from client {update.client_id}"
@@ -342,7 +356,9 @@ class FederatedAggregator:
                     aggregated_weights[key] + mu * global_model[key]
                 ) / (1 + mu)
 
-        logger.info(f"Aggregated {len(updates)} model updates using FedProx (mu={mu})")
+        logger.info(
+            f"Aggregated {len(updates)} model updates using FedProx (mu={mu})"
+        )
         return aggregated_weights
 
     @staticmethod
@@ -447,10 +463,14 @@ class ClientSelector:
         num_clients = min(len(clients), self.config.max_clients_per_round)
         return [client for client, _ in scored_clients[:num_clients]]
 
-    def _data_size_based_selection(self, clients: List[ClientInfo]) -> List[ClientInfo]:
+    def _data_size_based_selection(
+        self, clients: List[ClientInfo]
+    ) -> List[ClientInfo]:
         """Select clients based on data size."""
         # Sort by data size (descending)
-        clients_sorted = sorted(clients, key=lambda x: x.data_size, reverse=True)
+        clients_sorted = sorted(
+            clients, key=lambda x: x.data_size, reverse=True
+        )
 
         num_clients = min(len(clients), self.config.max_clients_per_round)
         return clients_sorted[:num_clients]
@@ -518,7 +538,9 @@ class FederatedServer:
         """
         try:
             if client_id in self.clients:
-                logger.warning(f"Client {client_id} already registered, updating info")
+                logger.warning(
+                    f"Client {client_id} already registered, updating info"
+                )
 
             # Generate authentication token
             auth_token = (
@@ -574,7 +596,9 @@ class FederatedServer:
         """
         try:
             if client_id not in self.clients:
-                logger.warning(f"Client {client_id} not found for unregistration")
+                logger.warning(
+                    f"Client {client_id} not found for unregistration"
+                )
                 return False
 
             del self.clients[client_id]
@@ -609,7 +633,9 @@ class FederatedServer:
             return True
 
         if client_id not in self.clients:
-            logger.warning(f"Authentication failed: Client {client_id} not registered")
+            logger.warning(
+                f"Authentication failed: Client {client_id} not registered"
+            )
             return False
 
         client = self.clients[client_id]
@@ -636,7 +662,8 @@ class FederatedServer:
         try:
             self.global_model = copy.deepcopy(model)
             self.global_model_weights = {
-                name: param.clone().detach() for name, param in model.named_parameters()
+                name: param.clone().detach()
+                for name, param in model.named_parameters()
             }
 
             logger.info(
@@ -689,7 +716,9 @@ class FederatedServer:
 
         # Apply aggregation method
         if self.config.aggregation_method == AggregationMethod.FEDAVG:
-            aggregated_weights = self.aggregator.federated_averaging(valid_updates)
+            aggregated_weights = self.aggregator.federated_averaging(
+                valid_updates
+            )
         elif self.config.aggregation_method == AggregationMethod.FEDPROX:
             aggregated_weights = self.aggregator.federated_proximal(
                 valid_updates, self.global_model_weights
@@ -698,7 +727,9 @@ class FederatedServer:
             logger.warning(
                 f"Unsupported aggregation method: {self.config.aggregation_method}"
             )
-            aggregated_weights = self.aggregator.federated_averaging(valid_updates)
+            aggregated_weights = self.aggregator.federated_averaging(
+                valid_updates
+            )
 
         # Update global model weights
         self.global_model_weights = aggregated_weights
@@ -722,7 +753,9 @@ class FederatedServer:
         """
         with self.round_lock:
             if self.current_round >= self.config.max_rounds:
-                logger.info("Maximum rounds reached, stopping federated training")
+                logger.info(
+                    "Maximum rounds reached, stopping federated training"
+                )
                 return None
 
             # Select clients for this round
@@ -732,14 +765,18 @@ class FederatedServer:
             )
 
             if len(selected_clients) < self.config.min_clients_per_round:
-                logger.warning(f"Not enough clients for round {self.current_round}")
+                logger.warning(
+                    f"Not enough clients for round {self.current_round}"
+                )
                 return None
 
             # Create new round
             federated_round = FederatedRound(
                 round_number=self.current_round,
                 start_time=datetime.now(),
-                participating_clients=[client.client_id for client in selected_clients],
+                participating_clients=[
+                    client.client_id for client in selected_clients
+                ],
             )
 
             # Update client status
@@ -754,7 +791,9 @@ class FederatedServer:
             )
             return federated_round
 
-    def complete_federated_round(self, client_updates: List[ModelUpdate]) -> bool:
+    def complete_federated_round(
+        self, client_updates: List[ModelUpdate]
+    ) -> bool:
         """
         Complete the current federated round with client updates.
 
@@ -809,7 +848,9 @@ class FederatedServer:
                     if update.client_id in self.clients:
                         client = self.clients[update.client_id]
                         client.status = ClientStatus.READY
-                        client.performance_metrics.update(update.validation_metrics)
+                        client.performance_metrics.update(
+                            update.validation_metrics
+                        )
                         client.update_last_seen()
 
                 # Update server metrics

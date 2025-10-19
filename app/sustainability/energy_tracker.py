@@ -37,7 +37,9 @@ try:
     CODECARBON_AVAILABLE = True
 except ImportError:
     CODECARBON_AVAILABLE = False
-    warnings.warn("CodeCarbon not available. Install with: pip install codecarbon")
+    warnings.warn(
+        "CodeCarbon not available. Install with: pip install codecarbon"
+    )
 
 try:
     from ..core.logging import get_audit_logger, get_logger
@@ -220,7 +222,9 @@ class SystemEnergyMonitor(EnergyMonitor):
                 self.gpus = GPUtil.getGPUs()
                 if not self.gpus:
                     self.gpu_available = False
-                    logger.warning("No GPUs detected despite CUDA availability")
+                    logger.warning(
+                        "No GPUs detected despite CUDA availability"
+                    )
             except Exception as e:
                 self.gpu_available = False
                 logger.warning(f"GPU monitoring disabled due to error: {e}")
@@ -284,9 +288,15 @@ class SystemEnergyMonitor(EnergyMonitor):
 
         return EnergyMeasurement(
             timestamp=current_time,
-            cpu_energy_kwh=round(cpu_energy_kwh, self.config.measurement_precision),
-            gpu_energy_kwh=round(gpu_energy_kwh, self.config.measurement_precision),
-            total_energy_kwh=round(total_energy_kwh, self.config.measurement_precision),
+            cpu_energy_kwh=round(
+                cpu_energy_kwh, self.config.measurement_precision
+            ),
+            gpu_energy_kwh=round(
+                gpu_energy_kwh, self.config.measurement_precision
+            ),
+            total_energy_kwh=round(
+                total_energy_kwh, self.config.measurement_precision
+            ),
             cpu_utilization=round(cpu_percent, 2),
             gpu_utilization=round(gpu_utilization, 2),
             memory_usage_gb=round(memory.used / (1024**3), 2),
@@ -316,16 +326,28 @@ class SystemEnergyMonitor(EnergyMonitor):
     def _get_gpu_stats(self) -> Dict[str, float]:
         """Get GPU statistics."""
         if not self.gpu_available:
-            return {"utilization": 0.0, "memory_used_gb": 0.0, "power_watts": 0.0}
+            return {
+                "utilization": 0.0,
+                "memory_used_gb": 0.0,
+                "power_watts": 0.0,
+            }
 
         try:
             if not GPUTIL_AVAILABLE:
-                return {"utilization": 0.0, "memory_used_gb": 0.0, "power_watts": 0.0}
+                return {
+                    "utilization": 0.0,
+                    "memory_used_gb": 0.0,
+                    "power_watts": 0.0,
+                }
 
             # Refresh GPU list
             gpus = GPUtil.getGPUs()
             if not gpus:
-                return {"utilization": 0.0, "memory_used_gb": 0.0, "power_watts": 0.0}
+                return {
+                    "utilization": 0.0,
+                    "memory_used_gb": 0.0,
+                    "power_watts": 0.0,
+                }
 
             # Use first GPU for simplicity (can be extended for multi-GPU)
             gpu = gpus[0]
@@ -351,7 +373,11 @@ class SystemEnergyMonitor(EnergyMonitor):
 
         except Exception as e:
             logger.warning(f"Failed to get GPU stats: {e}")
-            return {"utilization": 0.0, "memory_used_gb": 0.0, "power_watts": 0.0}
+            return {
+                "utilization": 0.0,
+                "memory_used_gb": 0.0,
+                "power_watts": 0.0,
+            }
 
 
 class CodeCarbonEnergyMonitor(EnergyMonitor):
@@ -359,7 +385,9 @@ class CodeCarbonEnergyMonitor(EnergyMonitor):
 
     def __init__(self, config: EnergyConfig):
         if not CODECARBON_AVAILABLE:
-            raise ImportError("CodeCarbon is required for CodeCarbonEnergyMonitor")
+            raise ImportError(
+                "CodeCarbon is required for CodeCarbonEnergyMonitor"
+            )
 
         self.config = config
         self.tracker = None
@@ -469,7 +497,9 @@ class EnergyTracker:
         # Initialize appropriate monitor
         self._initialize_monitor()
 
-        logger.info(f"Energy tracker initialized with {type(self.monitor).__name__}")
+        logger.info(
+            f"Energy tracker initialized with {type(self.monitor).__name__}"
+        )
 
     def _initialize_monitor(self):
         """Initialize the appropriate energy monitor."""
@@ -489,7 +519,8 @@ class EnergyTracker:
     def track(self, experiment_id: str = None):
         """Context manager for energy tracking."""
         experiment_id = (
-            experiment_id or f"experiment_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            experiment_id
+            or f"experiment_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         )
 
         try:
@@ -508,7 +539,8 @@ class EnergyTracker:
             raise RuntimeError("Monitor not initialized")
 
         experiment_id = (
-            experiment_id or f"experiment_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            experiment_id
+            or f"experiment_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         )
         self.experiment_id = experiment_id
 
@@ -593,13 +625,17 @@ class EnergyTracker:
                 self.measurements.append(measurement)
 
                 # Wait for next measurement
-                if self.stop_monitoring_flag.wait(self.config.tracking_interval):
+                if self.stop_monitoring_flag.wait(
+                    self.config.tracking_interval
+                ):
                     break  # Stop flag was set
 
             except Exception as e:
                 logger.error(f"Error in background monitoring: {e}")
                 # Continue monitoring despite errors
-                if self.stop_monitoring_flag.wait(self.config.tracking_interval):
+                if self.stop_monitoring_flag.wait(
+                    self.config.tracking_interval
+                ):
                     break
 
     def _generate_report(self) -> EnergyReport:
@@ -623,7 +659,9 @@ class EnergyTracker:
 
         # Calculate peaks
         peak_memory = max([m.memory_usage_gb for m in self.measurements])
-        peak_gpu_memory = max([m.gpu_memory_usage_gb for m in self.measurements])
+        peak_gpu_memory = max(
+            [m.gpu_memory_usage_gb for m in self.measurements]
+        )
         peak_power = max([m.power_draw_watts for m in self.measurements])
 
         # Get carbon emissions if available
@@ -672,12 +710,16 @@ class EnergyTracker:
             output_dir.mkdir(parents=True, exist_ok=True)
 
             # Save detailed report
-            report_file = output_dir / f"{report.experiment_id}_energy_report.json"
+            report_file = (
+                output_dir / f"{report.experiment_id}_energy_report.json"
+            )
             with open(report_file, "w") as f:
                 json.dump(report.to_dict(), f, indent=2)
 
             # Save measurements separately for analysis
-            measurements_file = output_dir / f"{report.experiment_id}_measurements.json"
+            measurements_file = (
+                output_dir / f"{report.experiment_id}_measurements.json"
+            )
             measurements_data = [m.to_dict() for m in report.measurements]
             with open(measurements_file, "w") as f:
                 json.dump(measurements_data, f, indent=2)
@@ -711,7 +753,9 @@ class EnergyTracker:
 # Utility functions for easy integration
 
 
-def track_energy(experiment_id: str = None, config: Optional[EnergyConfig] = None):
+def track_energy(
+    experiment_id: str = None, config: Optional[EnergyConfig] = None
+):
     """
     Context manager for energy tracking.
 
@@ -753,7 +797,10 @@ def measure_training_energy(
 
 
 def measure_inference_energy(
-    model, data_loader, experiment_id: str = None, config: Optional[EnergyConfig] = None
+    model,
+    data_loader,
+    experiment_id: str = None,
+    config: Optional[EnergyConfig] = None,
 ):
     """
     Measure energy consumption during model inference.

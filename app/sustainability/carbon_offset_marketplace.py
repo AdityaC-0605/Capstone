@@ -31,7 +31,10 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from core.logging import get_audit_logger, get_logger
-    from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()
@@ -103,7 +106,9 @@ class CarbonOffsetProject:
             "estimated_annual_reduction_kg": self.estimated_annual_reduction_kg,
             "verification_id": self.verification_id,
             "verification_date": (
-                self.verification_date.isoformat() if self.verification_date else None
+                self.verification_date.isoformat()
+                if self.verification_date
+                else None
             ),
             "registry_url": self.registry_url,
         }
@@ -150,7 +155,9 @@ class CarbonOffsetPurchase:
             "offset_certificate_id": self.offset_certificate_id,
             "verification_status": self.verification_status,
             "verification_date": (
-                self.verification_date.isoformat() if self.verification_date else None
+                self.verification_date.isoformat()
+                if self.verification_date
+                else None
             ),
             "ai_experiment_id": self.ai_experiment_id,
             "carbon_footprint_id": self.carbon_footprint_id,
@@ -164,7 +171,9 @@ class CarbonOffsetConfig:
 
     # Marketplace settings
     enable_automatic_offsets: bool = True
-    auto_offset_threshold_kg: float = 0.01  # Auto-purchase offsets above this threshold
+    auto_offset_threshold_kg: float = (
+        0.01  # Auto-purchase offsets above this threshold
+    )
     offset_ratio: float = 1.0  # 1.0 = 100% offset, 0.5 = 50% offset
 
     # Project preferences
@@ -231,7 +240,9 @@ class CarbonOffsetMarketplace:
             # In a real implementation, this would connect to actual marketplace APIs
             # For demo purposes, we'll create mock projects
             self._load_mock_projects()
-            logger.info(f"Loaded {len(self.available_projects)} carbon offset projects")
+            logger.info(
+                f"Loaded {len(self.available_projects)} carbon offset projects"
+            )
 
         except Exception as e:
             logger.error(f"Failed to initialize marketplace: {e}")
@@ -342,12 +353,16 @@ class CarbonOffsetMarketplace:
                             "verification_status", "pending"
                         ),
                         verification_date=(
-                            datetime.fromisoformat(purchase_data["verification_date"])
+                            datetime.fromisoformat(
+                                purchase_data["verification_date"]
+                            )
                             if purchase_data.get("verification_date")
                             else None
                         ),
                         ai_experiment_id=purchase_data.get("ai_experiment_id"),
-                        carbon_footprint_id=purchase_data.get("carbon_footprint_id"),
+                        carbon_footprint_id=purchase_data.get(
+                            "carbon_footprint_id"
+                        ),
                         offset_ratio=purchase_data.get("offset_ratio", 1.0),
                     )
                     self.purchase_history.append(purchase)
@@ -366,7 +381,9 @@ class CarbonOffsetMarketplace:
             return
 
         try:
-            purchases_data = [purchase.to_dict() for purchase in self.purchase_history]
+            purchases_data = [
+                purchase.to_dict() for purchase in self.purchase_history
+            ]
 
             purchases_file = Path(self.config.purchases_file)
             with open(purchases_file, "w") as f:
@@ -396,7 +413,9 @@ class CarbonOffsetMarketplace:
         # Filter by price
         if max_price_per_ton:
             filtered_projects = [
-                p for p in filtered_projects if p.price_per_ton_usd <= max_price_per_ton
+                p
+                for p in filtered_projects
+                if p.price_per_ton_usd <= max_price_per_ton
             ]
 
         # Filter by available credits
@@ -413,7 +432,9 @@ class CarbonOffsetMarketplace:
         return filtered_projects
 
     def calculate_required_offset(
-        self, carbon_footprint: CarbonFootprint, offset_ratio: Optional[float] = None
+        self,
+        carbon_footprint: CarbonFootprint,
+        offset_ratio: Optional[float] = None,
     ) -> float:
         """Calculate required carbon offset amount."""
 
@@ -441,7 +462,8 @@ class CarbonOffsetMarketplace:
             p
             for p in self.available_projects
             if (
-                p.available_credits >= required_offset_kg / 1000  # Convert kg to tonnes
+                p.available_credits
+                >= required_offset_kg / 1000  # Convert kg to tonnes
                 and p.min_purchase_kg <= required_offset_kg
                 and p.project_type in self.config.preferred_project_types
                 and p.verification_standard
@@ -597,7 +619,9 @@ class CarbonOffsetMarketplace:
         )
 
         monthly_purchases = [
-            p for p in self.purchase_history if p.purchase_date >= current_month
+            p
+            for p in self.purchase_history
+            if p.purchase_date >= current_month
         ]
 
         return sum(p.total_cost_usd for p in monthly_purchases)
@@ -629,8 +653,12 @@ class CarbonOffsetMarketplace:
                 project_type = project.project_type.value
                 if project_type not in project_type_breakdown:
                     project_type_breakdown[project_type] = {"kg": 0, "cost": 0}
-                project_type_breakdown[project_type]["kg"] += purchase.amount_kg
-                project_type_breakdown[project_type]["cost"] += purchase.total_cost_usd
+                project_type_breakdown[project_type][
+                    "kg"
+                ] += purchase.amount_kg
+                project_type_breakdown[project_type][
+                    "cost"
+                ] += purchase.total_cost_usd
 
         return {
             "period_days": days,
@@ -662,7 +690,11 @@ class CarbonOffsetMarketplace:
 
         # Find project details
         project = next(
-            (p for p in self.available_projects if p.project_id == purchase.project_id),
+            (
+                p
+                for p in self.available_projects
+                if p.project_id == purchase.project_id
+            ),
             None,
         )
 
@@ -694,7 +726,9 @@ class CarbonOffsetMarketplace:
 
         # Calculate neutrality ratio
         neutrality_ratio = (
-            total_offset_kg / total_ai_carbon_kg if total_ai_carbon_kg > 0 else 0
+            total_offset_kg / total_ai_carbon_kg
+            if total_ai_carbon_kg > 0
+            else 0
         )
 
         is_carbon_neutral = neutrality_ratio >= 1.0
@@ -730,7 +764,9 @@ def auto_offset_carbon_footprint(
     """Automatically purchase carbon offset for a carbon footprint."""
 
     marketplace = create_carbon_offset_marketplace(config)
-    return marketplace.purchase_carbon_offset(carbon_footprint, ai_experiment_id)
+    return marketplace.purchase_carbon_offset(
+        carbon_footprint, ai_experiment_id
+    )
 
 
 def get_carbon_neutrality_report(

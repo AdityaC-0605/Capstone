@@ -13,7 +13,6 @@ def test_basic_imports():
         sys.path.insert(0, str(Path(__file__).parent.parent / "app"))
 
         # Test core imports
-        from app.core.config import load_config
         from app.core.logging import get_logger
 
         # Test that we can create basic objects
@@ -35,7 +34,9 @@ def test_flower_import():
     try:
         import flower
 
-        print(f"✅ Flower imported successfully, version: {flower.__version__}")
+        print(
+            f"✅ Flower imported successfully, version: {flower.__version__}"
+        )
         assert flower.__version__ is not None
     except ImportError as e:
         print(f"❌ Flower import error: {e}")

@@ -22,7 +22,10 @@ from jinja2 import Template
 
 try:
     from ..core.logging import get_logger
-    from ..sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from ..sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from ..sustainability.energy_tracker import EnergyReport, EnergyTracker
     from ..sustainability.sustainability_monitor import SustainabilityMonitor
 except ImportError:
@@ -31,7 +34,10 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent.parent))
     from src.core.logging import get_logger
-    from src.sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from src.sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from src.sustainability.energy_tracker import EnergyReport, EnergyTracker
     from src.sustainability.sustainability_monitor import SustainabilityMonitor
 
@@ -98,7 +104,9 @@ class ESGComplianceConfig:
     )
 
     # Output settings
-    output_formats: List[str] = field(default_factory=lambda: ["json", "pdf", "excel"])
+    output_formats: List[str] = field(
+        default_factory=lambda: ["json", "pdf", "excel"]
+    )
     output_directory: str = "esg_reports"
 
 
@@ -278,16 +286,22 @@ class TCFDReportGenerator:
         ]
 
     def generate_report(
-        self, data_points: Dict[str, ESGDataPoint], company_info: Dict[str, Any]
+        self,
+        data_points: Dict[str, ESGDataPoint],
+        company_info: Dict[str, Any],
     ) -> ESGReport:
         """Generate TCFD compliance report."""
         try:
-            report_id = f"tcfd_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            report_id = (
+                f"tcfd_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
             period_end = datetime.now()
             period_start = period_end - timedelta(days=30)  # Monthly report
 
             # Calculate compliance score
-            compliance_score = self._calculate_tcfd_compliance_score(data_points)
+            compliance_score = self._calculate_tcfd_compliance_score(
+                data_points
+            )
 
             # Generate executive summary
             executive_summary = self._generate_executive_summary(
@@ -300,7 +314,9 @@ class TCFDReportGenerator:
             )
 
             # Determine verification status
-            verification_status = self._determine_verification_status(data_points)
+            verification_status = self._determine_verification_status(
+                data_points
+            )
 
             report = ESGReport(
                 report_id=report_id,
@@ -341,9 +357,13 @@ class TCFDReportGenerator:
                     if indicator.indicator_id.startswith(
                         "tcfd_met"
                     ):  # Metrics - lower is better
-                        score = max(0, 1 - (data_point.value / indicator.target_value))
+                        score = max(
+                            0, 1 - (data_point.value / indicator.target_value)
+                        )
                     else:  # Other indicators - higher is better
-                        score = min(1, data_point.value / indicator.target_value)
+                        score = min(
+                            1, data_point.value / indicator.target_value
+                        )
                 else:
                     score = 0.5  # Default score if no target
 
@@ -353,7 +373,9 @@ class TCFDReportGenerator:
                 total_score += score * indicator.weight
                 total_weight += indicator.weight
 
-        return total_score / max(1, total_weight) * 100  # Convert to percentage
+        return (
+            total_score / max(1, total_weight) * 100
+        )  # Convert to percentage
 
     def _generate_executive_summary(
         self, data_points: Dict[str, ESGDataPoint], compliance_score: float
@@ -369,7 +391,9 @@ class TCFDReportGenerator:
         scope3_emissions = data_points.get(
             "tcfd_met_03", ESGDataPoint("", 0, datetime.now(), "")
         ).value
-        total_emissions = scope1_emissions + scope2_emissions + scope3_emissions
+        total_emissions = (
+            scope1_emissions + scope2_emissions + scope3_emissions
+        )
 
         energy_consumption = data_points.get(
             "tcfd_met_04", ESGDataPoint("", 0, datetime.now(), "")
@@ -380,13 +404,16 @@ class TCFDReportGenerator:
             "compliance_level": self._get_compliance_level(compliance_score),
             "total_emissions_tco2e": total_emissions,
             "energy_consumption_mwh": energy_consumption,
-            "emissions_intensity": total_emissions / max(1, energy_consumption),
+            "emissions_intensity": total_emissions
+            / max(1, energy_consumption),
             "key_achievements": [
                 f"TCFD compliance score: {compliance_score:.1f}%",
                 f"Total emissions: {total_emissions:.1f} tCO2e",
                 f"Energy consumption: {energy_consumption:.1f} MWh",
             ],
-            "areas_for_improvement": self._identify_improvement_areas(data_points),
+            "areas_for_improvement": self._identify_improvement_areas(
+                data_points
+            ),
         }
 
     def _generate_recommendations(
@@ -399,7 +426,9 @@ class TCFDReportGenerator:
             recommendations.append(
                 "Implement comprehensive climate risk assessment framework"
             )
-            recommendations.append("Establish board-level climate governance structure")
+            recommendations.append(
+                "Establish board-level climate governance structure"
+            )
 
         # Check specific indicators
         scope1_emissions = data_points.get(
@@ -586,16 +615,22 @@ class SASBReportGenerator:
         ]
 
     def generate_report(
-        self, data_points: Dict[str, ESGDataPoint], company_info: Dict[str, Any]
+        self,
+        data_points: Dict[str, ESGDataPoint],
+        company_info: Dict[str, Any],
     ) -> ESGReport:
         """Generate SASB compliance report."""
         try:
-            report_id = f"sasb_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            report_id = (
+                f"sasb_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
             period_end = datetime.now()
             period_start = period_end - timedelta(days=30)  # Monthly report
 
             # Calculate compliance score
-            compliance_score = self._calculate_sasb_compliance_score(data_points)
+            compliance_score = self._calculate_sasb_compliance_score(
+                data_points
+            )
 
             # Generate executive summary
             executive_summary = self._generate_executive_summary(
@@ -608,7 +643,9 @@ class SASBReportGenerator:
             )
 
             # Determine verification status
-            verification_status = self._determine_verification_status(data_points)
+            verification_status = self._determine_verification_status(
+                data_points
+            )
 
             report = ESGReport(
                 report_id=report_id,
@@ -650,11 +687,17 @@ class SASBReportGenerator:
                         "sasb_soc_03"
                     ]:  # Incidents - lower is better
                         score = max(
-                            0, 1 - (data_point.value / max(1, indicator.target_value))
+                            0,
+                            1
+                            - (
+                                data_point.value
+                                / max(1, indicator.target_value)
+                            ),
                         )
                     else:  # Other indicators - higher is better
                         score = min(
-                            1, data_point.value / max(1, indicator.target_value)
+                            1,
+                            data_point.value / max(1, indicator.target_value),
                         )
                 else:
                     score = 0.5  # Default score if no target
@@ -665,7 +708,9 @@ class SASBReportGenerator:
                 total_score += score * indicator.weight
                 total_weight += indicator.weight
 
-        return total_score / max(1, total_weight) * 100  # Convert to percentage
+        return (
+            total_score / max(1, total_weight) * 100
+        )  # Convert to percentage
 
     def _generate_executive_summary(
         self, data_points: Dict[str, ESGDataPoint], compliance_score: float
@@ -698,7 +743,9 @@ class SASBReportGenerator:
                 f"Employee diversity: {employee_diversity:.1f}%",
                 f"Board independence: {board_independence:.1f}%",
             ],
-            "areas_for_improvement": self._identify_improvement_areas(data_points),
+            "areas_for_improvement": self._identify_improvement_areas(
+                data_points
+            ),
         }
 
     def _generate_recommendations(
@@ -709,7 +756,9 @@ class SASBReportGenerator:
 
         if compliance_score < 70:
             recommendations.append("Strengthen ESG governance framework")
-            recommendations.append("Implement comprehensive ESG risk management")
+            recommendations.append(
+                "Implement comprehensive ESG risk management"
+            )
 
         # Check specific indicators
         ghg_emissions = data_points.get(
@@ -879,7 +928,9 @@ class ESGComplianceAutomation:
         for indicator_id, data_points in self.esg_data.items():
             if data_points:
                 # Get the most recent data point
-                latest_data_point = max(data_points, key=lambda dp: dp.timestamp)
+                latest_data_point = max(
+                    data_points, key=lambda dp: dp.timestamp
+                )
                 latest_data[indicator_id] = latest_data_point
 
         return latest_data
@@ -890,10 +941,13 @@ class ESGComplianceAutomation:
             # Save as JSON
             if "json" in self.config.output_formats:
                 json_path = (
-                    Path(self.config.output_directory) / f"{report.report_id}.json"
+                    Path(self.config.output_directory)
+                    / f"{report.report_id}.json"
                 )
                 with open(json_path, "w") as f:
-                    json.dump(self._report_to_dict(report), f, indent=2, default=str)
+                    json.dump(
+                        self._report_to_dict(report), f, indent=2, default=str
+                    )
                 report.file_path = str(json_path)
 
             logger.info(f"Report saved: {report.report_id}")
@@ -952,7 +1006,9 @@ class ESGComplianceAutomation:
             environmental_score = self._calculate_pillar_score(
                 latest_data, ESGCategory.ENVIRONMENTAL
             )
-            social_score = self._calculate_pillar_score(latest_data, ESGCategory.SOCIAL)
+            social_score = self._calculate_pillar_score(
+                latest_data, ESGCategory.SOCIAL
+            )
             governance_score = self._calculate_pillar_score(
                 latest_data, ESGCategory.GOVERNANCE
             )
@@ -1017,10 +1073,17 @@ class ESGComplianceAutomation:
             if "tcfd_met_01" in latest_data:
                 current_emissions = latest_data["tcfd_met_01"].value
                 # Compare with historical average (simplified)
-                historical_avg = 200.0  # This would be calculated from historical data
-                increase = (current_emissions - historical_avg) / max(1, historical_avg)
+                historical_avg = (
+                    200.0  # This would be calculated from historical data
+                )
+                increase = (current_emissions - historical_avg) / max(
+                    1, historical_avg
+                )
 
-                if increase > self.config.alert_thresholds["carbon_intensity_increase"]:
+                if (
+                    increase
+                    > self.config.alert_thresholds["carbon_intensity_increase"]
+                ):
                     alerts.append(
                         {
                             "type": "carbon_intensity_increase",
@@ -1040,14 +1103,19 @@ class ESGComplianceAutomation:
                 if latest_data
                 else 1.0
             )
-            if avg_quality < self.config.alert_thresholds["data_quality_below"]:
+            if (
+                avg_quality
+                < self.config.alert_thresholds["data_quality_below"]
+            ):
                 alerts.append(
                     {
                         "type": "data_quality_below",
                         "severity": "medium",
                         "message": f"Average data quality below threshold: {avg_quality:.2f}",
                         "current_value": avg_quality,
-                        "threshold": self.config.alert_thresholds["data_quality_below"],
+                        "threshold": self.config.alert_thresholds[
+                            "data_quality_below"
+                        ],
                         "timestamp": datetime.now().isoformat(),
                     }
                 )
@@ -1114,7 +1182,9 @@ def demo_esg_compliance_automation() -> Dict[str, Any]:
 
     # Collect all sample data
     for indicator_id, value, source, quality, verified in sample_data:
-        esg_system.collect_esg_data(indicator_id, value, source, quality, verified)
+        esg_system.collect_esg_data(
+            indicator_id, value, source, quality, verified
+        )
 
     # Generate compliance reports
     reports = esg_system.generate_compliance_reports(company_info)

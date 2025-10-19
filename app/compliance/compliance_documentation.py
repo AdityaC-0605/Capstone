@@ -137,7 +137,9 @@ class ComplianceDocumentationGenerator:
         # Get template for framework
         template_id = f"{framework.value}_compliance_report"
         if template_id not in self.templates:
-            raise ValueError(f"No template found for framework: {framework.value}")
+            raise ValueError(
+                f"No template found for framework: {framework.value}"
+            )
 
         template = self.templates[template_id]
 
@@ -189,7 +191,9 @@ class ComplianceDocumentationGenerator:
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(report_content)
 
-        logger.info(f"Generated {framework.value} compliance report: {filepath}")
+        logger.info(
+            f"Generated {framework.value} compliance report: {filepath}"
+        )
 
         return str(filepath)
 
@@ -211,7 +215,9 @@ class ComplianceDocumentationGenerator:
 
         # Get violations in period
         period_violations = [
-            v for v in validator.violations if start_date <= v.timestamp <= end_date
+            v
+            for v in validator.violations
+            if start_date <= v.timestamp <= end_date
         ]
 
         # Generate report content
@@ -238,7 +244,9 @@ class ComplianceDocumentationGenerator:
             report_content += f"- **{user}:** {count} activities\n"
 
         report_content += "\n### Action Type Breakdown\n"
-        for action, count in list(audit_report["action_breakdown"].items())[:5]:
+        for action, count in list(audit_report["action_breakdown"].items())[
+            :5
+        ]:
             report_content += f"- **{action}:** {count} occurrences\n"
 
         report_content += "\n## Compliance Events\n\n"
@@ -251,7 +259,9 @@ class ComplianceDocumentationGenerator:
                 status = "resolved" if violation.resolved else "open"
                 report_content += f"| {violation.timestamp.strftime('%Y-%m-%d %H:%M')} | {violation.rule_id} | {violation.severity.value} | {status} |\n"
         else:
-            report_content += "No compliance violations detected during this period.\n"
+            report_content += (
+                "No compliance violations detected during this period.\n"
+            )
 
         report_content += f"""
 ## Recommendations
@@ -266,7 +276,9 @@ class ComplianceDocumentationGenerator:
 """
 
         # Save report
-        filename = f"audit_trail_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+        filename = (
+            f"audit_trail_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+        )
         filepath = self.output_dir / filename
 
         with open(filepath, "w", encoding="utf-8") as f:
@@ -298,7 +310,9 @@ class ComplianceDocumentationGenerator:
                 reports[framework.value] = report_path
                 logger.info(f"Generated {framework.value} compliance report")
             except Exception as e:
-                logger.error(f"Failed to generate {framework.value} report: {e}")
+                logger.error(
+                    f"Failed to generate {framework.value} report: {e}"
+                )
 
         # Generate audit trail report
         try:
@@ -336,7 +350,9 @@ Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         for report_type, report_path in reports.items():
             if report_type != "index":
                 filename = Path(report_path).name
-                index_content += f"- [{report_type.upper()} Report](./{filename})\n"
+                index_content += (
+                    f"- [{report_type.upper()} Report](./{filename})\n"
+                )
 
         index_content += f"""
 ## Report Descriptions

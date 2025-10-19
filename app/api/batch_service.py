@@ -181,7 +181,9 @@ class BatchJob:
         """Calculate success rate."""
         if self.processed_applications == 0:
             return 0.0
-        return (self.successful_predictions / self.processed_applications) * 100
+        return (
+            self.successful_predictions / self.processed_applications
+        ) * 100
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert job to dictionary."""
@@ -190,7 +192,9 @@ class BatchJob:
             "status": self.status.value,
             "priority": self.priority.value,
             "created_at": self.created_at.isoformat(),
-            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "started_at": (
+                self.started_at.isoformat() if self.started_at else None
+            ),
             "completed_at": (
                 self.completed_at.isoformat() if self.completed_at else None
             ),
@@ -265,7 +269,9 @@ class MemoryBatchQueue(BatchQueue):
             if not inserted:
                 self.queue.append(job.job_id)
 
-            logger.info(f"Job {job.job_id} enqueued with priority {job.priority.value}")
+            logger.info(
+                f"Job {job.job_id} enqueued with priority {job.priority.value}"
+            )
             return job.job_id
 
     async def dequeue(self) -> Optional[BatchJob]:
@@ -311,7 +317,9 @@ class RedisBatchQueue(BatchQueue):
         if not REDIS_AVAILABLE:
             raise ImportError("Redis is required for RedisBatchQueue")
 
-        self.redis_client = redis.from_url(config.redis_url or "redis://localhost:6379")
+        self.redis_client = redis.from_url(
+            config.redis_url or "redis://localhost:6379"
+        )
         self.job_key_prefix = "batch_job:"
         self.queue_key = "batch_queue"
 
@@ -425,7 +433,9 @@ class RedisBatchQueue(BatchQueue):
 class BatchProcessor:
     """Batch job processor with async processing capabilities."""
 
-    def __init__(self, config: BatchJobConfig, inference_service: Optional[Any] = None):
+    def __init__(
+        self, config: BatchJobConfig, inference_service: Optional[Any] = None
+    ):
         self.config = config
         if inference_service:
             self.inference_service = inference_service
@@ -473,7 +483,9 @@ class BatchProcessor:
         # Create results directory
         Path(config.result_storage_dir).mkdir(parents=True, exist_ok=True)
 
-        logger.info(f"Batch processor initialized with {config.queue_backend} queue")
+        logger.info(
+            f"Batch processor initialized with {config.queue_backend} queue"
+        )
 
     async def submit_batch_job(
         self,
@@ -567,7 +579,9 @@ class BatchProcessor:
         logger.info(f"Batch job {job_id} cancelled")
         return True
 
-    async def list_jobs(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def list_jobs(
+        self, status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """List batch jobs."""
         status_enum = BatchJobStatus(status) if status else None
         jobs = await self.queue.list_jobs(status_enum)
@@ -585,7 +599,10 @@ class BatchProcessor:
             try:
                 while self.is_processing:
                     # Check if we can process more jobs
-                    if len(self.active_jobs) >= self.config.max_concurrent_jobs:
+                    if (
+                        len(self.active_jobs)
+                        >= self.config.max_concurrent_jobs
+                    ):
                         await asyncio.sleep(1)
                         continue
 
@@ -624,7 +641,9 @@ class BatchProcessor:
 
         # Wait for tasks to complete
         if self.active_jobs:
-            await asyncio.gather(*self.active_jobs.values(), return_exceptions=True)
+            await asyncio.gather(
+                *self.active_jobs.values(), return_exceptions=True
+            )
 
         self.active_jobs.clear()
         logger.info("Batch processing stopped and all jobs cancelled")
@@ -702,7 +721,10 @@ class BatchProcessor:
         for app_data in chunk:
             try:
                 # Create prediction request
-                from .inference_service import CreditApplication, PredictionRequest
+                from .inference_service import (
+                    CreditApplication,
+                    PredictionRequest,
+                )
 
                 # Convert dict to CreditApplication
                 credit_app = CreditApplication(**app_data)
@@ -715,10 +737,8 @@ class BatchProcessor:
                 )
 
                 # Make prediction
-                prediction = (
-                    await self.inference_service._make_single_prediction_internal(
-                        prediction_request
-                    )
+                prediction = await self.inference_service._make_single_prediction_internal(
+                    prediction_request
                 )
 
                 # Store result
@@ -730,7 +750,9 @@ class BatchProcessor:
                 job.successful_predictions += 1
 
             except Exception as e:
-                logger.error(f"Error processing application in job {job.job_id}: {e}")
+                logger.error(
+                    f"Error processing application in job {job.job_id}: {e}"
+                )
                 job.errors.append(f"Application processing failed: {str(e)}")
                 job.failed_predictions += 1
 
@@ -740,7 +762,8 @@ class BatchProcessor:
         """Save job results to file."""
         try:
             results_file = (
-                Path(self.config.result_storage_dir) / f"{job.job_id}_results.json"
+                Path(self.config.result_storage_dir)
+                / f"{job.job_id}_results.json"
             )
 
             results_data = {
@@ -795,7 +818,9 @@ class BatchProcessor:
                     timeout=aiohttp.ClientTimeout(total=30),
                 ) as response:
                     if response.status == 200:
-                        logger.info(f"Callback sent successfully for job {job.job_id}")
+                        logger.info(
+                            f"Callback sent successfully for job {job.job_id}"
+                        )
                     else:
                         logger.warning(
                             f"Callback failed for job {job.job_id}: {response.status}"
@@ -809,7 +834,8 @@ class BatchProcessor:
 
 
 def create_batch_processor(
-    config: Optional[BatchJobConfig] = None, inference_service: Optional[Any] = None
+    config: Optional[BatchJobConfig] = None,
+    inference_service: Optional[Any] = None,
 ) -> BatchProcessor:
     """Create batch processor instance."""
     config = config or BatchJobConfig()

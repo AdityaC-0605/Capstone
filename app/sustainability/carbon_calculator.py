@@ -81,7 +81,8 @@ class EnergyMix:
             "region": self.region,
             "country_code": self.country_code,
             "sources": {
-                source.value: percentage for source, percentage in self.sources.items()
+                source.value: percentage
+                for source, percentage in self.sources.items()
             },
             "carbon_intensity_gco2_kwh": self.carbon_intensity_gco2_kwh,
             "last_updated": self.last_updated.isoformat(),
@@ -104,7 +105,9 @@ class CarbonFootprintConfig:
 
     # Calculation settings
     include_embodied_carbon: bool = True
-    embodied_carbon_factor: float = 0.1  # Additional 10% for hardware manufacturing
+    embodied_carbon_factor: float = (
+        0.1  # Additional 10% for hardware manufacturing
+    )
 
     # Budget and alerting
     enable_budget_monitoring: bool = True
@@ -160,7 +163,9 @@ class CarbonFootprint:
             "total_emissions_kg": self.total_emissions_kg,
             "region": self.region,
             "carbon_intensity_gco2_kwh": self.carbon_intensity_gco2_kwh,
-            "energy_mix": self.energy_mix.to_dict() if self.energy_mix else None,
+            "energy_mix": (
+                self.energy_mix.to_dict() if self.energy_mix else None
+            ),
             "equivalent_metrics": self.equivalent_metrics,
             "offset_cost_usd": self.offset_cost_usd,
         }
@@ -348,14 +353,20 @@ class EnergyMixDatabase:
                     region=mix_data["region"],
                     country_code=mix_data["country_code"],
                     sources=sources,
-                    carbon_intensity_gco2_kwh=mix_data["carbon_intensity_gco2_kwh"],
-                    last_updated=datetime.fromisoformat(mix_data["last_updated"]),
+                    carbon_intensity_gco2_kwh=mix_data[
+                        "carbon_intensity_gco2_kwh"
+                    ],
+                    last_updated=datetime.fromisoformat(
+                        mix_data["last_updated"]
+                    ),
                     data_source=mix_data.get("data_source", "custom"),
                 )
 
                 self.energy_mixes[region_code] = energy_mix
 
-            logger.info(f"Loaded {len(custom_data)} custom energy mix profiles")
+            logger.info(
+                f"Loaded {len(custom_data)} custom energy mix profiles"
+            )
 
         except Exception as e:
             logger.error(f"Failed to load custom energy mix data: {e}")
@@ -374,7 +385,9 @@ class EnergyMixDatabase:
         if energy_mix:
             return energy_mix.carbon_intensity_gco2_kwh
         else:
-            logger.warning(f"Region {region_code} not found, using global average")
+            logger.warning(
+                f"Region {region_code} not found, using global average"
+            )
             return 475.0  # Global average carbon intensity
 
 
@@ -383,7 +396,9 @@ class CarbonCalculator:
 
     def __init__(self, config: Optional[CarbonFootprintConfig] = None):
         self.config = config or CarbonFootprintConfig()
-        self.energy_mix_db = EnergyMixDatabase(self.config.energy_mix_data_path)
+        self.energy_mix_db = EnergyMixDatabase(
+            self.config.energy_mix_data_path
+        )
         self.carbon_history = []
 
         logger.info("Carbon calculator initialized")
@@ -413,7 +428,9 @@ class CarbonCalculator:
         total_emissions_kg = operational_emissions_kg + embodied_emissions_kg
 
         # Calculate equivalent metrics
-        equivalent_metrics = self._calculate_equivalent_metrics(total_emissions_kg)
+        equivalent_metrics = self._calculate_equivalent_metrics(
+            total_emissions_kg
+        )
 
         # Calculate offset cost
         offset_cost_usd = None
@@ -460,15 +477,19 @@ class CarbonCalculator:
 
         return carbon_footprint
 
-    def _calculate_equivalent_metrics(self, emissions_kg: float) -> Dict[str, float]:
+    def _calculate_equivalent_metrics(
+        self, emissions_kg: float
+    ) -> Dict[str, float]:
         """Calculate equivalent metrics for better understanding."""
 
         # Conversion factors (approximate)
         equivalents = {
-            "km_driven_gasoline_car": emissions_kg / 0.251,  # kg CO2/km for average car
+            "km_driven_gasoline_car": emissions_kg
+            / 0.251,  # kg CO2/km for average car
             "km_driven_electric_car": emissions_kg
             / 0.053,  # kg CO2/km for electric car
-            "hours_laptop_use": emissions_kg / 0.0086,  # kg CO2/hour for laptop
+            "hours_laptop_use": emissions_kg
+            / 0.0086,  # kg CO2/hour for laptop
             "smartphone_charges": emissions_kg / 0.0084,  # kg CO2 per charge
             "trees_needed_annual": emissions_kg
             / 21.77,  # kg CO2 absorbed per tree per year
@@ -478,7 +499,9 @@ class CarbonCalculator:
 
         return equivalents
 
-    def track_carbon_budget(self, budget_period: str = "monthly") -> CarbonBudgetStatus:
+    def track_carbon_budget(
+        self, budget_period: str = "monthly"
+    ) -> CarbonBudgetStatus:
         """Track carbon budget usage and generate status report."""
 
         # Get budget limit
@@ -490,7 +513,9 @@ class CarbonCalculator:
         period_start, period_end = self._get_period_boundaries(budget_period)
 
         # Calculate current usage in period
-        current_usage_kg = self._calculate_period_usage(period_start, period_end)
+        current_usage_kg = self._calculate_period_usage(
+            period_start, period_end
+        )
 
         # Calculate remaining budget and usage percentage
         remaining_budget_kg = max(0, budget_limit_kg - current_usage_kg)
@@ -501,7 +526,10 @@ class CarbonCalculator:
 
         # Determine alert level
         is_over_budget = current_usage_kg > budget_limit_kg
-        if is_over_budget or usage_percentage >= self.config.critical_threshold * 100:
+        if (
+            is_over_budget
+            or usage_percentage >= self.config.critical_threshold * 100
+        ):
             alert_level = "critical"
         elif usage_percentage >= self.config.warning_threshold * 100:
             alert_level = "warning"
@@ -552,7 +580,9 @@ class CarbonCalculator:
         else:
             return None
 
-    def _get_period_boundaries(self, budget_period: str) -> Tuple[datetime, datetime]:
+    def _get_period_boundaries(
+        self, budget_period: str
+    ) -> Tuple[datetime, datetime]:
         """Get start and end dates for the budget period."""
         now = datetime.now()
 
@@ -560,7 +590,9 @@ class CarbonCalculator:
             start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             end = start + timedelta(days=1)
         elif budget_period == "monthly":
-            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            start = now.replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
             if now.month == 12:
                 end = start.replace(year=now.year + 1, month=1)
             else:
@@ -626,7 +658,9 @@ class CarbonCalculator:
             daily_emissions[date_key] += footprint.total_emissions_kg
 
         # Calculate statistics
-        total_emissions = sum(fp.total_emissions_kg for fp in recent_footprints)
+        total_emissions = sum(
+            fp.total_emissions_kg for fp in recent_footprints
+        )
         avg_daily_emissions = total_emissions / max(1, len(daily_emissions))
 
         # Find peak day
@@ -652,7 +686,9 @@ class CarbonCalculator:
             sum_x2 = sum(x * x for x in date_nums)
 
             if n * sum_x2 - sum_x * sum_x != 0:
-                slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x)
+                slope = (n * sum_xy - sum_x * sum_y) / (
+                    n * sum_x2 - sum_x * sum_x
+                )
                 trend_direction = (
                     "increasing"
                     if slope > 0
@@ -684,7 +720,9 @@ class CarbonCalculator:
 
         # Find matching experiments
         matching_footprints = [
-            fp for fp in self.carbon_history if fp.experiment_id in experiment_ids
+            fp
+            for fp in self.carbon_history
+            if fp.experiment_id in experiment_ids
         ]
 
         if not matching_footprints:
@@ -754,14 +792,18 @@ class CarbonCalculator:
                     "calculation_timestamp": datetime.now().isoformat(),
                 },
                 "regional_context": (
-                    footprint.energy_mix.to_dict() if footprint.energy_mix else None
+                    footprint.energy_mix.to_dict()
+                    if footprint.energy_mix
+                    else None
                 ),
                 "equivalent_metrics": footprint.equivalent_metrics,
                 "recommendations": self._generate_recommendations(footprint),
             }
 
             # Save report
-            report_file = output_dir / f"{footprint.experiment_id}_carbon_report.json"
+            report_file = (
+                output_dir / f"{footprint.experiment_id}_carbon_report.json"
+            )
             with open(report_file, "w") as f:
                 json.dump(report, f, indent=2)
 
@@ -772,7 +814,9 @@ class CarbonCalculator:
             logger.error(f"Failed to save carbon report: {e}")
             return None
 
-    def _generate_recommendations(self, footprint: CarbonFootprint) -> List[str]:
+    def _generate_recommendations(
+        self, footprint: CarbonFootprint
+    ) -> List[str]:
         """Generate recommendations for reducing carbon footprint."""
 
         recommendations = []
@@ -907,7 +951,8 @@ def calculate_carbon_footprint_from_energy(
 
     # Create a mock energy report
     experiment_id = (
-        experiment_id or f"energy_calc_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        experiment_id
+        or f"energy_calc_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     )
 
     energy_report = EnergyReport(

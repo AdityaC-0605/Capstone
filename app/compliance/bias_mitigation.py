@@ -16,7 +16,12 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
@@ -30,7 +35,10 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from compliance.bias_detector import BiasDetector, FairnessMetricsCalculator
+    from compliance.bias_detector import (
+        BiasDetector,
+        FairnessMetricsCalculator,
+    )
     from core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -97,7 +105,9 @@ class DataReweighting:
 
         for attr in protected_attributes:
             if attr not in data.columns:
-                logger.warning(f"Protected attribute '{attr}' not found in data")
+                logger.warning(
+                    f"Protected attribute '{attr}' not found in data"
+                )
                 continue
 
             # Calculate group sizes
@@ -294,7 +304,9 @@ class AdversarialTrainer:
 
         # Adversary loss (adversary tries to predict protected attributes)
         if protected.dim() == 1 and self.model.adversary[-1].out_features == 1:
-            adv_loss = self.adversary_loss(adversary_pred.squeeze(), protected.float())
+            adv_loss = self.adversary_loss(
+                adversary_pred.squeeze(), protected.float()
+            )
         else:
             adv_loss = self.adversary_loss(adversary_pred, protected)
 
@@ -308,7 +320,9 @@ class AdversarialTrainer:
         pred_loss = self.prediction_loss(predictions, y)
 
         if protected.dim() == 1 and self.model.adversary[-1].out_features == 1:
-            adv_loss = self.adversary_loss(adversary_pred.squeeze(), protected.float())
+            adv_loss = self.adversary_loss(
+                adversary_pred.squeeze(), protected.float()
+            )
         else:
             adv_loss = self.adversary_loss(adversary_pred, protected)
 
@@ -363,15 +377,21 @@ class AdversarialTrainer:
                 batch_protected = batch_protected.to(self.device)
 
                 losses = self.train_step(batch_X, batch_y, batch_protected)
-                train_losses["prediction_loss"].append(losses["prediction_loss"])
+                train_losses["prediction_loss"].append(
+                    losses["prediction_loss"]
+                )
                 train_losses["adversary_loss"].append(losses["adversary_loss"])
 
             # Validation
             val_losses = self.validate(val_loader)
 
             # Record history
-            history["train_pred_loss"].append(np.mean(train_losses["prediction_loss"]))
-            history["train_adv_loss"].append(np.mean(train_losses["adversary_loss"]))
+            history["train_pred_loss"].append(
+                np.mean(train_losses["prediction_loss"])
+            )
+            history["train_adv_loss"].append(
+                np.mean(train_losses["adversary_loss"])
+            )
             history["val_pred_loss"].append(val_losses["prediction_loss"])
             history["val_adv_loss"].append(val_losses["adversary_loss"])
 
@@ -395,7 +415,9 @@ class AdversarialTrainer:
 
         return history
 
-    def validate(self, val_loader: torch.utils.data.DataLoader) -> Dict[str, float]:
+    def validate(
+        self, val_loader: torch.utils.data.DataLoader
+    ) -> Dict[str, float]:
         """Validate the model."""
         self.model.eval()
 
@@ -419,7 +441,9 @@ class AdversarialTrainer:
                         adversary_pred.squeeze(), batch_protected.float()
                     )
                 else:
-                    adv_loss = self.adversary_loss(adversary_pred, batch_protected)
+                    adv_loss = self.adversary_loss(
+                        adversary_pred, batch_protected
+                    )
 
                 val_losses["prediction_loss"].append(pred_loss.item())
                 val_losses["adversary_loss"].append(adv_loss.item())
@@ -472,13 +496,21 @@ class PostProcessingFairness:
         self.protected_groups = np.unique(protected_attributes)
 
         if self.fairness_constraint == "demographic_parity":
-            self._fit_demographic_parity(y_pred_proba, y_true, protected_attributes)
+            self._fit_demographic_parity(
+                y_pred_proba, y_true, protected_attributes
+            )
         elif self.fairness_constraint == "equal_opportunity":
-            self._fit_equal_opportunity(y_pred_proba, y_true, protected_attributes)
+            self._fit_equal_opportunity(
+                y_pred_proba, y_true, protected_attributes
+            )
         elif self.fairness_constraint == "equalized_odds":
-            self._fit_equalized_odds(y_pred_proba, y_true, protected_attributes)
+            self._fit_equalized_odds(
+                y_pred_proba, y_true, protected_attributes
+            )
         else:
-            raise ValueError(f"Unknown fairness constraint: {self.fairness_constraint}")
+            raise ValueError(
+                f"Unknown fairness constraint: {self.fairness_constraint}"
+            )
 
         return self
 
@@ -566,8 +598,12 @@ class PostProcessingFairness:
             best_score = float("inf")
 
             for threshold in thresholds:
-                group_pos_mask = (protected_attributes == group) & (y_true == 1)
-                group_neg_mask = (protected_attributes == group) & (y_true == 0)
+                group_pos_mask = (protected_attributes == group) & (
+                    y_true == 1
+                )
+                group_neg_mask = (protected_attributes == group) & (
+                    y_true == 0
+                )
 
                 if np.sum(group_pos_mask) == 0 or np.sum(group_neg_mask) == 0:
                     continue
@@ -576,7 +612,9 @@ class PostProcessingFairness:
                 group_fpr = np.mean(y_pred_proba[group_neg_mask] >= threshold)
 
                 # Score combines TPR and FPR differences
-                score = abs(group_tpr - overall_tpr) + abs(group_fpr - overall_fpr)
+                score = abs(group_tpr - overall_tpr) + abs(
+                    group_fpr - overall_fpr
+                )
 
                 if score < best_score:
                     best_score = score
@@ -607,9 +645,9 @@ class PostProcessingFairness:
         for group in self.protected_groups:
             group_mask = protected_attributes == group
             threshold = self.thresholds.get(group, 0.5)
-            predictions[group_mask] = (y_pred_proba[group_mask] >= threshold).astype(
-                int
-            )
+            predictions[group_mask] = (
+                y_pred_proba[group_mask] >= threshold
+            ).astype(int)
 
         return predictions
 
@@ -652,7 +690,9 @@ class BiasMitigationImpactMeasurement:
         )
 
         # Calculate improvements
-        improvement = self._calculate_improvement(before_metrics, after_metrics)
+        improvement = self._calculate_improvement(
+            before_metrics, after_metrics
+        )
 
         # Determine success
         success = self._determine_success(improvement)
@@ -688,11 +728,15 @@ class BiasMitigationImpactMeasurement:
             for group in np.unique(attr_values):
                 group_mask = attr_values == group
                 if np.sum(group_mask) > 0:
-                    group_acc = accuracy_score(y_true[group_mask], y_pred[group_mask])
+                    group_acc = accuracy_score(
+                        y_true[group_mask], y_pred[group_mask]
+                    )
                     group_accuracies[f"{attr_name}_{group}"] = group_acc
 
         # Use bias detector for fairness metrics
-        results = self.bias_detector.detect_bias(y_true, y_pred, protected_attributes)
+        results = self.bias_detector.detect_bias(
+            y_true, y_pred, protected_attributes
+        )
 
         # Convert results to dictionary format
         fairness_results = {}
@@ -713,12 +757,18 @@ class BiasMitigationImpactMeasurement:
                     demographic_parity, 1.0 - result.overall_metric
                 )
             elif result.metric.value == "equal_opportunity":
-                equal_opportunity = min(equal_opportunity, 1.0 - result.overall_metric)
+                equal_opportunity = min(
+                    equal_opportunity, 1.0 - result.overall_metric
+                )
             elif result.metric.value == "equalized_odds":
-                equalized_odds = min(equalized_odds, 1.0 - result.overall_metric)
+                equalized_odds = min(
+                    equalized_odds, 1.0 - result.overall_metric
+                )
 
         # For calibration, use a simplified calculation
-        calibration = 0.95  # Placeholder - would need proper calibration calculation
+        calibration = (
+            0.95  # Placeholder - would need proper calibration calculation
+        )
 
         # Individual fairness (simplified as consistency across similar individuals)
         individual_fairness = self._calculate_individual_fairness(
@@ -760,13 +810,16 @@ class BiasMitigationImpactMeasurement:
     ) -> Dict[str, float]:
         """Calculate improvement in metrics."""
         return {
-            "demographic_parity": after.demographic_parity - before.demographic_parity,
-            "equal_opportunity": after.equal_opportunity - before.equal_opportunity,
+            "demographic_parity": after.demographic_parity
+            - before.demographic_parity,
+            "equal_opportunity": after.equal_opportunity
+            - before.equal_opportunity,
             "equalized_odds": after.equalized_odds - before.equalized_odds,
             "calibration": after.calibration - before.calibration,
             "individual_fairness": after.individual_fairness
             - before.individual_fairness,
-            "overall_accuracy": after.overall_accuracy - before.overall_accuracy,
+            "overall_accuracy": after.overall_accuracy
+            - before.overall_accuracy,
         }
 
     def _determine_success(self, improvement: Dict[str, float]) -> bool:
@@ -806,7 +859,9 @@ class BiasMitigationImpactMeasurement:
             )
 
         if fairness_improvements:
-            notes.append("Fairness improvements: " + ", ".join(fairness_improvements))
+            notes.append(
+                "Fairness improvements: " + ", ".join(fairness_improvements)
+            )
 
         # Accuracy impact
         acc_change = improvement["overall_accuracy"]
@@ -854,7 +909,9 @@ class BiasMitigationPipeline:
         logger.info("Creating adversarial debiasing model")
 
         model = AdversarialDebiasing(
-            input_dim=input_dim, protected_dim=protected_dim, num_classes=num_classes
+            input_dim=input_dim,
+            protected_dim=protected_dim,
+            num_classes=num_classes,
         )
 
         return model
@@ -893,7 +950,11 @@ class BiasMitigationPipeline:
         logger.info(f"Measuring impact of {technique_name} bias mitigation")
 
         result = self.impact_measurement.measure_impact(
-            y_true, y_pred_before, y_pred_after, protected_attributes, technique_name
+            y_true,
+            y_pred_before,
+            y_pred_after,
+            protected_attributes,
+            technique_name,
         )
 
         # Store in history
@@ -908,13 +969,18 @@ class BiasMitigationPipeline:
         if not self.mitigation_history:
             return {"message": "No bias mitigation attempts recorded"}
 
-        successful_mitigations = [r for r in self.mitigation_history if r.success]
+        successful_mitigations = [
+            r for r in self.mitigation_history if r.success
+        ]
 
         summary = {
             "total_attempts": len(self.mitigation_history),
             "successful_attempts": len(successful_mitigations),
-            "success_rate": len(successful_mitigations) / len(self.mitigation_history),
-            "techniques_used": list(set(r.technique for r in self.mitigation_history)),
+            "success_rate": len(successful_mitigations)
+            / len(self.mitigation_history),
+            "techniques_used": list(
+                set(r.technique for r in self.mitigation_history)
+            ),
             "latest_results": (
                 self.mitigation_history[-3:]
                 if len(self.mitigation_history) >= 3
@@ -925,7 +991,8 @@ class BiasMitigationPipeline:
         if successful_mitigations:
             # Best performing technique
             best_result = max(
-                successful_mitigations, key=lambda r: sum(r.improvement.values())
+                successful_mitigations,
+                key=lambda r: sum(r.improvement.values()),
             )
             summary["best_technique"] = {
                 "name": best_result.technique,

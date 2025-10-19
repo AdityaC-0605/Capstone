@@ -74,7 +74,9 @@ class PrivacyConfig:
     # Privacy Budget Management
     privacy_budget: float = 10.0
     budget_tracking: bool = True
-    budget_allocation_strategy: str = "uniform"  # "uniform", "adaptive", "exponential"
+    budget_allocation_strategy: str = (
+        "uniform"  # "uniform", "adaptive", "exponential"
+    )
 
     # Secure Aggregation
     enable_secure_aggregation: bool = True
@@ -177,12 +179,16 @@ class AdvancedDifferentialPrivacy:
         total_noise = 0.0
 
         for name, grad in gradients.items():
-            noise = torch.normal(0, noise_scale, grad.shape, device=grad.device)
+            noise = torch.normal(
+                0, noise_scale, grad.shape, device=grad.device
+            )
             noisy_gradients[name] = grad + noise
             total_noise += noise.norm().item()
 
         # Update privacy budget
-        self.privacy_budget.allocate_budget(self.config.dp_epsilon, "gaussian_noise")
+        self.privacy_budget.allocate_budget(
+            self.config.dp_epsilon, "gaussian_noise"
+        )
 
         logger.debug(
             f"Added Gaussian noise: scale={noise_scale:.4f}, total={total_noise:.4f}"
@@ -217,7 +223,9 @@ class AdvancedDifferentialPrivacy:
             total_noise += noise.norm().item()
 
         # Update privacy budget
-        self.privacy_budget.allocate_budget(self.config.dp_epsilon, "laplace_noise")
+        self.privacy_budget.allocate_budget(
+            self.config.dp_epsilon, "laplace_noise"
+        )
 
         logger.debug(
             f"Added Laplace noise: scale={noise_scale:.4f}, total={total_noise:.4f}"
@@ -251,7 +259,9 @@ class AdvancedDifferentialPrivacy:
             else:
                 clipped_gradients[name] = grad
 
-        logger.debug(f"Adaptive gradient clipping: threshold={clip_threshold:.4f}")
+        logger.debug(
+            f"Adaptive gradient clipping: threshold={clip_threshold:.4f}"
+        )
         return clipped_gradients, total_norm
 
     def get_privacy_spent(self) -> Dict[str, Any]:
@@ -289,7 +299,10 @@ class SecureAggregationProtocol:
         self, participating_clients: List[str]
     ) -> Dict[str, bytes]:
         """Generate shared secrets for secure aggregation."""
-        if len(participating_clients) < self.config.min_clients_for_aggregation:
+        if (
+            len(participating_clients)
+            < self.config.min_clients_for_aggregation
+        ):
             raise ValueError(
                 f"Need at least {self.config.min_clients_for_aggregation} clients"
             )
@@ -335,12 +348,18 @@ class SecureAggregationProtocol:
 
             # Pad data to block size
             padding_length = 16 - (len(serialized_weights) % 16)
-            padded_data = serialized_weights + bytes([padding_length] * padding_length)
+            padded_data = serialized_weights + bytes(
+                [padding_length] * padding_length
+            )
 
-            encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
+            encrypted_data = (
+                encryptor.update(padded_data) + encryptor.finalize()
+            )
 
             return {
-                "encrypted_weights": base64.b64encode(encrypted_data).decode("utf-8"),
+                "encrypted_weights": base64.b64encode(encrypted_data).decode(
+                    "utf-8"
+                ),
                 "iv": base64.b64encode(iv).decode("utf-8"),
                 "client_id": model_update.client_id,
                 "data_size": model_update.data_size,
@@ -368,7 +387,9 @@ class SecureAggregationProtocol:
             key = kdf.derive(shared_secret)
 
             # Decrypt with AES
-            encrypted_data = base64.b64decode(encrypted_update["encrypted_weights"])
+            encrypted_data = base64.b64decode(
+                encrypted_update["encrypted_weights"]
+            )
             iv = base64.b64decode(encrypted_update["iv"])
 
             cipher = Cipher(
@@ -376,7 +397,9 @@ class SecureAggregationProtocol:
             )
             decryptor = cipher.decryptor()
 
-            padded_data = decryptor.update(encrypted_data) + decryptor.finalize()
+            padded_data = (
+                decryptor.update(encrypted_data) + decryptor.finalize()
+            )
 
             # Remove padding
             padding_length = padded_data[-1]
@@ -394,7 +417,9 @@ class SecureAggregationProtocol:
             raise
 
     def secure_aggregate(
-        self, encrypted_updates: List[Dict[str, Any]], shared_secrets: Dict[str, bytes]
+        self,
+        encrypted_updates: List[Dict[str, Any]],
+        shared_secrets: Dict[str, bytes],
     ) -> Dict[str, torch.Tensor]:
         """Perform secure aggregation of encrypted model updates."""
         if len(encrypted_updates) < self.config.min_clients_for_aggregation:
@@ -416,7 +441,9 @@ class SecureAggregationProtocol:
                     )
                     total_data_size += update["data_size"]
                 except Exception as e:
-                    logger.warning(f"Failed to decrypt update from {client_id}: {e}")
+                    logger.warning(
+                        f"Failed to decrypt update from {client_id}: {e}"
+                    )
                     if not self.config.dropout_resilience:
                         raise
 
@@ -436,7 +463,9 @@ class SecureAggregationProtocol:
                 if key in update["weights"]:
                     aggregated_weights[key] += weight * update["weights"][key]
 
-        logger.info(f"Securely aggregated {len(decrypted_updates)} model updates")
+        logger.info(
+            f"Securely aggregated {len(decrypted_updates)} model updates"
+        )
         return aggregated_weights
 
 
@@ -464,12 +493,16 @@ class ConvergenceMonitor:
             converged = False
         else:
             self.patience_counter += 1
-            converged = self.patience_counter >= self.config.convergence_patience
+            converged = (
+                self.patience_counter >= self.config.convergence_patience
+            )
 
         self.convergence_history.append(converged)
 
         if converged:
-            logger.info(f"Convergence detected after {len(self.loss_history)} rounds")
+            logger.info(
+                f"Convergence detected after {len(self.loss_history)} rounds"
+            )
 
         return converged
 
@@ -479,7 +512,9 @@ class ConvergenceMonitor:
             return {"status": "no_data"}
 
         recent_losses = (
-            self.loss_history[-5:] if len(self.loss_history) >= 5 else self.loss_history
+            self.loss_history[-5:]
+            if len(self.loss_history) >= 5
+            else self.loss_history
         )
 
         return {
@@ -488,7 +523,9 @@ class ConvergenceMonitor:
             "rounds_completed": len(self.loss_history),
             "patience_counter": self.patience_counter,
             "converged": (
-                self.convergence_history[-1] if self.convergence_history else False
+                self.convergence_history[-1]
+                if self.convergence_history
+                else False
             ),
             "recent_average_loss": np.mean(recent_losses),
             "loss_trend": (
@@ -559,7 +596,9 @@ class AsynchronousFederatedLearning:
     def increment_global_version(self):
         """Increment global model version."""
         self.global_version += 1
-        logger.debug(f"Global model version incremented to {self.global_version}")
+        logger.debug(
+            f"Global model version incremented to {self.global_version}"
+        )
 
     def get_async_stats(self) -> Dict[str, Any]:
         """Get asynchronous FL statistics."""
@@ -591,7 +630,9 @@ class PrivacyPreservationManager:
         logger.info("Privacy preservation manager initialized")
 
     def apply_privacy_mechanisms(
-        self, model_update: ModelUpdate, mechanism_types: List[PrivacyMechanism]
+        self,
+        model_update: ModelUpdate,
+        mechanism_types: List[PrivacyMechanism],
     ) -> ModelUpdate:
         """Apply multiple privacy mechanisms to a model update."""
         protected_update = copy.deepcopy(model_update)
@@ -600,8 +641,10 @@ class PrivacyPreservationManager:
         for mechanism in mechanism_types:
             if mechanism == PrivacyMechanism.DIFFERENTIAL_PRIVACY:
                 if self.config.enable_differential_privacy:
-                    noisy_weights, noise_amount = self.dp_manager.add_gaussian_noise(
-                        protected_update.model_weights
+                    noisy_weights, noise_amount = (
+                        self.dp_manager.add_gaussian_noise(
+                            protected_update.model_weights
+                        )
                     )
                     protected_update.model_weights = noisy_weights
                     protected_update.differential_privacy_applied = True
@@ -636,7 +679,9 @@ class PrivacyPreservationManager:
             "convergence_monitoring": self.convergence_monitor.get_convergence_metrics(),
             "asynchronous_fl": self.async_fl.get_async_stats(),
             "privacy_events": len(self.privacy_events),
-            "recent_events": self.privacy_events[-10:] if self.privacy_events else [],
+            "recent_events": (
+                self.privacy_events[-10:] if self.privacy_events else []
+            ),
         }
 
     def validate_privacy_guarantees(self) -> Dict[str, bool]:

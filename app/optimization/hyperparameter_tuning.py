@@ -27,7 +27,11 @@ try:
     from ..core.logging import get_audit_logger, get_logger
     from ..models.dnn_model import DNNConfig, DNNModel, DNNTrainer
     from ..models.gnn_model import GNNConfig, GNNModel, GNNTrainer
-    from ..models.lightgbm_model import LightGBMConfig, LightGBMModel, LightGBMTrainer
+    from ..models.lightgbm_model import (
+        LightGBMConfig,
+        LightGBMModel,
+        LightGBMTrainer,
+    )
     from ..models.lstm_model import LSTMConfig, LSTMModel, LSTMTrainer
     from ..models.tcn_model import TCNConfig, TCNModel, TCNTrainer
 except ImportError:
@@ -40,7 +44,11 @@ except ImportError:
     from core.logging import get_audit_logger, get_logger
     from models.dnn_model import DNNConfig, DNNModel, DNNTrainer
     from models.gnn_model import GNNConfig, GNNModel, GNNTrainer
-    from models.lightgbm_model import LightGBMConfig, LightGBMModel, LightGBMTrainer
+    from models.lightgbm_model import (
+        LightGBMConfig,
+        LightGBMModel,
+        LightGBMTrainer,
+    )
     from models.lstm_model import LSTMConfig, LSTMModel, LSTMTrainer
     from models.tcn_model import TCNConfig, TCNModel, TCNTrainer
 
@@ -95,7 +103,9 @@ class OptimizationConfig:
 
     # Energy monitoring
     track_energy: bool = True
-    energy_weight: float = 0.3  # Weight for energy efficiency in multi-objective
+    energy_weight: float = (
+        0.3  # Weight for energy efficiency in multi-objective
+    )
 
     # Results storage
     save_results: bool = True
@@ -171,7 +181,9 @@ class HyperparameterOptimizer:
         elif self.config.sampler_type == "cmaes":
             sampler = CmaEsSampler(**self.config.sampler_params)
         else:
-            sampler = optuna.samplers.RandomSampler(**self.config.sampler_params)
+            sampler = optuna.samplers.RandomSampler(
+                **self.config.sampler_params
+            )
 
         # Configure pruner
         if self.config.pruner_type == "median":
@@ -203,7 +215,9 @@ class HyperparameterOptimizer:
                 pruner=pruner,
             )
 
-    def optimize_dnn(self, X: pd.DataFrame, y: pd.Series) -> OptimizationResult:
+    def optimize_dnn(
+        self, X: pd.DataFrame, y: pd.Series
+    ) -> OptimizationResult:
         """Optimize DNN hyperparameters."""
         logger.info("Starting DNN hyperparameter optimization")
 
@@ -212,7 +226,9 @@ class HyperparameterOptimizer:
 
         return self._run_optimization(objective, "dnn", DNNConfig)
 
-    def optimize_lstm(self, X: pd.DataFrame, y: pd.Series) -> OptimizationResult:
+    def optimize_lstm(
+        self, X: pd.DataFrame, y: pd.Series
+    ) -> OptimizationResult:
         """Optimize LSTM hyperparameters."""
         logger.info("Starting LSTM hyperparameter optimization")
 
@@ -221,7 +237,9 @@ class HyperparameterOptimizer:
 
         return self._run_optimization(objective, "lstm", LSTMConfig)
 
-    def optimize_gnn(self, X: pd.DataFrame, y: pd.Series) -> OptimizationResult:
+    def optimize_gnn(
+        self, X: pd.DataFrame, y: pd.Series
+    ) -> OptimizationResult:
         """Optimize GNN hyperparameters."""
         logger.info("Starting GNN hyperparameter optimization")
 
@@ -230,7 +248,9 @@ class HyperparameterOptimizer:
 
         return self._run_optimization(objective, "gnn", GNNConfig)
 
-    def optimize_tcn(self, X: pd.DataFrame, y: pd.Series) -> OptimizationResult:
+    def optimize_tcn(
+        self, X: pd.DataFrame, y: pd.Series
+    ) -> OptimizationResult:
         """Optimize TCN hyperparameters."""
         logger.info("Starting TCN hyperparameter optimization")
 
@@ -239,7 +259,9 @@ class HyperparameterOptimizer:
 
         return self._run_optimization(objective, "tcn", TCNConfig)
 
-    def optimize_lightgbm(self, X: pd.DataFrame, y: pd.Series) -> OptimizationResult:
+    def optimize_lightgbm(
+        self, X: pd.DataFrame, y: pd.Series
+    ) -> OptimizationResult:
         """Optimize LightGBM hyperparameters."""
         logger.info("Starting LightGBM hyperparameter optimization")
 
@@ -262,14 +284,24 @@ class HyperparameterOptimizer:
         config = DNNConfig(
             hidden_layers=hidden_layers,
             dropout_rate=trial.suggest_float("dropout_rate", 0.1, 0.5),
-            learning_rate=trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True),
-            batch_size=trial.suggest_categorical("batch_size", [32, 64, 128, 256]),
-            optimizer=trial.suggest_categorical("optimizer", ["adam", "adamw", "sgd"]),
+            learning_rate=trial.suggest_float(
+                "learning_rate", 1e-5, 1e-2, log=True
+            ),
+            batch_size=trial.suggest_categorical(
+                "batch_size", [32, 64, 128, 256]
+            ),
+            optimizer=trial.suggest_categorical(
+                "optimizer", ["adam", "adamw", "sgd"]
+            ),
             activation=trial.suggest_categorical(
                 "activation", ["relu", "leaky_relu", "elu", "gelu"]
             ),
-            use_batch_norm=trial.suggest_categorical("use_batch_norm", [True, False]),
-            weight_decay=trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True),
+            use_batch_norm=trial.suggest_categorical(
+                "use_batch_norm", [True, False]
+            ),
+            weight_decay=trial.suggest_float(
+                "weight_decay", 1e-6, 1e-2, log=True
+            ),
             focal_alpha=trial.suggest_float("focal_alpha", 0.1, 0.5),
             focal_gamma=trial.suggest_float("focal_gamma", 1.0, 3.0),
             epochs=self.config.max_epochs_per_trial,
@@ -287,14 +319,26 @@ class HyperparameterOptimizer:
             hidden_size=trial.suggest_int("hidden_size", 64, 256, log=True),
             num_layers=trial.suggest_int("num_layers", 1, 3),
             dropout_rate=trial.suggest_float("dropout_rate", 0.1, 0.5),
-            bidirectional=trial.suggest_categorical("bidirectional", [True, False]),
-            use_attention=trial.suggest_categorical("use_attention", [True, False]),
+            bidirectional=trial.suggest_categorical(
+                "bidirectional", [True, False]
+            ),
+            use_attention=trial.suggest_categorical(
+                "use_attention", [True, False]
+            ),
             attention_dim=trial.suggest_int("attention_dim", 32, 128),
-            learning_rate=trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True),
+            learning_rate=trial.suggest_float(
+                "learning_rate", 1e-5, 1e-2, log=True
+            ),
             batch_size=trial.suggest_categorical("batch_size", [16, 32, 64]),
-            optimizer=trial.suggest_categorical("optimizer", ["adam", "adamw"]),
-            weight_decay=trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True),
-            max_sequence_length=trial.suggest_int("max_sequence_length", 20, 100),
+            optimizer=trial.suggest_categorical(
+                "optimizer", ["adam", "adamw"]
+            ),
+            weight_decay=trial.suggest_float(
+                "weight_decay", 1e-6, 1e-2, log=True
+            ),
+            max_sequence_length=trial.suggest_int(
+                "max_sequence_length", 20, 100
+            ),
             epochs=self.config.max_epochs_per_trial,
             early_stopping_patience=self.config.early_stopping_rounds,
             save_model=False,
@@ -325,14 +369,22 @@ class HyperparameterOptimizer:
             graph_construction_method=trial.suggest_categorical(
                 "graph_method", ["knn", "threshold"]
             ),
-            similarity_threshold=trial.suggest_float("similarity_threshold", 0.5, 0.9),
+            similarity_threshold=trial.suggest_float(
+                "similarity_threshold", 0.5, 0.9
+            ),
             pooling_method=trial.suggest_categorical(
                 "pooling_method", ["mean", "max", "attention"]
             ),
-            learning_rate=trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True),
+            learning_rate=trial.suggest_float(
+                "learning_rate", 1e-5, 1e-2, log=True
+            ),
             batch_size=trial.suggest_categorical("batch_size", [16, 32, 64]),
-            optimizer=trial.suggest_categorical("optimizer", ["adam", "adamw"]),
-            weight_decay=trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True),
+            optimizer=trial.suggest_categorical(
+                "optimizer", ["adam", "adamw"]
+            ),
+            weight_decay=trial.suggest_float(
+                "weight_decay", 1e-6, 1e-2, log=True
+            ),
             epochs=self.config.max_epochs_per_trial,
             early_stopping_patience=self.config.early_stopping_rounds,
             save_model=False,
@@ -356,12 +408,22 @@ class HyperparameterOptimizer:
             activation=trial.suggest_categorical(
                 "activation", ["relu", "gelu", "swish"]
             ),
-            use_layer_norm=trial.suggest_categorical("use_layer_norm", [True, False]),
-            learning_rate=trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True),
+            use_layer_norm=trial.suggest_categorical(
+                "use_layer_norm", [True, False]
+            ),
+            learning_rate=trial.suggest_float(
+                "learning_rate", 1e-5, 1e-2, log=True
+            ),
             batch_size=trial.suggest_categorical("batch_size", [32, 64, 128]),
-            optimizer=trial.suggest_categorical("optimizer", ["adam", "adamw"]),
-            weight_decay=trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True),
-            max_sequence_length=trial.suggest_int("max_sequence_length", 20, 80),
+            optimizer=trial.suggest_categorical(
+                "optimizer", ["adam", "adamw"]
+            ),
+            weight_decay=trial.suggest_float(
+                "weight_decay", 1e-6, 1e-2, log=True
+            ),
+            max_sequence_length=trial.suggest_int(
+                "max_sequence_length", 20, 80
+            ),
             epochs=self.config.max_epochs_per_trial,
             early_stopping_patience=self.config.early_stopping_rounds,
             save_model=False,
@@ -376,7 +438,9 @@ class HyperparameterOptimizer:
         config = LightGBMConfig(
             n_estimators=trial.suggest_int("n_estimators", 100, 1000),
             max_depth=trial.suggest_int("max_depth", 3, 10),
-            learning_rate=trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+            learning_rate=trial.suggest_float(
+                "learning_rate", 0.01, 0.3, log=True
+            ),
             num_leaves=trial.suggest_int("num_leaves", 10, 300),
             min_child_samples=trial.suggest_int("min_child_samples", 5, 100),
             subsample=trial.suggest_float("subsample", 0.6, 1.0),
@@ -471,7 +535,9 @@ class HyperparameterOptimizer:
                 # Multi-objective results
                 best_trials = self.study.best_trials
                 if best_trials:
-                    best_trial = best_trials[0]  # First Pareto optimal solution
+                    best_trial = best_trials[
+                        0
+                    ]  # First Pareto optimal solution
                     best_params = best_trial.params
                     best_values = best_trial.values
                     best_value = best_values[0] if best_values else 0.0
@@ -496,14 +562,20 @@ class HyperparameterOptimizer:
 
             # Create best configuration (filter out non-config parameters)
             try:
-                best_config = self._create_config_from_params(config_class, best_params)
+                best_config = self._create_config_from_params(
+                    config_class, best_params
+                )
             except Exception as e:
-                logger.warning(f"Could not create config from best params: {e}")
+                logger.warning(
+                    f"Could not create config from best params: {e}"
+                )
                 best_config = None
 
             # Calculate parameter importance
             try:
-                importance = optuna.importance.get_param_importances(self.study)
+                importance = optuna.importance.get_param_importances(
+                    self.study
+                )
             except Exception:
                 importance = {}
 
@@ -512,7 +584,11 @@ class HyperparameterOptimizer:
             # Save results if requested
             if self.config.save_results:
                 self._save_results(
-                    model_type, best_params, best_value, best_values, importance
+                    model_type,
+                    best_params,
+                    best_value,
+                    best_values,
+                    importance,
                 )
 
             # Log completion
@@ -553,7 +629,9 @@ class HyperparameterOptimizer:
 
         except Exception as e:
             optimization_time = (datetime.now() - start_time).total_seconds()
-            error_message = f"{model_type.upper()} optimization failed: {str(e)}"
+            error_message = (
+                f"{model_type.upper()} optimization failed: {str(e)}"
+            )
             logger.error(error_message)
 
             return OptimizationResult(
@@ -662,7 +740,9 @@ class HyperparameterOptimizer:
         elif config_class == GNNConfig:
             # Handle GNN-specific parameter conversion
             n_layers = params.get("num_layers", 3)
-            hidden_dims = [params.get(f"hidden_dim_{i}", 64) for i in range(n_layers)]
+            hidden_dims = [
+                params.get(f"hidden_dim_{i}", 64) for i in range(n_layers)
+            ]
             filtered_params["hidden_dims"] = hidden_dims
 
             # Copy other valid parameters
@@ -686,7 +766,9 @@ class HyperparameterOptimizer:
         elif config_class == TCNConfig:
             # Handle TCN-specific parameter conversion
             n_layers = params.get("num_layers", 3)
-            num_channels = [params.get(f"channel_{i}", 64) for i in range(n_layers)]
+            num_channels = [
+                params.get(f"channel_{i}", 64) for i in range(n_layers)
+            ]
             filtered_params["num_channels"] = num_channels
 
             # Copy other valid parameters
@@ -754,7 +836,9 @@ def optimize_all_models(
         if result.success:
             logger.info(f"✓ {model_type} optimization completed successfully")
         else:
-            logger.error(f"✗ {model_type} optimization failed: {result.message}")
+            logger.error(
+                f"✗ {model_type} optimization failed: {result.message}"
+            )
 
     return results
 

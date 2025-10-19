@@ -28,7 +28,9 @@ class SmokeTestRunner:
                 print("✅ Health endpoint is accessible")
                 return True
             else:
-                print(f"❌ Health endpoint returned status {response.status_code}")
+                print(
+                    f"❌ Health endpoint returned status {response.status_code}"
+                )
                 return False
         except Exception as e:
             print(f"❌ Health endpoint failed: {e}")
@@ -42,7 +44,9 @@ class SmokeTestRunner:
                 print("✅ Ready endpoint is accessible")
                 return True
             else:
-                print(f"❌ Ready endpoint returned status {response.status_code}")
+                print(
+                    f"❌ Ready endpoint returned status {response.status_code}"
+                )
                 return False
         except Exception as e:
             print(f"❌ Ready endpoint failed: {e}")
@@ -75,7 +79,9 @@ class SmokeTestRunner:
                     print("❌ OpenAPI specification is invalid")
                     return False
             else:
-                print(f"❌ OpenAPI spec returned status {response.status_code}")
+                print(
+                    f"❌ OpenAPI spec returned status {response.status_code}"
+                )
                 return False
         except Exception as e:
             print(f"❌ OpenAPI spec failed: {e}")
@@ -124,10 +130,14 @@ class SmokeTestRunner:
                     print("✅ Prediction endpoint works correctly")
                     return True
                 else:
-                    print(f"❌ Prediction response missing required fields: {result}")
+                    print(
+                        f"❌ Prediction response missing required fields: {result}"
+                    )
                     return False
             else:
-                print(f"❌ Prediction endpoint returned status {response.status_code}")
+                print(
+                    f"❌ Prediction endpoint returned status {response.status_code}"
+                )
                 print(f"Response: {response.text}")
                 return False
         except Exception as e:
@@ -150,7 +160,9 @@ class SmokeTestRunner:
                         "home_ownership": "OWN",
                         "debt_to_income_ratio": 0.20,
                         "credit_history_length": 8,
-                        "behavioral_features": {"avg_monthly_spending": 2500.0},
+                        "behavioral_features": {
+                            "avg_monthly_spending": 2500.0
+                        },
                         "temporal_features": [],
                         "relational_features": {},
                     },
@@ -164,7 +176,9 @@ class SmokeTestRunner:
                         "home_ownership": "MORTGAGE",
                         "debt_to_income_ratio": 0.30,
                         "credit_history_length": 12,
-                        "behavioral_features": {"avg_monthly_spending": 3500.0},
+                        "behavioral_features": {
+                            "avg_monthly_spending": 3500.0
+                        },
                         "temporal_features": [],
                         "relational_features": {},
                     },
@@ -201,14 +215,21 @@ class SmokeTestRunner:
             if response.status_code == 200:
                 # Check if it's Prometheus format
                 content = response.text
-                if "http_requests_total" in content or "prediction_latency" in content:
+                if (
+                    "http_requests_total" in content
+                    or "prediction_latency" in content
+                ):
                     print("✅ Metrics endpoint is accessible")
                     return True
                 else:
-                    print("❌ Metrics endpoint doesn't contain expected metrics")
+                    print(
+                        "❌ Metrics endpoint doesn't contain expected metrics"
+                    )
                     return False
             else:
-                print(f"❌ Metrics endpoint returned status {response.status_code}")
+                print(
+                    f"❌ Metrics endpoint returned status {response.status_code}"
+                )
                 return False
         except Exception as e:
             print(f"❌ Metrics endpoint failed: {e}")
@@ -221,7 +242,9 @@ class SmokeTestRunner:
             response = self.session.get(f"{self.base_url}/health")
             end_time = time.time()
 
-            response_time = (end_time - start_time) * 1000  # Convert to milliseconds
+            response_time = (
+                end_time - start_time
+            ) * 1000  # Convert to milliseconds
 
             if (
                 response.status_code == 200 and response_time < 1000

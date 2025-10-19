@@ -186,7 +186,9 @@ class ModelWrapper:
                 # Return both classes for binary classification
                 if len(probs.shape) == 0:
                     probs = probs.unsqueeze(0)
-                return np.column_stack([1 - probs.cpu().numpy(), probs.cpu().numpy()])
+                return np.column_stack(
+                    [1 - probs.cpu().numpy(), probs.cpu().numpy()]
+                )
             else:
                 probs = torch.softmax(outputs, dim=-1)
                 return probs.cpu().numpy()
@@ -226,7 +228,9 @@ class LIMEExplainer:
     def _create_explainer(self):
         """Create the LIME explainer."""
         if self.training_data is None:
-            raise ValueError("Training data must be set before creating explainer")
+            raise ValueError(
+                "Training data must be set before creating explainer"
+            )
 
         try:
             self.explainer = lime.lime_tabular.LimeTabularExplainer(
@@ -261,7 +265,9 @@ class LIMEExplainer:
             LIMEExplanation object
         """
         if self.explainer is None:
-            raise ValueError("Explainer not initialized. Set training data first.")
+            raise ValueError(
+                "Explainer not initialized. Set training data first."
+            )
 
         start_time = datetime.now()
 
@@ -302,7 +308,9 @@ class LIMEExplainer:
                 else model_prediction
             )
             intercept = (
-                explanation.intercept[1] if hasattr(explanation, "intercept") else 0.0
+                explanation.intercept[1]
+                if hasattr(explanation, "intercept")
+                else 0.0
             )
             score = explanation.score if hasattr(explanation, "score") else 0.0
 
@@ -313,7 +321,8 @@ class LIMEExplainer:
                 f"feature_{i}" for i in range(len(instance))
             ]
             local_explanation = [
-                (name, 0.0) for name in feature_names[: self.config.num_features]
+                (name, 0.0)
+                for name in feature_names[: self.config.num_features]
             ]
             feature_importance = dict(local_explanation)
             local_prediction = model_prediction
@@ -322,7 +331,9 @@ class LIMEExplainer:
 
         # Create customer-facing explanation
         simplified_explanation, top_positive, top_negative = (
-            self._create_customer_explanation(local_explanation, model_prediction)
+            self._create_customer_explanation(
+                local_explanation, model_prediction
+            )
         )
 
         explanation_time = (datetime.now() - start_time).total_seconds()
@@ -362,7 +373,9 @@ class LIMEExplainer:
 
     def _create_customer_explanation(
         self, local_explanation: List[Tuple[str, float]], prediction: float
-    ) -> Tuple[str, List[Tuple[str, float, str]], List[Tuple[str, float, str]]]:
+    ) -> Tuple[
+        str, List[Tuple[str, float, str]], List[Tuple[str, float, str]]
+    ]:
         """Create simplified, customer-facing explanation."""
 
         # Sort by absolute importance
@@ -384,7 +397,9 @@ class LIMEExplainer:
 
         # Create simplified explanation text
         risk_level = (
-            "high" if prediction > 0.7 else "medium" if prediction > 0.3 else "low"
+            "high"
+            if prediction > 0.7
+            else "medium" if prediction > 0.3 else "low"
         )
 
         explanation_parts = [
@@ -489,17 +504,23 @@ class LIMEExplainer:
 
         for i, (x, instance_id) in enumerate(zip(X_array, instance_ids)):
             try:
-                explanation = self.explain_instance(x.reshape(1, -1), instance_id)
+                explanation = self.explain_instance(
+                    x.reshape(1, -1), instance_id
+                )
                 explanations.append(explanation)
 
                 if (i + 1) % 10 == 0:
-                    logger.debug(f"Processed {i + 1}/{len(X_array)} LIME explanations")
+                    logger.debug(
+                        f"Processed {i + 1}/{len(X_array)} LIME explanations"
+                    )
 
             except Exception as e:
                 logger.error(f"Failed to explain instance {instance_id}: {e}")
                 continue
 
-        logger.info(f"Generated LIME explanations for {len(explanations)} instances")
+        logger.info(
+            f"Generated LIME explanations for {len(explanations)} instances"
+        )
         return explanations
 
     def create_visualization(
@@ -544,13 +565,17 @@ class LIMEExplainer:
             colors = ["green" if imp > 0 else "red" for imp in importances]
 
             # Create bar plot
-            bars = ax.bar(range(len(features)), importances, color=colors, alpha=0.7)
+            bars = ax.bar(
+                range(len(features)), importances, color=colors, alpha=0.7
+            )
 
             # Customize plot
             ax.set_xticks(range(len(features)))
             ax.set_xticklabels(features, rotation=45, ha="right")
             ax.set_ylabel("LIME Importance")
-            ax.set_title(f"LIME Feature Importance - {explanation.instance_id}")
+            ax.set_title(
+                f"LIME Feature Importance - {explanation.instance_id}"
+            )
             ax.axhline(y=0, color="black", linestyle="-", alpha=0.3)
             ax.grid(True, alpha=0.3)
 
@@ -580,7 +605,9 @@ class LIMEExplainer:
 
             # Save plot
             if self.config.save_plots:
-                plot_path = self._save_plot(fig, f"lime_bar_{explanation.instance_id}")
+                plot_path = self._save_plot(
+                    fig, f"lime_bar_{explanation.instance_id}"
+                )
                 plt.close(fig)
                 return plot_path
 
@@ -602,7 +629,9 @@ class LIMEExplainer:
 
             # Sort by absolute importance for better visualization
             sorted_items = sorted(
-                zip(features, importances), key=lambda x: abs(x[1]), reverse=True
+                zip(features, importances),
+                key=lambda x: abs(x[1]),
+                reverse=True,
             )
             features = [item[0] for item in sorted_items]
             importances = [item[1] for item in sorted_items]
@@ -618,7 +647,9 @@ class LIMEExplainer:
             ax.set_yticks(y_pos)
             ax.set_yticklabels(features)
             ax.set_xlabel("LIME Importance")
-            ax.set_title(f"LIME Feature Importance - {explanation.instance_id}")
+            ax.set_title(
+                f"LIME Feature Importance - {explanation.instance_id}"
+            )
             ax.axvline(x=0, color="black", linestyle="-", alpha=0.3)
             ax.grid(True, alpha=0.3)
 
@@ -637,7 +668,9 @@ class LIMEExplainer:
 
             # Save plot
             if self.config.save_plots:
-                plot_path = self._save_plot(fig, f"lime_hbar_{explanation.instance_id}")
+                plot_path = self._save_plot(
+                    fig, f"lime_hbar_{explanation.instance_id}"
+                )
                 plt.close(fig)
                 return plot_path
 
@@ -655,7 +688,9 @@ class LIMEExplainer:
 
             # Get sorted features by importance
             sorted_items = sorted(
-                explanation.local_explanation, key=lambda x: abs(x[1]), reverse=True
+                explanation.local_explanation,
+                key=lambda x: abs(x[1]),
+                reverse=True,
             )
             features = [item[0] for item in sorted_items]
             importances = [item[1] for item in sorted_items]
@@ -673,7 +708,14 @@ class LIMEExplainer:
                 color = "green" if imp > 0 else "red"
                 bottom = positions[i] if imp > 0 else positions[i] + imp
 
-                ax.bar(i, abs(imp), bottom=bottom, color=color, alpha=0.7, width=0.6)
+                ax.bar(
+                    i,
+                    abs(imp),
+                    bottom=bottom,
+                    color=color,
+                    alpha=0.7,
+                    width=0.6,
+                )
 
                 # Add value labels
                 label_pos = positions[i] + imp / 2
@@ -729,7 +771,9 @@ class LIMEExplainer:
     def _create_summary_plot(self, explanation: LIMEExplanation) -> str:
         """Create summary plot with multiple views."""
         try:
-            fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
+            fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
+                2, 2, figsize=(16, 12)
+            )
 
             # Get data
             features = [item[0] for item in explanation.local_explanation]
@@ -748,7 +792,12 @@ class LIMEExplainer:
 
             # Plot 2: Absolute importance
             abs_importances = [abs(imp) for imp in importances]
-            ax2.bar(range(len(features)), abs_importances, color="skyblue", alpha=0.7)
+            ax2.bar(
+                range(len(features)),
+                abs_importances,
+                color="skyblue",
+                alpha=0.7,
+            )
             ax2.set_xticks(range(len(features)))
             ax2.set_xticklabels(features, rotation=45, ha="right")
             ax2.set_ylabel("|LIME Importance|")
@@ -773,8 +822,13 @@ class LIMEExplainer:
 
             # Plot 4: Model vs Local prediction comparison
             categories = ["Model\nPrediction", "Local\nPrediction"]
-            predictions = [explanation.model_prediction, explanation.local_prediction]
-            bars = ax4.bar(categories, predictions, color=["blue", "orange"], alpha=0.7)
+            predictions = [
+                explanation.model_prediction,
+                explanation.local_prediction,
+            ]
+            bars = ax4.bar(
+                categories, predictions, color=["blue", "orange"], alpha=0.7
+            )
             ax4.set_ylabel("Prediction Value")
             ax4.set_title("Model vs Local Prediction")
             ax4.set_ylim(0, 1)
@@ -800,7 +854,9 @@ class LIMEExplainer:
                 bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
             )
 
-            plt.suptitle(f"LIME Explanation Summary - {explanation.instance_id}")
+            plt.suptitle(
+                f"LIME Explanation Summary - {explanation.instance_id}"
+            )
             plt.tight_layout()
 
             # Save plot
@@ -859,7 +915,9 @@ class LIMEExplainer:
             with open(save_path, "w") as f:
                 json.dump(explanations_data, f, indent=2)
 
-            logger.info(f"Saved {len(explanations)} explanations to {save_path}")
+            logger.info(
+                f"Saved {len(explanations)} explanations to {save_path}"
+            )
             return str(save_path)
 
         except Exception as e:
@@ -881,7 +939,9 @@ class LIMEExplainer:
                 explanation = LIMEExplanation(**data)
                 explanations.append(explanation)
 
-            logger.info(f"Loaded {len(explanations)} explanations from {filepath}")
+            logger.info(
+                f"Loaded {len(explanations)} explanations from {filepath}"
+            )
             return explanations
 
         except Exception as e:

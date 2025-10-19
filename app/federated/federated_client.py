@@ -295,14 +295,18 @@ class GradientCompressor:
                 compressed_grad[indices] = grad[indices]
 
                 # Store compressed gradient and metadata
-                compressed_gradients[name] = compressed_grad.reshape(param.grad.shape)
+                compressed_gradients[name] = compressed_grad.reshape(
+                    param.grad.shape
+                )
                 compression_metadata["shapes"][name] = param.grad.shape
                 compression_metadata["indices"][name] = indices.cpu().numpy()
 
         return compressed_gradients, compression_metadata
 
     def decompress_gradients(
-        self, compressed_gradients: Dict[str, torch.Tensor], metadata: Dict[str, Any]
+        self,
+        compressed_gradients: Dict[str, torch.Tensor],
+        metadata: Dict[str, Any],
     ) -> Dict[str, torch.Tensor]:
         """
         Decompress gradients (if needed for local operations).
@@ -355,12 +359,15 @@ class LocalTrainer:
                 and not self.dp_manager.can_participate()
             ):
                 return TrainingResult(
-                    success=False, message="Insufficient privacy budget for training"
+                    success=False,
+                    message="Insufficient privacy budget for training",
                 )
 
             # Setup training
             device = torch.device(
-                "cuda" if self.config.use_gpu and torch.cuda.is_available() else "cpu"
+                "cuda"
+                if self.config.use_gpu and torch.cuda.is_available()
+                else "cpu"
             )
             model = model.to(device)
 
@@ -399,7 +406,9 @@ class LocalTrainer:
                     epoch_loss += loss.item()
                     num_batches += 1
 
-                avg_epoch_loss = epoch_loss / num_batches if num_batches > 0 else 0.0
+                avg_epoch_loss = (
+                    epoch_loss / num_batches if num_batches > 0 else 0.0
+                )
                 epoch_losses.append(avg_epoch_loss)
 
                 logger.debug(f"Local epoch {epoch}: loss={avg_epoch_loss:.4f}")
@@ -425,7 +434,9 @@ class LocalTrainer:
             )
 
             # Estimate energy consumption (simplified)
-            energy_consumed = self._estimate_energy_consumption(training_time, device)
+            energy_consumed = self._estimate_energy_consumption(
+                training_time, device
+            )
 
             model_update = ModelUpdate(
                 client_id=self.config.client_id,
@@ -471,7 +482,9 @@ class LocalTrainer:
         if self.config.optimizer.lower() == "adam":
             return optim.Adam(model.parameters(), lr=self.config.learning_rate)
         elif self.config.optimizer.lower() == "adamw":
-            return optim.AdamW(model.parameters(), lr=self.config.learning_rate)
+            return optim.AdamW(
+                model.parameters(), lr=self.config.learning_rate
+            )
         else:  # Default to SGD
             return optim.SGD(
                 model.parameters(), lr=self.config.learning_rate, momentum=0.9
@@ -586,7 +599,9 @@ class FederatedClient:
             )
 
             if response and response.payload.get("success"):
-                self.authentication_token = response.payload.get("authentication_token")
+                self.authentication_token = response.payload.get(
+                    "authentication_token"
+                )
                 self.status = ClientStatus.CONNECTED
 
                 # Add server's public key
@@ -596,7 +611,9 @@ class FederatedClient:
                         "server", server_public_key
                     )
 
-                logger.info(f"Client {self.config.client_id} connected to server")
+                logger.info(
+                    f"Client {self.config.client_id} connected to server"
+                )
 
                 # Start heartbeat
                 asyncio.create_task(self._heartbeat_loop())
@@ -624,15 +641,15 @@ class FederatedClient:
         try:
             if self.status == ClientStatus.CONNECTED:
                 # Send unregistration request
-                unregister_url = (
-                    f"{self.server_url}/api/v1/unregister/{self.config.client_id}"
-                )
+                unregister_url = f"{self.server_url}/api/v1/unregister/{self.config.client_id}"
                 # Implementation would send unregister request here
 
             self.status = ClientStatus.DISCONNECTED
             self.authentication_token = None
 
-            logger.info(f"Client {self.config.client_id} disconnected from server")
+            logger.info(
+                f"Client {self.config.client_id} disconnected from server"
+            )
             return True
 
         except Exception as e:
@@ -741,8 +758,10 @@ class FederatedClient:
             if response and response.payload.get("success"):
                 encoded_weights = response.payload.get("model_weights_encoded")
                 if encoded_weights:
-                    global_weights = MessageSerializer.deserialize_model_weights(
-                        encoded_weights
+                    global_weights = (
+                        MessageSerializer.deserialize_model_weights(
+                            encoded_weights
+                        )
                     )
                     logger.info(
                         f"Retrieved global model with {len(global_weights)} parameters"
@@ -789,13 +808,17 @@ class FederatedClient:
             )
 
             if not training_result.success:
-                logger.error(f"Local training failed: {training_result.message}")
+                logger.error(
+                    f"Local training failed: {training_result.message}"
+                )
                 self.status = ClientStatus.ERROR
                 return False
 
             # Send model update to server
             self.status = ClientStatus.UPLOADING
-            success = await self._send_model_update(training_result.model_update)
+            success = await self._send_model_update(
+                training_result.model_update
+            )
 
             if success:
                 self.status = ClientStatus.WAITING
@@ -818,7 +841,9 @@ class FederatedClient:
                     }
                 )
 
-                logger.info(f"Successfully participated in round {self.current_round}")
+                logger.info(
+                    f"Successfully participated in round {self.current_round}"
+                )
                 return True
             else:
                 self.status = ClientStatus.ERROR
@@ -837,10 +862,12 @@ class FederatedClient:
                 return False
 
             # Create model update message
-            update_msg = self.communication_manager.create_model_update_message(
-                sender_id=self.config.client_id,
-                recipient_id="server",
-                model_update=model_update,
+            update_msg = (
+                self.communication_manager.create_model_update_message(
+                    sender_id=self.config.client_id,
+                    recipient_id="server",
+                    model_update=model_update,
+                )
             )
 
             # Send to server
@@ -927,14 +954,20 @@ class FederatedClient:
             # Participate in federated rounds
             for round_num in range(max_rounds):
                 if not self.local_trainer.dp_manager.can_participate():
-                    logger.warning(f"Privacy budget exhausted after {round_num} rounds")
+                    logger.warning(
+                        f"Privacy budget exhausted after {round_num} rounds"
+                    )
                     break
 
-                logger.info(f"Participating in round {round_num + 1}/{max_rounds}")
+                logger.info(
+                    f"Participating in round {round_num + 1}/{max_rounds}"
+                )
 
                 success = await self.participate_in_round()
                 if not success:
-                    logger.error(f"Failed to participate in round {round_num + 1}")
+                    logger.error(
+                        f"Failed to participate in round {round_num + 1}"
+                    )
                     break
 
                 # Wait between rounds (in practice, server would coordinate this)

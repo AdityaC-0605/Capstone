@@ -36,7 +36,9 @@ try:
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
-    warnings.warn("Scikit-learn not available. Install with: pip install scikit-learn")
+    warnings.warn(
+        "Scikit-learn not available. Install with: pip install scikit-learn"
+    )
 
 try:
     from ..core.logging import get_audit_logger, get_logger
@@ -161,7 +163,9 @@ class FairnessMetricsCalculator:
         if metric not in self.metric_functions:
             raise ValueError(f"Unsupported metric: {metric}")
 
-        return self.metric_functions[metric](y_true, y_pred, y_prob, protected_attr)
+        return self.metric_functions[metric](
+            y_true, y_pred, y_prob, protected_attr
+        )
 
     def _demographic_parity(
         self,
@@ -275,9 +279,9 @@ class FairnessMetricsCalculator:
             )
 
         # Overall equalized odds violation
-        results["overall_violation"] = results.get("tpr_disparity", 0) + results.get(
-            "fpr_disparity", 0
-        )
+        results["overall_violation"] = results.get(
+            "tpr_disparity", 0
+        ) + results.get("fpr_disparity", 0)
 
         return results
 
@@ -314,9 +318,9 @@ class FairnessMetricsCalculator:
                 if np.sum(bin_mask) > 0:
                     bin_accuracy = np.mean(group_true[bin_mask])
                     bin_confidence = np.mean(group_prob[bin_mask])
-                    calibration_error += abs(bin_accuracy - bin_confidence) * np.sum(
-                        bin_mask
-                    )
+                    calibration_error += abs(
+                        bin_accuracy - bin_confidence
+                    ) * np.sum(bin_mask)
                     bin_count += np.sum(bin_mask)
 
             if bin_count > 0:
@@ -495,7 +499,11 @@ class ProtectedAttributeAnalyzer:
 
         # AUC score if probabilities available
         auc_score = None
-        if y_prob is not None and len(np.unique(y_true)) > 1 and SKLEARN_AVAILABLE:
+        if (
+            y_prob is not None
+            and len(np.unique(y_true)) > 1
+            and SKLEARN_AVAILABLE
+        ):
             try:
                 auc_score = roc_auc_score(y_true, y_prob)
             except Exception:
@@ -536,7 +544,9 @@ class ProtectedAttributeAnalyzer:
         max_percentage = max(percentages)
         min_percentage = min(percentages)
 
-        disparity_ratio = min_percentage / max_percentage if max_percentage > 0 else 0
+        disparity_ratio = (
+            min_percentage / max_percentage if max_percentage > 0 else 0
+        )
 
         # Determine if there's significant underrepresentation
         underrepresented_threshold = (
@@ -562,12 +572,16 @@ class ProtectedAttributeAnalyzer:
 class BiasDetector:
     """Main bias detection system."""
 
-    def __init__(self, fairness_thresholds: Optional[List[FairnessThreshold]] = None):
+    def __init__(
+        self, fairness_thresholds: Optional[List[FairnessThreshold]] = None
+    ):
         self.metrics_calculator = FairnessMetricsCalculator()
         self.attribute_analyzer = ProtectedAttributeAnalyzer()
 
         # Default fairness thresholds
-        self.fairness_thresholds = fairness_thresholds or self._get_default_thresholds()
+        self.fairness_thresholds = (
+            fairness_thresholds or self._get_default_thresholds()
+        )
 
         # Detection history
         self.detection_history: List[BiasDetectionResult] = []
@@ -632,7 +646,9 @@ class BiasDetector:
         """
 
         if metrics is None:
-            metrics = [threshold.metric for threshold in self.fairness_thresholds]
+            metrics = [
+                threshold.metric for threshold in self.fairness_thresholds
+            ]
 
         results = []
 
@@ -646,7 +662,12 @@ class BiasDetector:
             for metric in metrics:
                 try:
                     result = self._detect_bias_for_attribute_metric(
-                        y_true, y_pred, y_prob, attr_values, protected_attr_enum, metric
+                        y_true,
+                        y_pred,
+                        y_prob,
+                        attr_values,
+                        protected_attr_enum,
+                        metric,
                     )
                     results.append(result)
 
@@ -662,7 +683,8 @@ class BiasDetector:
         significant_bias = [
             r
             for r in results
-            if r.bias_detected and r.bias_level in [BiasLevel.HIGH, BiasLevel.SEVERE]
+            if r.bias_detected
+            and r.bias_level in [BiasLevel.HIGH, BiasLevel.SEVERE]
         ]
         if significant_bias:
             self._log_bias_violations(significant_bias)
@@ -729,7 +751,9 @@ class BiasDetector:
         )
 
     def _evaluate_bias_level(
-        self, metric_values: Dict[str, float], threshold_config: FairnessThreshold
+        self,
+        metric_values: Dict[str, float],
+        threshold_config: FairnessThreshold,
     ) -> Tuple[bool, BiasLevel, float]:
         """Evaluate bias level based on metric values and thresholds."""
 
@@ -789,7 +813,9 @@ class BiasDetector:
         try:
             unique_groups = np.unique(protected_attr)
             if len(unique_groups) != 2:
-                return None  # Chi-square test works best for binary comparisons
+                return (
+                    None  # Chi-square test works best for binary comparisons
+                )
 
             # Create contingency table
             group1_mask = protected_attr == unique_groups[0]
@@ -813,10 +839,14 @@ class BiasDetector:
                 return p_value
 
             # For other metrics, use permutation test
-            return self._permutation_test(y_true, y_pred, protected_attr, metric)
+            return self._permutation_test(
+                y_true, y_pred, protected_attr, metric
+            )
 
         except Exception as e:
-            logger.warning(f"Could not calculate statistical significance: {e}")
+            logger.warning(
+                f"Could not calculate statistical significance: {e}"
+            )
             return None
 
     def _permutation_test(
@@ -905,7 +935,9 @@ class BiasDetector:
         # Summary statistics
         total_tests = len(results)
         violations = [r for r in results if r.bias_detected]
-        violation_rate = len(violations) / total_tests if total_tests > 0 else 0
+        violation_rate = (
+            len(violations) / total_tests if total_tests > 0 else 0
+        )
 
         # Bias level distribution
         bias_levels = defaultdict(int)
@@ -916,7 +948,9 @@ class BiasDetector:
         attribute_violation_rates = {}
         for attr, attr_results in by_attribute.items():
             attr_violations = [r for r in attr_results if r.bias_detected]
-            attribute_violation_rates[attr] = len(attr_violations) / len(attr_results)
+            attribute_violation_rates[attr] = len(attr_violations) / len(
+                attr_results
+            )
 
         metric_violation_rates = {}
         for metric, metric_results in by_metric.items():
@@ -935,7 +969,9 @@ class BiasDetector:
             "by_protected_attribute": {
                 attr: {
                     "tests_conducted": len(attr_results),
-                    "violations": len([r for r in attr_results if r.bias_detected]),
+                    "violations": len(
+                        [r for r in attr_results if r.bias_detected]
+                    ),
                     "violation_rate": attribute_violation_rates[attr],
                     "worst_violation": max(
                         attr_results, key=lambda x: x.overall_metric
@@ -946,7 +982,9 @@ class BiasDetector:
             "by_fairness_metric": {
                 metric: {
                     "tests_conducted": len(metric_results),
-                    "violations": len([r for r in metric_results if r.bias_detected]),
+                    "violations": len(
+                        [r for r in metric_results if r.bias_detected]
+                    ),
                     "violation_rate": metric_violation_rates[metric],
                     "average_disparity": np.mean(
                         [r.overall_metric for r in metric_results]
@@ -966,14 +1004,18 @@ class BiasDetector:
         recommendations = []
 
         # Check for severe violations
-        severe_violations = [r for r in results if r.bias_level == BiasLevel.SEVERE]
+        severe_violations = [
+            r for r in results if r.bias_level == BiasLevel.SEVERE
+        ]
         if severe_violations:
             recommendations.append(
                 "URGENT: Severe bias detected. Consider immediate model retraining with bias mitigation techniques."
             )
 
         # Check for high violations
-        high_violations = [r for r in results if r.bias_level == BiasLevel.HIGH]
+        high_violations = [
+            r for r in results if r.bias_level == BiasLevel.HIGH
+        ]
         if high_violations:
             recommendations.append(
                 "High bias levels detected. Implement bias mitigation strategies before deployment."
@@ -983,7 +1025,8 @@ class BiasDetector:
         dp_violations = [
             r
             for r in results
-            if r.metric == FairnessMetric.DEMOGRAPHIC_PARITY and r.bias_detected
+            if r.metric == FairnessMetric.DEMOGRAPHIC_PARITY
+            and r.bias_detected
         ]
         if dp_violations:
             recommendations.append(
@@ -1023,11 +1066,15 @@ class BiasDetector:
 
         return recommendations
 
-    def get_detection_history(self, days: int = 30) -> List[BiasDetectionResult]:
+    def get_detection_history(
+        self, days: int = 30
+    ) -> List[BiasDetectionResult]:
         """Get bias detection history for the specified number of days."""
 
         cutoff_date = datetime.now() - timedelta(days=days)
-        return [r for r in self.detection_history if r.timestamp >= cutoff_date]
+        return [
+            r for r in self.detection_history if r.timestamp >= cutoff_date
+        ]
 
 
 # Utility functions
@@ -1068,7 +1115,9 @@ if __name__ == "__main__":
     # Protected attributes
     gender = np.random.choice(["male", "female"], n_samples, p=[0.6, 0.4])
     race = np.random.choice(
-        ["white", "black", "hispanic", "asian"], n_samples, p=[0.5, 0.2, 0.2, 0.1]
+        ["white", "black", "hispanic", "asian"],
+        n_samples,
+        p=[0.5, 0.2, 0.2, 0.1],
     )
 
     # Simulate biased predictions (higher approval rate for certain groups)
@@ -1085,7 +1134,9 @@ if __name__ == "__main__":
     # Detect bias
     protected_attributes = {"gender": gender, "race": race}
 
-    results = detector.detect_bias(y_true, y_pred, protected_attributes, y_prob)
+    results = detector.detect_bias(
+        y_true, y_pred, protected_attributes, y_prob
+    )
 
     # Generate report
     report = detector.generate_bias_report(results)

@@ -44,7 +44,11 @@ except ImportError:
         CarbonFootprint,
         CarbonFootprintConfig,
     )
-    from sustainability.energy_tracker import EnergyConfig, EnergyReport, EnergyTracker
+    from sustainability.energy_tracker import (
+        EnergyConfig,
+        EnergyReport,
+        EnergyTracker,
+    )
     from sustainability.esg_dashboard import ESGDashboard, create_esg_dashboard
     from sustainability.esg_metrics import (
         ESGCategory,
@@ -140,13 +144,16 @@ class SustainabilityMonitor:
         if self.config.enable_dashboard:
             try:
                 self.dashboard = create_esg_dashboard(
-                    esg_collector=self.esg_collector, port=self.config.dashboard_port
+                    esg_collector=self.esg_collector,
+                    port=self.config.dashboard_port,
                 )
                 logger.info(
                     f"ESG Dashboard initialized on port {self.config.dashboard_port}"
                 )
             except ImportError:
-                logger.warning("Dashboard not available - Dash/Plotly not installed")
+                logger.warning(
+                    "Dashboard not available - Dash/Plotly not installed"
+                )
 
         # Monitoring state
         self.is_monitoring = False
@@ -245,7 +252,9 @@ class SustainabilityMonitor:
         """Start tracking sustainability metrics for an experiment."""
 
         # Start energy tracking
-        energy_experiment_id = self.energy_tracker.start_tracking(experiment_id)
+        energy_experiment_id = self.energy_tracker.start_tracking(
+            experiment_id
+        )
 
         # Store experiment metadata
         self.active_experiments[experiment_id] = {
@@ -254,7 +263,9 @@ class SustainabilityMonitor:
             "metadata": metadata or {},
         }
 
-        logger.info(f"Started sustainability tracking for experiment: {experiment_id}")
+        logger.info(
+            f"Started sustainability tracking for experiment: {experiment_id}"
+        )
 
         audit_logger.log_model_operation(
             user_id="system",
@@ -291,14 +302,17 @@ class SustainabilityMonitor:
 
         # Collect ESG metrics
         esg_metrics = self.esg_collector.collect_all_metrics(
-            energy_reports=[energy_report], carbon_footprints=[carbon_footprint]
+            energy_reports=[energy_report],
+            carbon_footprints=[carbon_footprint],
         )
 
         # Calculate ESG score
         esg_score = self.esg_collector.calculate_esg_score(esg_metrics)
 
         # Generate recommendations
-        recommendations = self.esg_collector.generate_recommendations(esg_metrics)
+        recommendations = self.esg_collector.generate_recommendations(
+            esg_metrics
+        )
 
         # Create experiment report
         experiment_report = {
@@ -343,7 +357,9 @@ class SustainabilityMonitor:
         """Collect and analyze current sustainability metrics."""
 
         # Get recent carbon footprints and energy reports
-        recent_footprints = self.carbon_calculator.carbon_history[-10:]  # Last 10
+        recent_footprints = self.carbon_calculator.carbon_history[
+            -10:
+        ]  # Last 10
 
         # Create mock energy reports for recent footprints (in real implementation, these would be stored)
         recent_energy_reports = []
@@ -370,9 +386,13 @@ class SustainabilityMonitor:
             )
 
             # Calculate current ESG score
-            current_score = self.esg_collector.calculate_esg_score(current_metrics)
+            current_score = self.esg_collector.calculate_esg_score(
+                current_metrics
+            )
 
-            logger.debug(f"Current ESG score: {current_score.overall_score:.2f}")
+            logger.debug(
+                f"Current ESG score: {current_score.overall_score:.2f}"
+            )
 
     def _check_alert_conditions(self):
         """Check for alert conditions and generate alerts."""
@@ -385,13 +405,15 @@ class SustainabilityMonitor:
             try:
                 # Check daily budget
                 if self.config.carbon_config.daily_carbon_budget_kg:
-                    daily_status = self.carbon_calculator.track_carbon_budget("daily")
+                    daily_status = self.carbon_calculator.track_carbon_budget(
+                        "daily"
+                    )
                     self._check_budget_alert(daily_status, "daily")
 
                 # Check monthly budget
                 if self.config.carbon_config.monthly_carbon_budget_kg:
-                    monthly_status = self.carbon_calculator.track_carbon_budget(
-                        "monthly"
+                    monthly_status = (
+                        self.carbon_calculator.track_carbon_budget("monthly")
                     )
                     self._check_budget_alert(monthly_status, "monthly")
 
@@ -540,7 +562,8 @@ class SustainabilityMonitor:
             output_dir.mkdir(parents=True, exist_ok=True)
 
             report_file = (
-                output_dir / f"{report['experiment_id']}_sustainability_report.json"
+                output_dir
+                / f"{report['experiment_id']}_sustainability_report.json"
             )
             with open(report_file, "w") as f:
                 json.dump(report, f, indent=2)
@@ -550,7 +573,9 @@ class SustainabilityMonitor:
         except Exception as e:
             logger.error(f"Error saving sustainability report: {e}")
 
-    def add_alert_callback(self, callback: Callable[[SustainabilityAlert], None]):
+    def add_alert_callback(
+        self, callback: Callable[[SustainabilityAlert], None]
+    ):
         """Add callback function for alert notifications."""
         self.alert_callbacks.append(callback)
 
@@ -574,17 +599,23 @@ class SustainabilityMonitor:
                 [a for a in recent_alerts if a.level == AlertLevel.WARNING]
             ),
             "dashboard_available": self.dashboard is not None,
-            "dashboard_port": self.config.dashboard_port if self.dashboard else None,
+            "dashboard_port": (
+                self.config.dashboard_port if self.dashboard else None
+            ),
         }
 
-    def generate_sustainability_report(self, period_days: int = 30) -> ESGReport:
+    def generate_sustainability_report(
+        self, period_days: int = 30
+    ) -> ESGReport:
         """Generate comprehensive sustainability report for a period."""
 
         period_start = datetime.now() - timedelta(days=period_days)
         period_end = datetime.now()
 
         # Get metrics for the period
-        period_metrics = self.esg_collector.get_metrics_history(days=period_days)
+        period_metrics = self.esg_collector.get_metrics_history(
+            days=period_days
+        )
 
         if not period_metrics:
             logger.warning("No metrics available for sustainability report")
@@ -607,7 +638,9 @@ class SustainabilityMonitor:
         current_score = self.esg_collector.calculate_esg_score(period_metrics)
 
         # Generate recommendations and alerts
-        recommendations = self.esg_collector.generate_recommendations(period_metrics)
+        recommendations = self.esg_collector.generate_recommendations(
+            period_metrics
+        )
         alerts = self.esg_collector.generate_alerts(period_metrics)
 
         # Create report
@@ -668,7 +701,9 @@ class SustainabilityTracker:
         self.report = None
 
     def __enter__(self):
-        self.monitor.start_experiment_tracking(self.experiment_id, self.metadata)
+        self.monitor.start_experiment_tracking(
+            self.experiment_id, self.metadata
+        )
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

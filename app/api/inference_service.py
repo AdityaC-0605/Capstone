@@ -18,7 +18,13 @@ from typing import Any, Dict, List, Optional, Union
 # FastAPI dependencies
 try:
     import uvicorn
-    from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+    from fastapi import (
+        BackgroundTasks,
+        Depends,
+        FastAPI,
+        HTTPException,
+        Request,
+    )
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.middleware.trustedhost import TrustedHostMiddleware
     from fastapi.responses import JSONResponse
@@ -28,7 +34,9 @@ try:
     FASTAPI_AVAILABLE = True
 except ImportError:
     FASTAPI_AVAILABLE = False
-    warnings.warn("FastAPI not available. Install with: pip install fastapi uvicorn")
+    warnings.warn(
+        "FastAPI not available. Install with: pip install fastapi uvicorn"
+    )
 
 # Rate limiting
 try:
@@ -128,7 +136,9 @@ class CreditApplication(BaseModel):
         ..., ge=0, le=1, description="Debt-to-income ratio"
     )
     credit_score: int = Field(..., ge=300, le=850, description="Credit score")
-    loan_amount: float = Field(..., ge=1000, description="Requested loan amount")
+    loan_amount: float = Field(
+        ..., ge=1000, description="Requested loan amount"
+    )
     loan_purpose: str = Field(..., description="Purpose of the loan")
 
     # Optional demographic information (for fairness monitoring)
@@ -141,7 +151,9 @@ class CreditApplication(BaseModel):
 
     # Additional features
     home_ownership: str = Field(..., description="Home ownership status")
-    verification_status: str = Field(..., description="Income verification status")
+    verification_status: str = Field(
+        ..., description="Income verification status"
+    )
 
     @validator("loan_purpose")
     def validate_loan_purpose(cls, v):
@@ -156,7 +168,9 @@ class CreditApplication(BaseModel):
             "other",
         ]
         if v.lower() not in valid_purposes:
-            raise ValueError(f"Invalid loan purpose. Must be one of: {valid_purposes}")
+            raise ValueError(
+                f"Invalid loan purpose. Must be one of: {valid_purposes}"
+            )
         return v.lower()
 
     @validator("home_ownership")
@@ -182,17 +196,23 @@ class PredictionRequest(BaseModel):
     """Prediction request model."""
 
     application: CreditApplication
-    include_explanation: bool = Field(True, description="Include model explanation")
+    include_explanation: bool = Field(
+        True, description="Include model explanation"
+    )
     explanation_type: str = Field(
         "shap", description="Type of explanation (shap, lime)"
     )
-    track_sustainability: bool = Field(True, description="Track sustainability metrics")
+    track_sustainability: bool = Field(
+        True, description="Track sustainability metrics"
+    )
 
     @validator("explanation_type")
     def validate_explanation_type(cls, v):
         valid_types = ["shap", "lime", "attention", "counterfactual"]
         if v.lower() not in valid_types:
-            raise ValueError(f"Invalid explanation type. Must be one of: {valid_types}")
+            raise ValueError(
+                f"Invalid explanation type. Must be one of: {valid_types}"
+            )
         return v.lower()
 
 
@@ -233,7 +253,9 @@ class BatchPredictionRequest(BaseModel):
         False, description="Include explanations (slower for batch)"
     )
     explanation_type: str = Field("shap", description="Type of explanation")
-    track_sustainability: bool = Field(True, description="Track sustainability metrics")
+    track_sustainability: bool = Field(
+        True, description="Track sustainability metrics"
+    )
 
 
 class BatchPredictionResponse(BaseModel):
@@ -252,7 +274,9 @@ class APIConfig:
     def __init__(self):
         # API settings
         self.title = "Credit Risk Prediction API"
-        self.description = "Sustainable AI-powered credit risk assessment service"
+        self.description = (
+            "Sustainable AI-powered credit risk assessment service"
+        )
         self.version = "1.0.0"
         self.host = "0.0.0.0"
         self.port = 8000
@@ -309,7 +333,10 @@ class APIKeyManager:
         if api_key in self.api_keys:
             # Update usage stats
             if api_key not in self.key_usage:
-                self.key_usage[api_key] = {"requests": 0, "last_used": datetime.now()}
+                self.key_usage[api_key] = {
+                    "requests": 0,
+                    "last_used": datetime.now(),
+                }
 
             self.key_usage[api_key]["requests"] += 1
             self.key_usage[api_key]["last_used"] = datetime.now()
@@ -389,7 +416,9 @@ class InferenceService:
 
             # Log response
             process_time = time.time() - start_time
-            logger.info(f"Response: {response.status_code} ({process_time:.3f}s)")
+            logger.info(
+                f"Response: {response.status_code} ({process_time:.3f}s)"
+            )
 
             return response
 
@@ -403,7 +432,9 @@ class InferenceService:
         # Initialize limiter
         limiter = Limiter(key_func=get_remote_address)
         self.app.state.limiter = limiter
-        self.app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+        self.app.add_exception_handler(
+            RateLimitExceeded, _rate_limit_exceeded_handler
+        )
 
         self.limiter = limiter
 
@@ -439,7 +470,12 @@ class InferenceService:
                     "home_ownership",
                     "verification_status",
                 ],
-                "explanation_types": ["shap", "lime", "attention", "counterfactual"],
+                "explanation_types": [
+                    "shap",
+                    "lime",
+                    "attention",
+                    "counterfactual",
+                ],
                 "sustainability_tracking": self.config.enable_sustainability_tracking,
             }
 
@@ -457,10 +493,14 @@ class InferenceService:
                 # This would be applied as a decorator in a real implementation
                 pass
 
-            return await self._make_prediction(request, background_tasks, api_key)
+            return await self._make_prediction(
+                request, background_tasks, api_key
+            )
 
         # Batch prediction endpoint
-        @self.app.post("/predict/batch", response_model=BatchPredictionResponse)
+        @self.app.post(
+            "/predict/batch", response_model=BatchPredictionResponse
+        )
         async def predict_batch(
             request: BatchPredictionRequest,
             background_tasks: BackgroundTasks,
@@ -468,7 +508,9 @@ class InferenceService:
         ):
             """Make batch credit risk predictions."""
 
-            return await self._make_batch_prediction(request, background_tasks, api_key)
+            return await self._make_batch_prediction(
+                request, background_tasks, api_key
+            )
 
         # API key info endpoint
         @self.app.get("/api-key/info")
@@ -559,7 +601,9 @@ class InferenceService:
 
             # Validate model is loaded
             if self.model is None:
-                raise HTTPException(status_code=503, detail="Model not available")
+                raise HTTPException(
+                    status_code=503, detail="Model not available"
+                )
 
             # Prepare input data
             input_data = self._prepare_input_data(request.application)
@@ -641,7 +685,9 @@ class InferenceService:
                 except:
                     pass
 
-            raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+            raise HTTPException(
+                status_code=500, detail=f"Prediction failed: {str(e)}"
+            )
 
     async def _make_batch_prediction(
         self,
@@ -686,8 +732,10 @@ class InferenceService:
                     )
 
                     # Make prediction (without sustainability tracking)
-                    pred_response = await self._make_single_prediction_internal(
-                        individual_request
+                    pred_response = (
+                        await self._make_single_prediction_internal(
+                            individual_request
+                        )
                     )
                     predictions.append(pred_response)
 
@@ -713,8 +761,11 @@ class InferenceService:
             batch_summary = {
                 "total_applications": len(request.applications),
                 "successful_predictions": len(successful_predictions),
-                "failed_predictions": len(predictions) - len(successful_predictions),
-                "average_risk_score": sum(p.risk_score for p in successful_predictions)
+                "failed_predictions": len(predictions)
+                - len(successful_predictions),
+                "average_risk_score": sum(
+                    p.risk_score for p in successful_predictions
+                )
                 / max(len(successful_predictions), 1),
                 "risk_distribution": self._calculate_risk_distribution(
                     successful_predictions
@@ -808,7 +859,9 @@ class InferenceService:
             message="Prediction completed successfully",
         )
 
-    def _prepare_input_data(self, application: CreditApplication) -> Dict[str, Any]:
+    def _prepare_input_data(
+        self, application: CreditApplication
+    ) -> Dict[str, Any]:
         """Prepare input data for model prediction."""
 
         return {
@@ -856,7 +909,10 @@ class InferenceService:
         return distribution
 
     async def _log_prediction(
-        self, request: PredictionRequest, response: PredictionResponse, api_key: str
+        self,
+        request: PredictionRequest,
+        response: PredictionResponse,
+        api_key: str,
     ):
         """Log prediction for audit and monitoring."""
 
@@ -892,7 +948,9 @@ class InferenceService:
             "batch_id": response.batch_id,
             "api_key": api_key[:10] + "...",
             "batch_size": len(request.applications),
-            "successful_predictions": response.batch_summary["successful_predictions"],
+            "successful_predictions": response.batch_summary[
+                "successful_predictions"
+            ],
             "failed_predictions": response.batch_summary["failed_predictions"],
             "average_risk_score": response.batch_summary["average_risk_score"],
             "processing_time_ms": response.processing_time_ms,
@@ -909,7 +967,10 @@ class InferenceService:
         logger.info(f"Starting inference service on {host}:{port}")
 
         uvicorn.run(
-            self.app, host=host, port=port, log_level=self.config.log_level.lower()
+            self.app,
+            host=host,
+            port=port,
+            log_level=self.config.log_level.lower(),
         )
 
     def get_app(self):
@@ -920,7 +981,9 @@ class InferenceService:
 # Utility functions
 
 
-def create_inference_service(config: Optional[APIConfig] = None) -> InferenceService:
+def create_inference_service(
+    config: Optional[APIConfig] = None,
+) -> InferenceService:
     """Create inference service instance."""
     return InferenceService(config)
 
@@ -938,4 +1001,6 @@ if __name__ == "__main__":
     if FASTAPI_AVAILABLE:
         run_inference_service()
     else:
-        print("FastAPI not available. Install with: pip install fastapi uvicorn")
+        print(
+            "FastAPI not available. Install with: pip install fastapi uvicorn"
+        )
