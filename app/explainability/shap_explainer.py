@@ -220,7 +220,9 @@ class SHAPExplainer:
         # This will be set when we have background data
         pass
 
-    def set_background_data(self, X_background: Union[pd.DataFrame, np.ndarray]):
+    def set_background_data(
+        self, X_background: Union[pd.DataFrame, np.ndarray]
+    ):
         """Set background data for SHAP explainer."""
         if isinstance(X_background, pd.DataFrame):
             self.background_data = X_background.values
@@ -232,7 +234,9 @@ class SHAPExplainer:
         # Sample background data if too large
         if len(self.background_data) > self.config.background_samples:
             indices = np.random.choice(
-                len(self.background_data), self.config.background_samples, replace=False
+                len(self.background_data),
+                self.config.background_samples,
+                replace=False,
             )
             self.background_data = self.background_data[indices]
 
@@ -244,7 +248,9 @@ class SHAPExplainer:
     def _create_explainer(self):
         """Create the appropriate SHAP explainer."""
         if self.background_data is None:
-            raise ValueError("Background data must be set before creating explainer")
+            raise ValueError(
+                "Background data must be set before creating explainer"
+            )
 
         try:
             if self.config.explainer_type == "auto":
@@ -289,7 +295,9 @@ class SHAPExplainer:
             )
         except:
             # Fallback to KernelExplainer
-            return shap.KernelExplainer(self.model_wrapper, self.background_data)
+            return shap.KernelExplainer(
+                self.model_wrapper, self.background_data
+            )
 
     def explain_instance(
         self, X: Union[pd.DataFrame, np.ndarray], instance_id: str = None
@@ -305,7 +313,9 @@ class SHAPExplainer:
             SHAPExplanation object
         """
         if self.explainer is None:
-            raise ValueError("Explainer not initialized. Set background data first.")
+            raise ValueError(
+                "Explainer not initialized. Set background data first."
+            )
 
         start_time = datetime.now()
 
@@ -330,7 +340,9 @@ class SHAPExplainer:
         # Calculate SHAP values
         try:
             if isinstance(self.explainer, shap.DeepExplainer):
-                shap_values = self.explainer.shap_values(torch.FloatTensor(X_array))
+                shap_values = self.explainer.shap_values(
+                    torch.FloatTensor(X_array)
+                )
                 if isinstance(shap_values, list):
                     shap_values = shap_values[0]  # For binary classification
                 base_value = self.explainer.expected_value
@@ -361,7 +373,8 @@ class SHAPExplainer:
 
         # Calculate feature importance
         feature_importance = {
-            name: float(abs(value)) for name, value in zip(feature_names, shap_values)
+            name: float(abs(value))
+            for name, value in zip(feature_names, shap_values)
         }
 
         # Get top positive and negative features
@@ -369,10 +382,14 @@ class SHAPExplainer:
         feature_impacts.sort(key=lambda x: x[1], reverse=True)
 
         top_positive = [
-            (name, float(value)) for name, value in feature_impacts if value > 0
+            (name, float(value))
+            for name, value in feature_impacts
+            if value > 0
         ][:5]
         top_negative = [
-            (name, float(value)) for name, value in feature_impacts if value < 0
+            (name, float(value))
+            for name, value in feature_impacts
+            if value < 0
         ][-5:]
 
         explanation_time = (datetime.now() - start_time).total_seconds()
@@ -443,7 +460,9 @@ class SHAPExplainer:
                 batch_ids = instance_ids[i:batch_end]
 
                 for j, (x, instance_id) in enumerate(zip(batch_X, batch_ids)):
-                    explanation = self.explain_instance(x.reshape(1, -1), instance_id)
+                    explanation = self.explain_instance(
+                        x.reshape(1, -1), instance_id
+                    )
                     explanations.append(explanation)
 
                 logger.debug(
@@ -452,10 +471,14 @@ class SHAPExplainer:
         else:
             # Process all at once
             for x, instance_id in zip(X_array, instance_ids):
-                explanation = self.explain_instance(x.reshape(1, -1), instance_id)
+                explanation = self.explain_instance(
+                    x.reshape(1, -1), instance_id
+                )
                 explanations.append(explanation)
 
-        logger.info(f"Generated explanations for {len(explanations)} instances")
+        logger.info(
+            f"Generated explanations for {len(explanations)} instances"
+        )
         return explanations
 
     def get_global_importance(
@@ -478,15 +501,21 @@ class SHAPExplainer:
 
         # Sample data if requested
         if sample_size and len(X_array) > sample_size:
-            indices = np.random.choice(len(X_array), sample_size, replace=False)
+            indices = np.random.choice(
+                len(X_array), sample_size, replace=False
+            )
             X_array = X_array[indices]
 
-        logger.info(f"Calculating global importance for {len(X_array)} instances")
+        logger.info(
+            f"Calculating global importance for {len(X_array)} instances"
+        )
 
         # Get SHAP values for all instances
         try:
             if isinstance(self.explainer, shap.DeepExplainer):
-                shap_values = self.explainer.shap_values(torch.FloatTensor(X_array))
+                shap_values = self.explainer.shap_values(
+                    torch.FloatTensor(X_array)
+                )
             else:
                 shap_values = self.explainer.shap_values(X_array)
 
@@ -584,7 +613,9 @@ class SHAPExplainer:
                 colors.append("green" if value > 0 else "red")
 
             # Plot bars
-            for i, (pos, val, color) in enumerate(zip(positions, shap_values, colors)):
+            for i, (pos, val, color) in enumerate(
+                zip(positions, shap_values, colors)
+            ):
                 ax.bar(
                     i,
                     abs(val),
@@ -632,7 +663,9 @@ class SHAPExplainer:
 
             # Save plot
             if self.config.save_plots:
-                plot_path = self._save_plot(fig, f"waterfall_{explanation.instance_id}")
+                plot_path = self._save_plot(
+                    fig, f"waterfall_{explanation.instance_id}"
+                )
                 plt.close(fig)
                 return plot_path
 
@@ -684,7 +717,9 @@ class SHAPExplainer:
             ax.set_yticks(y_pos)
             ax.set_yticklabels(feature_names)
             ax.set_xlabel("SHAP Value")
-            ax.set_title(f"SHAP Feature Importance - {explanation.instance_id}")
+            ax.set_title(
+                f"SHAP Feature Importance - {explanation.instance_id}"
+            )
             ax.axvline(x=0, color="black", linestyle="-", alpha=0.3)
             ax.grid(True, alpha=0.3)
 
@@ -692,7 +727,9 @@ class SHAPExplainer:
 
             # Save plot
             if self.config.save_plots:
-                plot_path = self._save_plot(fig, f"bar_{explanation.instance_id}")
+                plot_path = self._save_plot(
+                    fig, f"bar_{explanation.instance_id}"
+                )
                 plt.close(fig)
                 return plot_path
 
@@ -721,10 +758,14 @@ class SHAPExplainer:
 
             # Separate positive and negative contributions
             negative_features = [
-                (name, val, fval) for name, val, fval in feature_impacts if val < 0
+                (name, val, fval)
+                for name, val, fval in feature_impacts
+                if val < 0
             ]
             positive_features = [
-                (name, val, fval) for name, val, fval in feature_impacts if val > 0
+                (name, val, fval)
+                for name, val, fval in feature_impacts
+                if val > 0
             ]
 
             # Plot negative contributions (left side)
@@ -810,7 +851,9 @@ class SHAPExplainer:
 
             # Save plot
             if self.config.save_plots:
-                plot_path = self._save_plot(fig, f"force_{explanation.instance_id}")
+                plot_path = self._save_plot(
+                    fig, f"force_{explanation.instance_id}"
+                )
                 plt.close(fig)
                 return plot_path
 
@@ -842,7 +885,12 @@ class SHAPExplainer:
             colors = ["green" if val > 0 else "red" for val in shap_values]
             y_pos = np.arange(len(feature_names))
 
-            ax1.barh(y_pos, [abs(val) for val in shap_values], color=colors, alpha=0.7)
+            ax1.barh(
+                y_pos,
+                [abs(val) for val in shap_values],
+                color=colors,
+                alpha=0.7,
+            )
             ax1.set_yticks(y_pos)
             ax1.set_yticklabels(feature_names)
             ax1.set_xlabel("|SHAP Value|")
@@ -863,7 +911,9 @@ class SHAPExplainer:
 
             # Save plot
             if self.config.save_plots:
-                plot_path = self._save_plot(fig, f"summary_{explanation.instance_id}")
+                plot_path = self._save_plot(
+                    fig, f"summary_{explanation.instance_id}"
+                )
                 plt.close(fig)
                 return plot_path
 
@@ -900,7 +950,9 @@ class SHAPExplainer:
             fig, ax = plt.subplots(figsize=(12, 8))
 
             # Get top features
-            n_features = min(self.config.max_display_features, len(global_importance))
+            n_features = min(
+                self.config.max_display_features, len(global_importance)
+            )
             top_features = list(global_importance.items())[:n_features]
 
             feature_names = [f[0] for f in top_features]
@@ -908,7 +960,9 @@ class SHAPExplainer:
 
             # Create horizontal bar plot
             y_pos = np.arange(len(feature_names))
-            bars = ax.barh(y_pos, importance_values, color="steelblue", alpha=0.7)
+            bars = ax.barh(
+                y_pos, importance_values, color="steelblue", alpha=0.7
+            )
 
             # Add value labels
             for i, (bar, val) in enumerate(zip(bars, importance_values)):
@@ -963,7 +1017,9 @@ class SHAPExplainer:
                 "metadata": {
                     "num_explanations": len(explanations),
                     "model_type": (
-                        explanations[0].model_type if explanations else "unknown"
+                        explanations[0].model_type
+                        if explanations
+                        else "unknown"
                     ),
                     "created_at": datetime.now().isoformat(),
                     "config": {
@@ -979,7 +1035,9 @@ class SHAPExplainer:
             with open(save_path, "w") as f:
                 json.dump(explanations_data, f, indent=2)
 
-            logger.info(f"Saved {len(explanations)} explanations to {save_path}")
+            logger.info(
+                f"Saved {len(explanations)} explanations to {save_path}"
+            )
             return str(save_path)
 
         except Exception as e:
@@ -1010,7 +1068,9 @@ class SHAPExplainer:
                 )
                 explanations.append(explanation)
 
-            logger.info(f"Loaded {len(explanations)} explanations from {filepath}")
+            logger.info(
+                f"Loaded {len(explanations)} explanations from {filepath}"
+            )
             return explanations
 
         except Exception as e:
@@ -1082,7 +1142,9 @@ def batch_explain_decisions(
     Returns:
         List of SHAP explanations
     """
-    config = SHAPConfig(feature_names=feature_names, enable_batch_processing=True)
+    config = SHAPConfig(
+        feature_names=feature_names, enable_batch_processing=True
+    )
     explainer = create_shap_explainer(model, background_data, config)
 
     return explainer.explain_batch(instances)

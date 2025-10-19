@@ -67,7 +67,9 @@ class ClientRegistrationRequest(BaseModel):
     """Request model for client registration."""
 
     client_id: str = Field(..., description="Unique client identifier")
-    public_key: str = Field(..., description="Client's public key in PEM format")
+    public_key: str = Field(
+        ..., description="Client's public key in PEM format"
+    )
     ip_address: str = Field(..., description="Client's IP address")
     port: int = Field(..., description="Client's port number")
     capabilities: Optional[Dict[str, Any]] = Field(
@@ -93,7 +95,9 @@ class ModelUpdateRequest(BaseModel):
 
     client_id: str
     round_number: int
-    model_weights_encoded: str = Field(..., description="Base64 encoded model weights")
+    model_weights_encoded: str = Field(
+        ..., description="Base64 encoded model weights"
+    )
     data_size: int
     training_loss: float
     validation_metrics: Dict[str, float]
@@ -168,7 +172,9 @@ class FederatedServerAPI:
     def _setup_routes(self):
         """Setup API routes."""
 
-        @self.app.post("/api/v1/register", response_model=ClientRegistrationResponse)
+        @self.app.post(
+            "/api/v1/register", response_model=ClientRegistrationResponse
+        )
         async def register_client(
             request: ClientRegistrationRequest,
             background_tasks: BackgroundTasks,
@@ -204,7 +210,9 @@ class FederatedServerAPI:
                         success=True,
                         message="Client registered successfully",
                         authentication_token=(
-                            client_info.authentication_token if client_info else None
+                            client_info.authentication_token
+                            if client_info
+                            else None
                         ),
                         server_public_key=self.communication_manager.communicator.get_public_key_pem(),
                         client_id=request.client_id,
@@ -220,7 +228,9 @@ class FederatedServerAPI:
                     )
 
             except Exception as e:
-                logger.error(f"Registration error for client {request.client_id}: {e}")
+                logger.error(
+                    f"Registration error for client {request.client_id}: {e}"
+                )
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.delete("/api/v1/unregister/{client_id}")
@@ -232,7 +242,9 @@ class FederatedServerAPI:
             try:
                 # Authenticate client
                 if not self._authenticate_client(client_id, credentials):
-                    raise HTTPException(status_code=401, detail="Authentication failed")
+                    raise HTTPException(
+                        status_code=401, detail="Authentication failed"
+                    )
 
                 success = self.server.unregister_client(client_id)
 
@@ -242,15 +254,21 @@ class FederatedServerAPI:
                         "message": "Client unregistered successfully",
                     }
                 else:
-                    raise HTTPException(status_code=404, detail="Client not found")
+                    raise HTTPException(
+                        status_code=404, detail="Client not found"
+                    )
 
             except HTTPException:
                 raise
             except Exception as e:
-                logger.error(f"Unregistration error for client {client_id}: {e}")
+                logger.error(
+                    f"Unregistration error for client {client_id}: {e}"
+                )
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.get("/api/v1/global-model", response_model=GlobalModelResponse)
+        @self.app.get(
+            "/api/v1/global-model", response_model=GlobalModelResponse
+        )
         async def get_global_model(
             client_id: str,
             credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -259,15 +277,19 @@ class FederatedServerAPI:
             try:
                 # Authenticate client
                 if not self._authenticate_client(client_id, credentials):
-                    raise HTTPException(status_code=401, detail="Authentication failed")
+                    raise HTTPException(
+                        status_code=401, detail="Authentication failed"
+                    )
 
                 # Get global model weights
                 global_weights = self.server.get_global_model_weights()
 
                 if global_weights:
                     # Serialize weights
-                    encoded_weights = MessageSerializer.serialize_model_weights(
-                        global_weights
+                    encoded_weights = (
+                        MessageSerializer.serialize_model_weights(
+                            global_weights
+                        )
                     )
 
                     return GlobalModelResponse(
@@ -288,10 +310,14 @@ class FederatedServerAPI:
             except HTTPException:
                 raise
             except Exception as e:
-                logger.error(f"Error getting global model for client {client_id}: {e}")
+                logger.error(
+                    f"Error getting global model for client {client_id}: {e}"
+                )
                 raise HTTPException(status_code=500, detail=str(e))
 
-        @self.app.post("/api/v1/model-update", response_model=ModelUpdateResponse)
+        @self.app.post(
+            "/api/v1/model-update", response_model=ModelUpdateResponse
+        )
         async def submit_model_update(
             request: ModelUpdateRequest,
             background_tasks: BackgroundTasks,
@@ -300,8 +326,12 @@ class FederatedServerAPI:
             """Submit a model update from a client."""
             try:
                 # Authenticate client
-                if not self._authenticate_client(request.client_id, credentials):
-                    raise HTTPException(status_code=401, detail="Authentication failed")
+                if not self._authenticate_client(
+                    request.client_id, credentials
+                ):
+                    raise HTTPException(
+                        status_code=401, detail="Authentication failed"
+                    )
 
                 # Deserialize model weights
                 model_weights = MessageSerializer.deserialize_model_weights(
@@ -326,7 +356,9 @@ class FederatedServerAPI:
                 model_update.model_hash = model_update.calculate_hash()
 
                 # Add to background processing
-                background_tasks.add_task(self._process_model_update, model_update)
+                background_tasks.add_task(
+                    self._process_model_update, model_update
+                )
 
                 return ModelUpdateResponse(
                     success=True,
@@ -373,7 +405,10 @@ class FederatedServerAPI:
                         "participating_clients": round_info.participating_clients,
                     }
                 else:
-                    return {"success": False, "message": "Failed to start new round"}
+                    return {
+                        "success": False,
+                        "message": "Failed to start new round",
+                    }
 
             except Exception as e:
                 logger.error(f"Error starting training round: {e}")
@@ -401,12 +436,16 @@ class FederatedServerAPI:
                         "aggregated_metrics": round_info.aggregated_metrics,
                     }
                 else:
-                    raise HTTPException(status_code=404, detail="Round not found")
+                    raise HTTPException(
+                        status_code=404, detail="Round not found"
+                    )
 
             except HTTPException:
                 raise
             except Exception as e:
-                logger.error(f"Error getting round info for round {round_number}: {e}")
+                logger.error(
+                    f"Error getting round info for round {round_number}: {e}"
+                )
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.post("/api/v1/heartbeat")
@@ -418,19 +457,25 @@ class FederatedServerAPI:
             try:
                 # Authenticate client
                 if not self._authenticate_client(client_id, credentials):
-                    raise HTTPException(status_code=401, detail="Authentication failed")
+                    raise HTTPException(
+                        status_code=401, detail="Authentication failed"
+                    )
 
                 # Update client last seen
                 if client_id in self.server.clients:
                     self.server.clients[client_id].update_last_seen()
                     return {"success": True, "message": "Heartbeat received"}
                 else:
-                    raise HTTPException(status_code=404, detail="Client not registered")
+                    raise HTTPException(
+                        status_code=404, detail="Client not registered"
+                    )
 
             except HTTPException:
                 raise
             except Exception as e:
-                logger.error(f"Error processing heartbeat from client {client_id}: {e}")
+                logger.error(
+                    f"Error processing heartbeat from client {client_id}: {e}"
+                )
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.get("/api/v1/health")
@@ -445,7 +490,9 @@ class FederatedServerAPI:
             }
 
     def _authenticate_client(
-        self, client_id: str, credentials: Optional[HTTPAuthorizationCredentials]
+        self,
+        client_id: str,
+        credentials: Optional[HTTPAuthorizationCredentials],
     ) -> bool:
         """Authenticate a client request."""
         if not self.config.require_authentication:
@@ -454,7 +501,9 @@ class FederatedServerAPI:
         if not credentials:
             return False
 
-        return self.server.authenticate_client(client_id, credentials.credentials)
+        return self.server.authenticate_client(
+            client_id, credentials.credentials
+        )
 
     async def _process_model_update(self, model_update: ModelUpdate):
         """Process a model update in the background."""
@@ -553,17 +602,25 @@ if __name__ == "__main__":
     # Example usage
     import argparse
 
-    parser = argparse.ArgumentParser(description="Run Federated Learning Server")
+    parser = argparse.ArgumentParser(
+        description="Run Federated Learning Server"
+    )
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=8080, help="Port to bind to")
+    parser.add_argument(
+        "--port", type=int, default=8080, help="Port to bind to"
+    )
     parser.add_argument(
         "--max-clients", type=int, default=10, help="Maximum number of clients"
     )
     parser.add_argument(
-        "--require-auth", action="store_true", help="Require client authentication"
+        "--require-auth",
+        action="store_true",
+        help="Require client authentication",
     )
     parser.add_argument(
-        "--enable-encryption", action="store_true", help="Enable message encryption"
+        "--enable-encryption",
+        action="store_true",
+        help="Enable message encryption",
     )
 
     args = parser.parse_args()

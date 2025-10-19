@@ -62,7 +62,9 @@ class PruningConfig:
 
     # Magnitude-based pruning
     sparsity_level: float = 0.5  # Target sparsity (0.0 to 1.0)
-    magnitude_threshold: Optional[float] = None  # Absolute threshold for pruning
+    magnitude_threshold: Optional[float] = (
+        None  # Absolute threshold for pruning
+    )
 
     # Structured pruning
     structured_type: str = "neuron"  # 'neuron', 'channel', 'filter'
@@ -73,7 +75,9 @@ class PruningConfig:
     initial_sparsity: float = 0.0
     final_sparsity: float = 0.8
     pruning_frequency: int = 10  # Prune every N epochs
-    pruning_schedule: str = "polynomial"  # 'linear', 'polynomial', 'exponential'
+    pruning_schedule: str = (
+        "polynomial"  # 'linear', 'polynomial', 'exponential'
+    )
 
     # Fine-tuning
     fine_tune_epochs: int = 20
@@ -81,8 +85,12 @@ class PruningConfig:
     recovery_epochs: int = 5  # Epochs to recover after each pruning step
 
     # Layer selection
-    layers_to_prune: Optional[List[str]] = None  # None means all eligible layers
-    exclude_layers: List[str] = field(default_factory=list)  # Layers to exclude
+    layers_to_prune: Optional[List[str]] = (
+        None  # None means all eligible layers
+    )
+    exclude_layers: List[str] = field(
+        default_factory=list
+    )  # Layers to exclude
 
     # Validation and impact measurement
     validate_pruning: bool = True
@@ -143,7 +151,9 @@ class BasePruner(ABC):
     """Abstract base class for pruning methods."""
 
     @abstractmethod
-    def prune_model(self, model: nn.Module, config: PruningConfig) -> nn.Module:
+    def prune_model(
+        self, model: nn.Module, config: PruningConfig
+    ) -> nn.Module:
         """Prune the model according to the configuration."""
         pass
 
@@ -156,7 +166,9 @@ class BasePruner(ABC):
 class MagnitudePruner(BasePruner):
     """Magnitude-based weight pruning."""
 
-    def prune_model(self, model: nn.Module, config: PruningConfig) -> nn.Module:
+    def prune_model(
+        self, model: nn.Module, config: PruningConfig
+    ) -> nn.Module:
         """Prune model based on weight magnitudes."""
         pruned_model = copy.deepcopy(model)
 
@@ -182,7 +194,9 @@ class MagnitudePruner(BasePruner):
             threshold = config.magnitude_threshold
         else:
             # Use percentile-based threshold
-            threshold = torch.quantile(all_weights_tensor, config.sparsity_level)
+            threshold = torch.quantile(
+                all_weights_tensor, config.sparsity_level
+            )
 
         logger.info(f"Pruning threshold: {threshold:.6f}")
 
@@ -227,7 +241,9 @@ class MagnitudePruner(BasePruner):
 
         # Only prune specific layers if specified
         if config.layers_to_prune is not None:
-            if not any(layer_name in name for layer_name in config.layers_to_prune):
+            if not any(
+                layer_name in name for layer_name in config.layers_to_prune
+            ):
                 return False
 
         # Only prune linear and conv layers
@@ -237,7 +253,9 @@ class MagnitudePruner(BasePruner):
 class StructuredPruner(BasePruner):
     """Structured pruning for neurons, channels, or filters."""
 
-    def prune_model(self, model: nn.Module, config: PruningConfig) -> nn.Module:
+    def prune_model(
+        self, model: nn.Module, config: PruningConfig
+    ) -> nn.Module:
         """Prune model using structured pruning."""
         pruned_model = copy.deepcopy(model)
 
@@ -246,10 +264,14 @@ class StructuredPruner(BasePruner):
         elif config.structured_type == "channel":
             return self._prune_channels(pruned_model, config)
         else:
-            logger.warning(f"Structured type {config.structured_type} not implemented")
+            logger.warning(
+                f"Structured type {config.structured_type} not implemented"
+            )
             return pruned_model
 
-    def _prune_neurons(self, model: nn.Module, config: PruningConfig) -> nn.Module:
+    def _prune_neurons(
+        self, model: nn.Module, config: PruningConfig
+    ) -> nn.Module:
         """Prune entire neurons from linear layers."""
         layers_to_modify = []
 
@@ -298,11 +320,15 @@ class StructuredPruner(BasePruner):
             # Store mask
             layer.register_buffer("neuron_mask", keep_mask)
 
-            logger.info(f"Pruned {num_to_prune}/{num_neurons} neurons from {name}")
+            logger.info(
+                f"Pruned {num_to_prune}/{num_neurons} neurons from {name}"
+            )
 
         return model
 
-    def _prune_channels(self, model: nn.Module, config: PruningConfig) -> nn.Module:
+    def _prune_channels(
+        self, model: nn.Module, config: PruningConfig
+    ) -> nn.Module:
         """Prune channels from convolutional layers."""
         # This is a simplified implementation
         # In practice, channel pruning requires careful handling of dependencies
@@ -316,7 +342,9 @@ class StructuredPruner(BasePruner):
             return torch.norm(layer.weight.data, dim=1)
         elif isinstance(layer, (nn.Conv1d, nn.Conv2d)):
             # For channels, use L2 norm of filters
-            return torch.norm(layer.weight.data.view(layer.weight.size(0), -1), dim=1)
+            return torch.norm(
+                layer.weight.data.view(layer.weight.size(0), -1), dim=1
+            )
         return torch.tensor([])
 
     def _should_prune_layer(
@@ -327,7 +355,9 @@ class StructuredPruner(BasePruner):
             return False
 
         if config.layers_to_prune is not None:
-            if not any(layer_name in name for layer_name in config.layers_to_prune):
+            if not any(
+                layer_name in name for layer_name in config.layers_to_prune
+            ):
                 return False
 
         return isinstance(module, (nn.Linear, nn.Conv1d, nn.Conv2d))
@@ -340,7 +370,9 @@ class GradualPruner(BasePruner):
         self.current_sparsity = 0.0
         self.pruning_step = 0
 
-    def prune_model(self, model: nn.Module, config: PruningConfig) -> nn.Module:
+    def prune_model(
+        self, model: nn.Module, config: PruningConfig
+    ) -> nn.Module:
         """Apply gradual pruning (this is called during training)."""
         # This method is called during training to gradually increase sparsity
         target_sparsity = self._calculate_target_sparsity(config)
@@ -404,7 +436,9 @@ class ModelPruner:
         elif self.config.pruning_method == "gradual":
             self.pruner = GradualPruner()
         else:
-            raise ValueError(f"Unknown pruning method: {self.config.pruning_method}")
+            raise ValueError(
+                f"Unknown pruning method: {self.config.pruning_method}"
+            )
 
     def prune_and_fine_tune(
         self, model: nn.Module, X: pd.DataFrame, y: pd.Series
@@ -459,7 +493,9 @@ class ModelPruner:
             pruning_time = (datetime.now() - pruning_start).total_seconds()
 
             # Evaluate pruned model
-            pruned_performance = self._evaluate_model(pruned_model, X_val, y_val)
+            pruned_performance = self._evaluate_model(
+                pruned_model, X_val, y_val
+            )
             pruned_stats = self._calculate_model_stats(pruned_model)
 
             # Calculate metrics
@@ -471,7 +507,8 @@ class ModelPruner:
             sparsity_achieved = self._calculate_sparsity(pruned_model)
 
             performance_drop = {
-                key: original_performance[key] - pruned_performance.get(key, 0.0)
+                key: original_performance[key]
+                - pruned_performance.get(key, 0.0)
                 for key in original_performance.keys()
             }
 
@@ -526,7 +563,10 @@ class ModelPruner:
                 original_flops=original_stats.get("flops", 0),
                 pruned_flops=pruned_stats.get("flops", 0),
                 flops_reduction=1.0
-                - (pruned_stats.get("flops", 0) / original_stats.get("flops", 1)),
+                - (
+                    pruned_stats.get("flops", 0)
+                    / original_stats.get("flops", 1)
+                ),
                 original_memory_mb=original_stats.get("memory_mb", 0.0),
                 pruned_memory_mb=pruned_stats.get("memory_mb", 0.0),
                 memory_reduction=1.0
@@ -579,7 +619,9 @@ class ModelPruner:
 
         # Setup training
         criterion = nn.BCEWithLogitsLoss()
-        optimizer = optim.Adam(current_model.parameters(), lr=self.config.fine_tune_lr)
+        optimizer = optim.Adam(
+            current_model.parameters(), lr=self.config.fine_tune_lr
+        )
 
         # Gradual pruning loop
         for step in range(self.config.iterative_steps):
@@ -721,8 +763,12 @@ class ModelPruner:
         total_params = sum(p.numel() for p in model.parameters())
 
         # Estimate memory usage
-        param_size = sum(p.numel() * p.element_size() for p in model.parameters())
-        buffer_size = sum(b.numel() * b.element_size() for b in model.buffers())
+        param_size = sum(
+            p.numel() * p.element_size() for p in model.parameters()
+        )
+        buffer_size = sum(
+            b.numel() * b.element_size() for b in model.buffers()
+        )
         memory_mb = (param_size + buffer_size) / (1024 * 1024)
 
         # Estimate FLOPs (simplified)
@@ -758,7 +804,9 @@ class ModelPruner:
         pruned_layers = []
 
         for name, module in model.named_modules():
-            if hasattr(module, "weight_mask") or hasattr(module, "neuron_mask"):
+            if hasattr(module, "weight_mask") or hasattr(
+                module, "neuron_mask"
+            ):
                 pruned_layers.append(name)
 
         return pruned_layers
@@ -771,7 +819,9 @@ class ModelPruner:
             if hasattr(module, "weight") and module.weight is not None:
                 total_weights = module.weight.numel()
                 zero_weights = (module.weight.data == 0).sum().item()
-                ratio = zero_weights / total_weights if total_weights > 0 else 0.0
+                ratio = (
+                    zero_weights / total_weights if total_weights > 0 else 0.0
+                )
 
                 if ratio > 0:
                     ratios[name] = ratio
@@ -963,7 +1013,9 @@ def load_pruned_model(
         "saved_at": checkpoint.get("saved_at"),
     }
 
-    logger.info(f"Loaded pruned model with sparsity: {metadata['sparsity']:.4f}")
+    logger.info(
+        f"Loaded pruned model with sparsity: {metadata['sparsity']:.4f}"
+    )
 
     # Note: This is a placeholder - actual implementation would need to reconstruct the model
     # and apply pruning masks based on the saved configuration

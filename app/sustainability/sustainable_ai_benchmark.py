@@ -37,7 +37,10 @@ except ImportError:
     from models.dnn_model import DNNModel
     from models.gnn_model import GNNModel
     from models.lstm_model import LSTMModel
-    from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from sustainability.energy_tracker import EnergyReport, EnergyTracker
 
 logger = get_logger(__name__)
@@ -191,7 +194,9 @@ class IndustryBenchmarkProvider(ABC):
     """Abstract base class for industry benchmark data providers."""
 
     @abstractmethod
-    def get_benchmark_data(self, sector: IndustrySector) -> IndustryBenchmarkData:
+    def get_benchmark_data(
+        self, sector: IndustrySector
+    ) -> IndustryBenchmarkData:
         """Get benchmark data for a specific industry sector."""
         pass
 
@@ -207,7 +212,9 @@ class MockIndustryBenchmarkProvider(IndustryBenchmarkProvider):
     def __init__(self):
         self.benchmark_data = self._initialize_mock_data()
 
-    def _initialize_mock_data(self) -> Dict[IndustrySector, IndustryBenchmarkData]:
+    def _initialize_mock_data(
+        self,
+    ) -> Dict[IndustrySector, IndustryBenchmarkData]:
         """Initialize mock industry benchmark data."""
 
         # Finance sector benchmarks
@@ -240,7 +247,13 @@ class MockIndustryBenchmarkProvider(IndustryBenchmarkProvider):
                 "p90": 100,
                 "p95": 150,
             },
-            "model_size_mb": {"avg": 25, "p25": 10, "p75": 40, "p90": 80, "p95": 120},
+            "model_size_mb": {
+                "avg": 25,
+                "p25": 10,
+                "p75": 40,
+                "p90": 80,
+                "p95": 120,
+            },
             "carbon_efficiency": {
                 "avg": 6.5,
                 "p25": 4.0,
@@ -294,7 +307,13 @@ class MockIndustryBenchmarkProvider(IndustryBenchmarkProvider):
                 "p90": 50,
                 "p95": 75,
             },
-            "model_size_mb": {"avg": 15, "p25": 5, "p75": 25, "p90": 50, "p95": 80},
+            "model_size_mb": {
+                "avg": 15,
+                "p25": 5,
+                "p75": 25,
+                "p90": 50,
+                "p95": 80,
+            },
             "carbon_efficiency": {
                 "avg": 12.0,
                 "p25": 8.0,
@@ -348,7 +367,13 @@ class MockIndustryBenchmarkProvider(IndustryBenchmarkProvider):
                 "p90": 120,
                 "p95": 180,
             },
-            "model_size_mb": {"avg": 50, "p25": 20, "p75": 80, "p90": 150, "p95": 250},
+            "model_size_mb": {
+                "avg": 50,
+                "p25": 20,
+                "p75": 80,
+                "p90": 150,
+                "p95": 250,
+            },
             "carbon_efficiency": {
                 "avg": 3.5,
                 "p25": 2.0,
@@ -396,7 +421,9 @@ class MockIndustryBenchmarkProvider(IndustryBenchmarkProvider):
             ),
         }
 
-    def get_benchmark_data(self, sector: IndustrySector) -> IndustryBenchmarkData:
+    def get_benchmark_data(
+        self, sector: IndustrySector
+    ) -> IndustryBenchmarkData:
         """Get benchmark data for a specific industry sector."""
         return self.benchmark_data.get(sector)
 
@@ -409,8 +436,12 @@ class MockIndustryBenchmarkProvider(IndustryBenchmarkProvider):
 class SustainableAIBenchmark:
     """Main sustainable AI benchmarking system."""
 
-    def __init__(self, industry_provider: Optional[IndustryBenchmarkProvider] = None):
-        self.industry_provider = industry_provider or MockIndustryBenchmarkProvider()
+    def __init__(
+        self, industry_provider: Optional[IndustryBenchmarkProvider] = None
+    ):
+        self.industry_provider = (
+            industry_provider or MockIndustryBenchmarkProvider()
+        )
         self.carbon_calculator = CarbonCalculator()
         self.energy_tracker = EnergyTracker()
 
@@ -476,21 +507,31 @@ class SustainableAIBenchmark:
             )
 
             accuracy = accuracy_score(y_test, binary_predictions)
-            precision = precision_score(y_test, binary_predictions, average="weighted")
-            recall = recall_score(y_test, binary_predictions, average="weighted")
+            precision = precision_score(
+                y_test, binary_predictions, average="weighted"
+            )
+            recall = recall_score(
+                y_test, binary_predictions, average="weighted"
+            )
             f1 = f1_score(y_test, binary_predictions, average="weighted")
 
             try:
                 roc_auc = roc_auc_score(
                     y_test,
-                    predictions if len(predictions.shape) == 1 else predictions[:, 1],
+                    (
+                        predictions
+                        if len(predictions.shape) == 1
+                        else predictions[:, 1]
+                    ),
                 )
             except:
                 roc_auc = 0.5
 
             # Calculate carbon footprint
-            carbon_footprint = self.carbon_calculator.calculate_carbon_footprint(
-                energy_report, region="US"
+            carbon_footprint = (
+                self.carbon_calculator.calculate_carbon_footprint(
+                    energy_report, region="US"
+                )
             )
 
             # Calculate model size (estimate)
@@ -507,11 +548,17 @@ class SustainableAIBenchmark:
                 if energy_report.total_energy_kwh > 0
                 else 0
             )
-            time_efficiency = roc_auc / inference_time if inference_time > 0 else 0
-            size_efficiency = roc_auc / model_size_mb if model_size_mb > 0 else 0
+            time_efficiency = (
+                roc_auc / inference_time if inference_time > 0 else 0
+            )
+            size_efficiency = (
+                roc_auc / model_size_mb if model_size_mb > 0 else 0
+            )
 
             # Get industry benchmarks
-            industry_data = self.industry_provider.get_benchmark_data(industry_sector)
+            industry_data = self.industry_provider.get_benchmark_data(
+                industry_sector
+            )
 
             # Create benchmark metrics
             benchmark_metrics = self._create_benchmark_metrics(
@@ -537,7 +584,9 @@ class SustainableAIBenchmark:
             performance_score = self._calculate_performance_score(
                 accuracy, precision, recall, f1, roc_auc
             )
-            efficiency_score = self._calculate_efficiency_score(benchmark_metrics)
+            efficiency_score = self._calculate_efficiency_score(
+                benchmark_metrics
+            )
             overall_score = (
                 sustainability_score * 0.4
                 + performance_score * 0.4
@@ -666,7 +715,9 @@ class SustainableAIBenchmark:
             ).get("avg"),
             industry_percentile=self._calculate_percentile(
                 energy_kwh,
-                industry_data.benchmark_metrics.get("energy_consumption_kwh", {}),
+                industry_data.benchmark_metrics.get(
+                    "energy_consumption_kwh", {}
+                ),
             ),
             best_practice_threshold=industry_data.benchmark_metrics.get(
                 "energy_consumption_kwh", {}
@@ -721,9 +772,9 @@ class SustainableAIBenchmark:
             unit="AUC",
             category=BenchmarkCategory.MODEL_EFFICIENCY,
             is_higher_better=True,
-            industry_average=industry_data.benchmark_metrics.get("accuracy", {}).get(
-                "avg"
-            ),
+            industry_average=industry_data.benchmark_metrics.get(
+                "accuracy", {}
+            ).get("avg"),
             industry_percentile=self._calculate_percentile(
                 roc_auc, industry_data.benchmark_metrics.get("accuracy", {})
             ),
@@ -757,7 +808,9 @@ class SustainableAIBenchmark:
         else:
             return 90.0
 
-    def _calculate_sustainability_score(self, metrics: List[BenchmarkMetric]) -> float:
+    def _calculate_sustainability_score(
+        self, metrics: List[BenchmarkMetric]
+    ) -> float:
         """Calculate overall sustainability score."""
 
         sustainability_metrics = [
@@ -796,10 +849,15 @@ class SustainableAIBenchmark:
 
         # Weighted average with ROC-AUC as primary metric
         return (
-            roc_auc * 0.4 + f1 * 0.3 + accuracy * 0.2 + (precision + recall) / 2 * 0.1
+            roc_auc * 0.4
+            + f1 * 0.3
+            + accuracy * 0.2
+            + (precision + recall) / 2 * 0.1
         ) * 100
 
-    def _calculate_efficiency_score(self, metrics: List[BenchmarkMetric]) -> float:
+    def _calculate_efficiency_score(
+        self, metrics: List[BenchmarkMetric]
+    ) -> float:
         """Calculate overall efficiency score."""
 
         efficiency_metrics = [
@@ -839,7 +897,9 @@ class SustainableAIBenchmark:
         except Exception as e:
             logger.error(f"Failed to save benchmark result: {e}")
 
-    def compare_models(self, model_results: List[ModelBenchmarkResult]) -> pd.DataFrame:
+    def compare_models(
+        self, model_results: List[ModelBenchmarkResult]
+    ) -> pd.DataFrame:
         """Compare multiple models across sustainability metrics."""
 
         comparison_data = []
@@ -886,15 +946,21 @@ class SustainableAIBenchmark:
         # Find best and worst performers
         best_overall = max(model_results, key=lambda x: x.overall_score)
         worst_overall = min(model_results, key=lambda x: x.overall_score)
-        best_sustainability = max(model_results, key=lambda x: x.sustainability_score)
-        best_performance = max(model_results, key=lambda x: x.performance_score)
+        best_sustainability = max(
+            model_results, key=lambda x: x.sustainability_score
+        )
+        best_performance = max(
+            model_results, key=lambda x: x.performance_score
+        )
 
         # Industry comparison
         industry_sectors = list(set(r.industry_sector for r in model_results))
         industry_comparisons = {}
 
         for sector in industry_sectors:
-            sector_results = [r for r in model_results if r.industry_sector == sector]
+            sector_results = [
+                r for r in model_results if r.industry_sector == sector
+            ]
             if sector_results:
                 industry_comparisons[sector.value] = {
                     "count": len(sector_results),

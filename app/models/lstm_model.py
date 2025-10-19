@@ -31,7 +31,11 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from torch.cuda.amp import GradScaler, autocast
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, pad_sequence
+from torch.nn.utils.rnn import (
+    pack_padded_sequence,
+    pad_packed_sequence,
+    pad_sequence,
+)
 from torch.utils.data import DataLoader, TensorDataset
 
 try:
@@ -169,8 +173,12 @@ class AttentionLayer(nn.Module):
         batch_size, max_seq_len, hidden_size = lstm_outputs.shape
 
         # Calculate attention scores
-        attention_scores = self.attention(lstm_outputs)  # (batch_size, max_seq_len, 1)
-        attention_scores = attention_scores.squeeze(-1)  # (batch_size, max_seq_len)
+        attention_scores = self.attention(
+            lstm_outputs
+        )  # (batch_size, max_seq_len, 1)
+        attention_scores = attention_scores.squeeze(
+            -1
+        )  # (batch_size, max_seq_len)
 
         # Create mask for padding
         mask = torch.arange(max_seq_len, device=lstm_outputs.device).expand(
@@ -204,8 +212,12 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.reduction = reduction
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        ce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+    def forward(
+        self, inputs: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
+        ce_loss = F.binary_cross_entropy_with_logits(
+            inputs, targets, reduction="none"
+        )
         pt = torch.exp(-ce_loss)
         focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
 
@@ -247,7 +259,10 @@ class LSTMModel(BaseModel):
         if self.config.device == "auto":
             if torch.cuda.is_available():
                 return torch.device("cuda")
-            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            elif (
+                hasattr(torch.backends, "mps")
+                and torch.backends.mps.is_available()
+            ):
                 return torch.device("mps")
             else:
                 return torch.device("cpu")
@@ -261,7 +276,9 @@ class LSTMModel(BaseModel):
             input_size=self.config.input_size,
             hidden_size=self.config.hidden_size,
             num_layers=self.config.num_layers,
-            dropout=self.config.dropout_rate if self.config.num_layers > 1 else 0,
+            dropout=(
+                self.config.dropout_rate if self.config.num_layers > 1 else 0
+            ),
             bidirectional=self.config.bidirectional,
             batch_first=True,
         )
@@ -273,7 +290,9 @@ class LSTMModel(BaseModel):
 
         # Attention mechanism
         if self.config.use_attention:
-            self.attention = AttentionLayer(lstm_output_size, self.config.attention_dim)
+            self.attention = AttentionLayer(
+                lstm_output_size, self.config.attention_dim
+            )
             final_lstm_size = lstm_output_size
         else:
             self.attention = None
@@ -366,7 +385,9 @@ class LSTMModel(BaseModel):
 
         return output.squeeze(-1)
 
-    def predict_proba(self, x: torch.Tensor, lengths: torch.Tensor) -> torch.Tensor:
+    def predict_proba(
+        self, x: torch.Tensor, lengths: torch.Tensor
+    ) -> torch.Tensor:
         """Get prediction probabilities."""
         self.eval()
         with torch.no_grad():
@@ -400,9 +421,14 @@ class LSTMModel(BaseModel):
         feature_importance = {}
 
         # If attention is used, use attention weights as importance
-        if self.config.use_attention and self.last_attention_weights is not None:
+        if (
+            self.config.use_attention
+            and self.last_attention_weights is not None
+        ):
             # Average attention weights across batch and time steps
-            avg_attention = self.last_attention_weights.mean(dim=0).cpu().numpy()
+            avg_attention = (
+                self.last_attention_weights.mean(dim=0).cpu().numpy()
+            )
 
             # Map attention weights to timesteps, not features
             for i, weight in enumerate(avg_attention):
@@ -420,13 +446,17 @@ class LSTMModel(BaseModel):
                     requires_grad=True,
                     device=self.device,
                 )
-                dummy_lengths = torch.tensor([dummy_seq_len], device=self.device)
+                dummy_lengths = torch.tensor(
+                    [dummy_seq_len], device=self.device
+                )
 
                 output = self.forward(dummy_input, dummy_lengths)
                 gradients = torch.autograd.grad(
                     output, dummy_input, create_graph=False
                 )[0]
-                importance_scores = torch.abs(gradients).mean(dim=(0, 1)).cpu().numpy()
+                importance_scores = (
+                    torch.abs(gradients).mean(dim=(0, 1)).cpu().numpy()
+                )
 
                 for i, score in enumerate(importance_scores):
                     if self.feature_names and i < len(self.feature_names):
@@ -448,7 +478,9 @@ class LSTMModel(BaseModel):
                     requires_grad=True,
                     device=self.device,
                 )
-                dummy_lengths = torch.tensor([dummy_seq_len], device=self.device)
+                dummy_lengths = torch.tensor(
+                    [dummy_seq_len], device=self.device
+                )
 
                 output = self.forward(dummy_input, dummy_lengths)
 
@@ -456,7 +488,9 @@ class LSTMModel(BaseModel):
                 gradients = torch.autograd.grad(
                     output, dummy_input, create_graph=False
                 )[0]
-                importance_scores = torch.abs(gradients).mean(dim=(0, 1)).cpu().numpy()
+                importance_scores = (
+                    torch.abs(gradients).mean(dim=(0, 1)).cpu().numpy()
+                )
 
                 for i, score in enumerate(importance_scores):
                     if self.feature_names and i < len(self.feature_names):
@@ -468,7 +502,9 @@ class LSTMModel(BaseModel):
                 # Fallback: create dummy importance based on feature names
                 if self.feature_names:
                     for i, name in enumerate(self.feature_names):
-                        feature_importance[name] = 1.0 / len(self.feature_names)
+                        feature_importance[name] = 1.0 / len(
+                            self.feature_names
+                        )
                 else:
                     for i in range(self.config.input_size):
                         feature_importance[f"feature_{i}"] = (
@@ -477,7 +513,9 @@ class LSTMModel(BaseModel):
 
         # Sort by importance
         feature_importance = dict(
-            sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
+            sorted(
+                feature_importance.items(), key=lambda x: x[1], reverse=True
+            )
         )
 
         return feature_importance
@@ -612,13 +650,17 @@ class SequenceDataProcessor:
         y_np = y.values
 
         # Create sequences using sliding window
-        for i in range(0, len(X_np) - self.sequence_length + 1, self.step_size):
+        for i in range(
+            0, len(X_np) - self.sequence_length + 1, self.step_size
+        ):
             end_idx = min(i + self.sequence_length, len(X_np))
             seq_len = end_idx - i
 
             if seq_len >= 3:  # Minimum sequence length
                 sequence = X_np[i:end_idx]
-                target = y_np[end_idx - 1]  # Use the last target in the sequence
+                target = y_np[
+                    end_idx - 1
+                ]  # Use the last target in the sequence
 
                 sequences.append(sequence)
                 lengths.append(seq_len)
@@ -661,7 +703,9 @@ class LSTMTrainer:
             logger.info("Starting LSTM training and evaluation")
 
             # Create sequences from tabular data
-            sequences, lengths, targets = self.sequence_processor.create_sequences(X, y)
+            sequences, lengths, targets = (
+                self.sequence_processor.create_sequences(X, y)
+            )
 
             if len(sequences) == 0:
                 raise ValueError("No sequences could be created from the data")
@@ -682,13 +726,15 @@ class LSTMTrainer:
                 )
             )
 
-            seq_train, seq_val, len_train, len_val, y_train, y_val = train_test_split(
-                seq_train,
-                len_train,
-                y_train,
-                test_size=0.2,
-                random_state=42,
-                stratify=y_train,
+            seq_train, seq_val, len_train, len_val, y_train, y_val = (
+                train_test_split(
+                    seq_train,
+                    len_train,
+                    y_train,
+                    test_size=0.2,
+                    random_state=42,
+                    stratify=y_train,
+                )
             )
 
             logger.info(
@@ -747,12 +793,16 @@ class LSTMTrainer:
                     "training_time_seconds": training_time,
                     "test_auc": test_metrics.get("roc_auc", 0.0),
                     "best_epoch": best_epoch,
-                    "num_parameters": sum(p.numel() for p in model.parameters()),
+                    "num_parameters": sum(
+                        p.numel() for p in model.parameters()
+                    ),
                     "num_sequences": len(sequences),
                 },
             )
 
-            logger.info(f"LSTM training completed in {training_time:.2f} seconds")
+            logger.info(
+                f"LSTM training completed in {training_time:.2f} seconds"
+            )
 
             return LSTMResult(
                 success=True,
@@ -834,7 +884,9 @@ class LSTMTrainer:
         len_val_tensor = torch.LongTensor(len_val).to(model.device)
 
         # Create data loaders
-        train_dataset = TensorDataset(X_train_tensor, len_train_tensor, y_train_tensor)
+        train_dataset = TensorDataset(
+            X_train_tensor, len_train_tensor, y_train_tensor
+        )
         train_loader = DataLoader(
             train_dataset, batch_size=self.config.batch_size, shuffle=True
         )
@@ -921,11 +973,15 @@ class LSTMTrainer:
 
                         # Add L1/L2 regularization
                         if self.config.l1_lambda > 0:
-                            l1_reg = sum(p.abs().sum() for p in model.parameters())
+                            l1_reg = sum(
+                                p.abs().sum() for p in model.parameters()
+                            )
                             loss += self.config.l1_lambda * l1_reg
 
                         if self.config.l2_lambda > 0:
-                            l2_reg = sum(p.pow(2).sum() for p in model.parameters())
+                            l2_reg = sum(
+                                p.pow(2).sum() for p in model.parameters()
+                            )
                             loss += self.config.l2_lambda * l2_reg
 
                     scaler.scale(loss).backward()
@@ -949,7 +1005,9 @@ class LSTMTrainer:
                         loss += self.config.l1_lambda * l1_reg
 
                     if self.config.l2_lambda > 0:
-                        l2_reg = sum(p.pow(2).sum() for p in model.parameters())
+                        l2_reg = sum(
+                            p.pow(2).sum() for p in model.parameters()
+                        )
                         loss += self.config.l2_lambda * l2_reg
 
                     loss.backward()
@@ -986,10 +1044,16 @@ class LSTMTrainer:
             val_auc = roc_auc_score(val_targets, val_predictions)
             val_f1 = f1_score(val_targets, val_pred_binary, average="weighted")
             val_precision = precision_score(
-                val_targets, val_pred_binary, average="weighted", zero_division=0
+                val_targets,
+                val_pred_binary,
+                average="weighted",
+                zero_division=0,
             )
             val_recall = recall_score(
-                val_targets, val_pred_binary, average="weighted", zero_division=0
+                val_targets,
+                val_pred_binary,
+                average="weighted",
+                zero_division=0,
             )
 
             # Create training metrics
@@ -1085,13 +1149,22 @@ class LSTMTrainer:
             metrics = {
                 "accuracy": accuracy_score(targets, predictions_np),
                 "precision": precision_score(
-                    targets, predictions_np, average="weighted", zero_division=0
+                    targets,
+                    predictions_np,
+                    average="weighted",
+                    zero_division=0,
                 ),
                 "recall": recall_score(
-                    targets, predictions_np, average="weighted", zero_division=0
+                    targets,
+                    predictions_np,
+                    average="weighted",
+                    zero_division=0,
                 ),
                 "f1_score": f1_score(
-                    targets, predictions_np, average="weighted", zero_division=0
+                    targets,
+                    predictions_np,
+                    average="weighted",
+                    zero_division=0,
                 ),
                 "roc_auc": roc_auc_score(targets, probs_np[:, 1]),
             }

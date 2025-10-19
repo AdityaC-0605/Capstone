@@ -16,7 +16,12 @@ from scipy.stats import wasserstein_distance
 from sklearn.ensemble import RandomForestClassifier
 
 # Statistical and ML imports
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
@@ -44,7 +49,9 @@ class SyntheticDataConfig:
     verbose: bool = False
 
     # Data generation parameters
-    num_samples: Optional[int] = None  # If None, generates same number as original
+    num_samples: Optional[int] = (
+        None  # If None, generates same number as original
+    )
     sample_multiplier: float = 1.0  # Multiplier for original data size
 
     # Quality validation parameters
@@ -168,17 +175,24 @@ class CTGANWrapper:
             logger.error(f"Synthetic data generation failed: {e}")
             return None
 
-    def _preprocess_data(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
+    def _preprocess_data(
+        self, data: pd.DataFrame
+    ) -> Tuple[pd.DataFrame, List[str]]:
         """Preprocess data for CTGAN."""
         processed_data = data.copy()
         discrete_columns = []
 
         # Identify and encode categorical columns
         for column in data.columns:
-            if data[column].dtype == "object" or data[column].dtype.name == "category":
+            if (
+                data[column].dtype == "object"
+                or data[column].dtype.name == "category"
+            ):
                 # Label encode categorical columns
                 le = LabelEncoder()
-                processed_data[column] = le.fit_transform(data[column].astype(str))
+                processed_data[column] = le.fit_transform(
+                    data[column].astype(str)
+                )
                 self.label_encoders[column] = le
                 discrete_columns.append(column)
 
@@ -214,13 +228,16 @@ class CTGANWrapper:
                 )
 
                 # Inverse transform
-                processed_data[column] = self.label_encoders[column].inverse_transform(
-                    processed_data[column].astype(int)
-                )
+                processed_data[column] = self.label_encoders[
+                    column
+                ].inverse_transform(processed_data[column].astype(int))
 
         # Clip numeric columns to reasonable ranges
         for column in processed_data.columns:
-            if column not in self.discrete_columns and column in self.column_info:
+            if (
+                column not in self.discrete_columns
+                and column in self.column_info
+            ):
                 col_info = self.column_info[column]
                 if col_info["type"] == "numeric":
                     # Use 3-sigma rule for clipping
@@ -239,13 +256,18 @@ class CTGANWrapper:
 
     def _fit_fallback(self, data: pd.DataFrame) -> bool:
         """Fallback method when CTGAN is not available."""
-        logger.info("Using fallback synthetic data generation (statistical sampling)")
+        logger.info(
+            "Using fallback synthetic data generation (statistical sampling)"
+        )
 
         # Store data statistics for fallback generation
         self.fallback_stats = {}
 
         for column in data.columns:
-            if data[column].dtype == "object" or data[column].dtype.name == "category":
+            if (
+                data[column].dtype == "object"
+                or data[column].dtype.name == "category"
+            ):
                 # Store categorical distribution
                 value_counts = data[column].value_counts(normalize=True)
                 self.fallback_stats[column] = {
@@ -281,7 +303,9 @@ class CTGANWrapper:
                 samples = np.random.normal(
                     stats["mean"], stats["std"], size=num_samples
                 )
-                synthetic_data[column] = np.clip(samples, stats["min"], stats["max"])
+                synthetic_data[column] = np.clip(
+                    samples, stats["min"], stats["max"]
+                )
 
         return pd.DataFrame(synthetic_data)
 
@@ -301,23 +325,30 @@ class SyntheticDataEvaluator:
         try:
             # Statistical similarity tests
             if self.config.evaluate_column_shapes:
-                quality.kolmogorov_smirnov_scores = self._evaluate_column_distributions(
-                    original_data, synthetic_data
+                quality.kolmogorov_smirnov_scores = (
+                    self._evaluate_column_distributions(
+                        original_data, synthetic_data
+                    )
                 )
-                quality.wasserstein_distances = self._evaluate_wasserstein_distances(
-                    original_data, synthetic_data
+                quality.wasserstein_distances = (
+                    self._evaluate_wasserstein_distances(
+                        original_data, synthetic_data
+                    )
                 )
 
             # Correlation similarity
-            quality.correlation_similarity = self._evaluate_correlation_similarity(
-                original_data, synthetic_data
+            quality.correlation_similarity = (
+                self._evaluate_correlation_similarity(
+                    original_data, synthetic_data
+                )
             )
 
             # Machine learning efficacy
             if self.config.evaluate_ml_efficacy:
-                quality.ml_efficacy_score, quality.feature_importance_similarity = (
-                    self._evaluate_ml_efficacy(original_data, synthetic_data)
-                )
+                (
+                    quality.ml_efficacy_score,
+                    quality.feature_importance_similarity,
+                ) = self._evaluate_ml_efficacy(original_data, synthetic_data)
 
             # Privacy evaluation
             if self.config.privacy_test_enabled:
@@ -326,7 +357,9 @@ class SyntheticDataEvaluator:
                 )
 
             # Calculate overall quality score
-            quality.overall_quality_score = self._calculate_overall_quality(quality)
+            quality.overall_quality_score = self._calculate_overall_quality(
+                quality
+            )
 
             logger.info(
                 f"Synthetic data quality evaluation completed. Overall score: {quality.overall_quality_score:.3f}"
@@ -349,7 +382,8 @@ class SyntheticDataEvaluator:
                     try:
                         # Kolmogorov-Smirnov test
                         ks_stat, p_value = stats.ks_2samp(
-                            original[column].dropna(), synthetic[column].dropna()
+                            original[column].dropna(),
+                            synthetic[column].dropna(),
                         )
                         ks_scores[column] = 1 - ks_stat  # Higher is better
                     except:
@@ -360,7 +394,9 @@ class SyntheticDataEvaluator:
                     synth_dist = synthetic[column].value_counts(normalize=True)
 
                     # Calculate overlap
-                    common_categories = set(orig_dist.index) & set(synth_dist.index)
+                    common_categories = set(orig_dist.index) & set(
+                        synth_dist.index
+                    )
                     if common_categories:
                         overlap_score = sum(
                             min(orig_dist.get(cat, 0), synth_dist.get(cat, 0))
@@ -389,10 +425,14 @@ class SyntheticDataEvaluator:
                     )
 
                     # Normalize by data range
-                    data_range = original[column].max() - original[column].min()
+                    data_range = (
+                        original[column].max() - original[column].min()
+                    )
                     if data_range > 0:
                         normalized_distance = distance / data_range
-                        wasserstein_scores[column] = max(0, 1 - normalized_distance)
+                        wasserstein_scores[column] = max(
+                            0, 1 - normalized_distance
+                        )
                     else:
                         wasserstein_scores[column] = 1.0
                 except:
@@ -406,7 +446,9 @@ class SyntheticDataEvaluator:
         """Evaluate correlation matrix similarity."""
         try:
             # Get numeric columns
-            numeric_columns = original.select_dtypes(include=[np.number]).columns
+            numeric_columns = original.select_dtypes(
+                include=[np.number]
+            ).columns
             common_numeric = [
                 col for col in numeric_columns if col in synthetic.columns
             ]
@@ -427,9 +469,9 @@ class SyntheticDataEvaluator:
             ]
 
             if len(orig_corr_flat) > 0:
-                correlation_similarity = np.corrcoef(orig_corr_flat, synth_corr_flat)[
-                    0, 1
-                ]
+                correlation_similarity = np.corrcoef(
+                    orig_corr_flat, synth_corr_flat
+                )[0, 1]
                 return (
                     max(0, correlation_similarity)
                     if not np.isnan(correlation_similarity)
@@ -469,7 +511,9 @@ class SyntheticDataEvaluator:
                 return 0.0, 0.0
 
             # Align columns
-            common_features = [col for col in X_orig.columns if col in X_synth.columns]
+            common_features = [
+                col for col in X_orig.columns if col in X_synth.columns
+            ]
             if len(common_features) == 0:
                 return 0.0, 0.0
 
@@ -508,7 +552,9 @@ class SyntheticDataEvaluator:
                     rf_orig.feature_importances_, rf_synth.feature_importances_
                 )[0, 1]
                 feature_importance_similarity = (
-                    max(0, importance_corr) if not np.isnan(importance_corr) else 0.0
+                    max(0, importance_corr)
+                    if not np.isnan(importance_corr)
+                    else 0.0
                 )
             else:
                 feature_importance_similarity = 0.0
@@ -538,7 +584,9 @@ class SyntheticDataEvaluator:
 
             # Align columns
             common_cols = [
-                col for col in orig_encoded.columns if col in synth_encoded.columns
+                col
+                for col in orig_encoded.columns
+                if col in synth_encoded.columns
             ]
             if len(common_cols) == 0:
                 return 0.5, 0.0
@@ -555,10 +603,14 @@ class SyntheticDataEvaluator:
 
             # Normalize by data scale
             data_scale = np.std(orig_encoded.values)
-            normalized_distance = avg_min_distance / data_scale if data_scale > 0 else 0
+            normalized_distance = (
+                avg_min_distance / data_scale if data_scale > 0 else 0
+            )
 
             # Privacy score: higher distance = better privacy
-            privacy_score = min(1.0, normalized_distance / 2.0)  # Normalize to 0-1
+            privacy_score = min(
+                1.0, normalized_distance / 2.0
+            )  # Normalize to 0-1
 
             return privacy_score, avg_min_distance
 
@@ -571,14 +623,21 @@ class SyntheticDataEvaluator:
         encoded_data = data.copy()
 
         for column in data.columns:
-            if data[column].dtype == "object" or data[column].dtype.name == "category":
+            if (
+                data[column].dtype == "object"
+                or data[column].dtype.name == "category"
+            ):
                 # Simple label encoding
                 le = LabelEncoder()
-                encoded_data[column] = le.fit_transform(data[column].astype(str))
+                encoded_data[column] = le.fit_transform(
+                    data[column].astype(str)
+                )
 
         return encoded_data.fillna(0)
 
-    def _calculate_overall_quality(self, quality: SyntheticDataQuality) -> float:
+    def _calculate_overall_quality(
+        self, quality: SyntheticDataQuality
+    ) -> float:
         """Calculate overall quality score."""
         scores = []
 
@@ -588,7 +647,9 @@ class SyntheticDataEvaluator:
             scores.append(avg_ks * 0.2)
 
         if quality.wasserstein_distances:
-            avg_wasserstein = np.mean(list(quality.wasserstein_distances.values()))
+            avg_wasserstein = np.mean(
+                list(quality.wasserstein_distances.values())
+            )
             scores.append(avg_wasserstein * 0.2)
 
         # Correlation similarity (20% weight)
@@ -626,9 +687,9 @@ class SyntheticDataGenerator(DataProcessor):
             # Prepare data
             if target_column and target_column in data.columns:
                 # Ensure target column is last for consistency
-                columns = [col for col in data.columns if col != target_column] + [
-                    target_column
-                ]
+                columns = [
+                    col for col in data.columns if col != target_column
+                ] + [target_column]
                 data = data[columns]
 
             # Train CTGAN model
@@ -659,10 +720,14 @@ class SyntheticDataGenerator(DataProcessor):
 
             if self.config.enable_quality_validation:
                 logger.info("Evaluating synthetic data quality...")
-                quality_metrics = self.evaluator.evaluate_quality(data, synthetic_data)
+                quality_metrics = self.evaluator.evaluate_quality(
+                    data, synthetic_data
+                )
 
                 # Check if quality meets thresholds
-                validation_passed = self._validate_quality_thresholds(quality_metrics)
+                validation_passed = self._validate_quality_thresholds(
+                    quality_metrics
+                )
 
             processing_time = (datetime.now() - start_time).total_seconds()
 
@@ -722,7 +787,9 @@ class SyntheticDataGenerator(DataProcessor):
 
             # Check for reasonable data types
             if data.isnull().all().any():
-                logger.warning("Some columns in synthetic data are entirely null")
+                logger.warning(
+                    "Some columns in synthetic data are entirely null"
+                )
 
             # Check for infinite values
             numeric_cols = data.select_dtypes(include=[np.number]).columns
@@ -737,7 +804,9 @@ class SyntheticDataGenerator(DataProcessor):
             logger.error(f"Synthetic data validation failed: {e}")
             return False
 
-    def generate_additional_samples(self, num_samples: int) -> Optional[pd.DataFrame]:
+    def generate_additional_samples(
+        self, num_samples: int
+    ) -> Optional[pd.DataFrame]:
         """Generate additional synthetic samples using trained model."""
         if not self.model_trained:
             logger.error("Model not trained. Call process() first.")
@@ -805,12 +874,18 @@ class SyntheticDataGenerator(DataProcessor):
             if "model" in model_data:
                 # Load CTGAN model
                 self.ctgan_wrapper.model = model_data["model"]
-                self.ctgan_wrapper.discrete_columns = model_data["discrete_columns"]
-                self.ctgan_wrapper.label_encoders = model_data["label_encoders"]
+                self.ctgan_wrapper.discrete_columns = model_data[
+                    "discrete_columns"
+                ]
+                self.ctgan_wrapper.label_encoders = model_data[
+                    "label_encoders"
+                ]
                 self.ctgan_wrapper.column_info = model_data["column_info"]
             else:
                 # Load fallback model
-                self.ctgan_wrapper.fallback_stats = model_data["fallback_stats"]
+                self.ctgan_wrapper.fallback_stats = model_data[
+                    "fallback_stats"
+                ]
 
             self.config = model_data["config"]
             self.model_trained = True
@@ -861,12 +936,18 @@ class SyntheticDataGenerator(DataProcessor):
                 "kolmogorov_smirnov_scores": quality_metrics.kolmogorov_smirnov_scores,
                 "wasserstein_distances": quality_metrics.wasserstein_distances,
                 "average_ks_score": (
-                    np.mean(list(quality_metrics.kolmogorov_smirnov_scores.values()))
+                    np.mean(
+                        list(
+                            quality_metrics.kolmogorov_smirnov_scores.values()
+                        )
+                    )
                     if quality_metrics.kolmogorov_smirnov_scores
                     else 0.0
                 ),
                 "average_wasserstein_score": (
-                    np.mean(list(quality_metrics.wasserstein_distances.values()))
+                    np.mean(
+                        list(quality_metrics.wasserstein_distances.values())
+                    )
                     if quality_metrics.wasserstein_distances
                     else 0.0
                 ),
@@ -885,7 +966,9 @@ class SyntheticDataGenerator(DataProcessor):
             "quality_assessment": {
                 "excellent": quality_metrics.overall_quality_score >= 0.8,
                 "good": 0.6 <= quality_metrics.overall_quality_score < 0.8,
-                "acceptable": 0.4 <= quality_metrics.overall_quality_score < 0.6,
+                "acceptable": 0.4
+                <= quality_metrics.overall_quality_score
+                < 0.6,
                 "poor": quality_metrics.overall_quality_score < 0.4,
             },
         }

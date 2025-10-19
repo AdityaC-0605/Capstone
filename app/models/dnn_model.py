@@ -37,7 +37,10 @@ try:
     from ..core.config import get_config
     from ..core.interfaces import BaseModel, TrainingMetrics
     from ..core.logging import get_audit_logger, get_logger
-    from ..data.cross_validation import get_imbalanced_cv_config, validate_model_cv
+    from ..data.cross_validation import (
+        get_imbalanced_cv_config,
+        validate_model_cv,
+    )
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -66,7 +69,9 @@ class DNNConfig:
     """Configuration for Deep Neural Network model."""
 
     # Architecture parameters
-    hidden_layers: List[int] = field(default_factory=lambda: [512, 256, 128, 64])
+    hidden_layers: List[int] = field(
+        default_factory=lambda: [512, 256, 128, 64]
+    )
     dropout_rate: float = 0.3
     activation: str = "relu"  # 'relu', 'leaky_relu', 'elu', 'gelu'
     use_batch_norm: bool = True
@@ -140,8 +145,12 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.reduction = reduction
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        ce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+    def forward(
+        self, inputs: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
+        ce_loss = F.binary_cross_entropy_with_logits(
+            inputs, targets, reduction="none"
+        )
         pt = torch.exp(-ce_loss)
         focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
 
@@ -183,7 +192,10 @@ class DNNModel(BaseModel):
         if self.config.device == "auto":
             if torch.cuda.is_available():
                 return torch.device("cuda")
-            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            elif (
+                hasattr(torch.backends, "mps")
+                and torch.backends.mps.is_available()
+            ):
                 return torch.device("mps")
             else:
                 return torch.device("cpu")
@@ -287,7 +299,9 @@ class DNNModel(BaseModel):
         output = self.forward(dummy_input)
 
         # Compute gradients
-        gradients = torch.autograd.grad(output, dummy_input, create_graph=False)[0]
+        gradients = torch.autograd.grad(
+            output, dummy_input, create_graph=False
+        )[0]
         importance_scores = torch.abs(gradients).squeeze().cpu().numpy()
 
         # Create feature importance dictionary
@@ -300,7 +314,9 @@ class DNNModel(BaseModel):
 
         # Sort by importance
         feature_importance = dict(
-            sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
+            sorted(
+                feature_importance.items(), key=lambda x: x[1], reverse=True
+            )
         )
 
         return feature_importance
@@ -421,7 +437,11 @@ class DNNTrainer:
             )
 
             X_train, X_val, y_train, y_val = train_test_split(
-                X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+                X_train,
+                y_train,
+                test_size=0.2,
+                random_state=42,
+                stratify=y_train,
             )
 
             logger.info(
@@ -433,10 +453,14 @@ class DNNTrainer:
             model.feature_names = list(X_train.columns)
 
             # Train model
-            training_metrics = self._train_model(model, X_train, y_train, X_val, y_val)
+            training_metrics = self._train_model(
+                model, X_train, y_train, X_val, y_val
+            )
 
             # Evaluate model
-            validation_metrics = self._evaluate_model(model, X_val, y_val, "Validation")
+            validation_metrics = self._evaluate_model(
+                model, X_val, y_val, "Validation"
+            )
             test_metrics = self._evaluate_model(model, X_test, y_test, "Test")
 
             # Get feature importance
@@ -465,11 +489,15 @@ class DNNTrainer:
                     "training_time_seconds": training_time,
                     "test_auc": test_metrics.get("roc_auc", 0.0),
                     "best_epoch": best_epoch,
-                    "num_parameters": sum(p.numel() for p in model.parameters()),
+                    "num_parameters": sum(
+                        p.numel() for p in model.parameters()
+                    ),
                 },
             )
 
-            logger.info(f"DNN training completed in {training_time:.2f} seconds")
+            logger.info(
+                f"DNN training completed in {training_time:.2f} seconds"
+            )
 
             return DNNResult(
                 success=True,
@@ -619,11 +647,15 @@ class DNNTrainer:
 
                         # Add L1/L2 regularization
                         if self.config.l1_lambda > 0:
-                            l1_reg = sum(p.abs().sum() for p in model.parameters())
+                            l1_reg = sum(
+                                p.abs().sum() for p in model.parameters()
+                            )
                             loss += self.config.l1_lambda * l1_reg
 
                         if self.config.l2_lambda > 0:
-                            l2_reg = sum(p.pow(2).sum() for p in model.parameters())
+                            l2_reg = sum(
+                                p.pow(2).sum() for p in model.parameters()
+                            )
                             loss += self.config.l2_lambda * l2_reg
 
                     scaler.scale(loss).backward()
@@ -647,7 +679,9 @@ class DNNTrainer:
                         loss += self.config.l1_lambda * l1_reg
 
                     if self.config.l2_lambda > 0:
-                        l2_reg = sum(p.pow(2).sum() for p in model.parameters())
+                        l2_reg = sum(
+                            p.pow(2).sum() for p in model.parameters()
+                        )
                         loss += self.config.l2_lambda * l2_reg
 
                     loss.backward()
@@ -688,10 +722,16 @@ class DNNTrainer:
             val_auc = roc_auc_score(val_targets, val_predictions)
             val_f1 = f1_score(val_targets, val_pred_binary, average="weighted")
             val_precision = precision_score(
-                val_targets, val_pred_binary, average="weighted", zero_division=0
+                val_targets,
+                val_pred_binary,
+                average="weighted",
+                zero_division=0,
             )
             val_recall = recall_score(
-                val_targets, val_pred_binary, average="weighted", zero_division=0
+                val_targets,
+                val_pred_binary,
+                average="weighted",
+                zero_division=0,
             )
 
             # Create training metrics
@@ -794,7 +834,9 @@ class DNNTrainer:
 
 
 # Factory functions and utilities
-def create_dnn_model(input_dim: int, config: Optional[DNNConfig] = None) -> DNNModel:
+def create_dnn_model(
+    input_dim: int, config: Optional[DNNConfig] = None
+) -> DNNModel:
     """Create a DNN model instance."""
     return DNNModel(input_dim, config)
 

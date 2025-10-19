@@ -29,14 +29,22 @@ from sklearn.metrics import (
 )
 
 # ML imports
-from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
+from sklearn.model_selection import (
+    StratifiedKFold,
+    cross_val_score,
+    train_test_split,
+)
 
 try:
     from ..core.interfaces import BaseModel, TrainingMetrics
     from ..core.logging import get_audit_logger, get_logger
     from ..models.dnn_model import DNNConfig, DNNModel, DNNTrainer
     from ..models.gnn_model import GNNConfig, GNNModel, GNNTrainer
-    from ..models.lightgbm_model import LightGBMConfig, LightGBMModel, LightGBMTrainer
+    from ..models.lightgbm_model import (
+        LightGBMConfig,
+        LightGBMModel,
+        LightGBMTrainer,
+    )
     from ..models.lstm_model import LSTMConfig, LSTMModel, LSTMTrainer
     from ..models.tcn_model import TCNConfig, TCNModel, TCNTrainer
 except ImportError:
@@ -50,7 +58,11 @@ except ImportError:
     from core.logging import get_audit_logger, get_logger
     from models.dnn_model import DNNConfig, DNNModel, DNNTrainer
     from models.gnn_model import GNNConfig, GNNModel, GNNTrainer
-    from models.lightgbm_model import LightGBMConfig, LightGBMModel, LightGBMTrainer
+    from models.lightgbm_model import (
+        LightGBMConfig,
+        LightGBMModel,
+        LightGBMTrainer,
+    )
     from models.lstm_model import LSTMConfig, LSTMModel, LSTMTrainer
     from models.tcn_model import TCNConfig, TCNModel, TCNTrainer
 
@@ -197,7 +209,9 @@ class WeightedAverageEnsemble(BaseEnsembleMethod):
         def objective(weights):
             weights = weights / np.sum(weights)  # Normalize
             ensemble_pred = np.dot(predictions, weights)
-            return -roc_auc_score(targets, ensemble_pred)  # Minimize negative AUC
+            return -roc_auc_score(
+                targets, ensemble_pred
+            )  # Minimize negative AUC
 
         n_models = predictions.shape[1]
         initial_weights = np.ones(n_models) / n_models
@@ -243,7 +257,9 @@ class WeightedAverageEnsemble(BaseEnsembleMethod):
 class StackingEnsemble(BaseEnsembleMethod):
     """Stacking ensemble method with meta-learner."""
 
-    def __init__(self, meta_learner: str = "logistic_regression", cv_folds: int = 5):
+    def __init__(
+        self, meta_learner: str = "logistic_regression", cv_folds: int = 5
+    ):
         self.meta_learner_name = meta_learner
         self.cv_folds = cv_folds
         self.meta_learner = None
@@ -270,7 +286,9 @@ class StackingEnsemble(BaseEnsembleMethod):
             targets: Shape (n_samples,) - true targets
         """
         # Use cross-validation to create meta-features
-        cv = StratifiedKFold(n_splits=self.cv_folds, shuffle=True, random_state=42)
+        cv = StratifiedKFold(
+            n_splits=self.cv_folds, shuffle=True, random_state=42
+        )
         meta_features = np.zeros_like(predictions)
 
         for train_idx, val_idx in cv.split(predictions, targets):
@@ -362,14 +380,17 @@ class EnsembleModel:
             )
         elif self.config.ensemble_method == "stacking":
             self.ensemble_method = StackingEnsemble(
-                meta_learner=self.config.meta_learner, cv_folds=self.config.cv_folds
+                meta_learner=self.config.meta_learner,
+                cv_folds=self.config.cv_folds,
             )
         elif self.config.ensemble_method == "blending":
             self.ensemble_method = BlendingEnsemble(
                 meta_learner=self.config.meta_learner
             )
         else:
-            raise ValueError(f"Unknown ensemble method: {self.config.ensemble_method}")
+            raise ValueError(
+                f"Unknown ensemble method: {self.config.ensemble_method}"
+            )
 
     def add_model(
         self,
@@ -461,7 +482,9 @@ class EnsembleModel:
                 # Handle different model types
                 if hasattr(model, "predict_proba"):
                     # Neural network models or sklearn models
-                    if isinstance(model, (DNNModel, LSTMModel, GNNModel, TCNModel)):
+                    if isinstance(
+                        model, (DNNModel, LSTMModel, GNNModel, TCNModel)
+                    ):
                         # Convert to tensor if needed
                         if isinstance(X, pd.DataFrame):
                             X_tensor = torch.FloatTensor(X.values)
@@ -491,13 +514,17 @@ class EnsembleModel:
                     continue
 
             except Exception as e:
-                logger.error(f"Error getting predictions from model {model_id}: {e}")
+                logger.error(
+                    f"Error getting predictions from model {model_id}: {e}"
+                )
                 continue
 
         return predictions
 
     def fit(
-        self, X: Union[pd.DataFrame, np.ndarray], y: Union[pd.Series, np.ndarray]
+        self,
+        X: Union[pd.DataFrame, np.ndarray],
+        y: Union[pd.Series, np.ndarray],
     ) -> None:
         """
         Fit the ensemble on training data.
@@ -546,7 +573,9 @@ class EnsembleModel:
         model_predictions = self.get_model_predictions(X)
 
         # Convert to array format (same order as training)
-        model_ids = [mid for mid in self.models.keys() if mid in model_predictions]
+        model_ids = [
+            mid for mid in self.models.keys() if mid in model_predictions
+        ]
         predictions_array = np.column_stack(
             [model_predictions[mid] for mid in model_ids]
         )
@@ -563,7 +592,9 @@ class EnsembleModel:
         model_predictions = self.get_model_predictions(X)
 
         # Convert to array format
-        model_ids = [mid for mid in self.models.keys() if mid in model_predictions]
+        model_ids = [
+            mid for mid in self.models.keys() if mid in model_predictions
+        ]
         predictions_array = np.column_stack(
             [model_predictions[mid] for mid in model_ids]
         )
@@ -592,14 +623,20 @@ class EnsembleModel:
             # Use ensemble weights as contributions
             if isinstance(self.ensemble_method, WeightedAverageEnsemble):
                 model_ids = [
-                    mid for mid in self.models.keys() if self.models[mid].is_active
+                    mid
+                    for mid in self.models.keys()
+                    if self.models[mid].is_active
                 ]
                 for i, model_id in enumerate(model_ids):
-                    contributions[model_id] = float(self.ensemble_method.weights[i])
+                    contributions[model_id] = float(
+                        self.ensemble_method.weights[i]
+                    )
             else:
                 # Equal contributions for non-weighted methods
                 active_models = [
-                    mid for mid in self.models.keys() if self.models[mid].is_active
+                    mid
+                    for mid in self.models.keys()
+                    if self.models[mid].is_active
                 ]
                 equal_contrib = 1.0 / len(active_models)
                 for model_id in active_models:
@@ -666,10 +703,14 @@ class EnsembleModel:
 
         for i in range(n_models):
             for j in range(i + 1, n_models):
-                disagreements += np.sum(binary_preds[:, i] != binary_preds[:, j])
+                disagreements += np.sum(
+                    binary_preds[:, i] != binary_preds[:, j]
+                )
                 total_pairs += len(binary_preds)
 
-        disagreement_rate = disagreements / total_pairs if total_pairs > 0 else 0.0
+        disagreement_rate = (
+            disagreements / total_pairs if total_pairs > 0 else 0.0
+        )
 
         return {
             "pairwise_correlation": avg_correlation,
@@ -707,8 +748,12 @@ class EnsembleModel:
         metadata = {
             "ensemble_method": self.config.ensemble_method,
             "num_models": len(self.models),
-            "active_models": sum(1 for m in self.models.values() if m.is_active),
-            "model_types": list(set(m.model_type for m in self.models.values())),
+            "active_models": sum(
+                1 for m in self.models.values() if m.is_active
+            ),
+            "model_types": list(
+                set(m.model_type for m in self.models.values())
+            ),
             "saved_at": datetime.now().isoformat(),
         }
 
@@ -842,7 +887,9 @@ class EnsembleTrainer:
             ensemble.fit(X_blend, y_blend)
 
             # Evaluate ensemble
-            ensemble_performance = self._evaluate_ensemble(ensemble, X_test, y_test)
+            ensemble_performance = self._evaluate_ensemble(
+                ensemble, X_test, y_test
+            )
 
             # Get model weights and contributions
             model_weights = self._get_model_weights(ensemble)
@@ -869,12 +916,18 @@ class EnsembleTrainer:
                     "ensemble_auc": ensemble_performance.get("roc_auc", 0.0),
                     "num_models": len(ensemble.models),
                     "ensemble_method": self.config.ensemble_method,
-                    "diversity_score": diversity_metrics.get("diversity_score", 0.0),
+                    "diversity_score": diversity_metrics.get(
+                        "diversity_score", 0.0
+                    ),
                 },
             )
 
-            logger.info(f"Ensemble training completed in {training_time:.2f} seconds")
-            logger.info(f"Ensemble AUC: {ensemble_performance.get('roc_auc', 0.0):.4f}")
+            logger.info(
+                f"Ensemble training completed in {training_time:.2f} seconds"
+            )
+            logger.info(
+                f"Ensemble AUC: {ensemble_performance.get('roc_auc', 0.0):.4f}"
+            )
 
             return EnsembleResult(
                 success=True,
@@ -910,13 +963,19 @@ class EnsembleTrainer:
             )
 
     def _evaluate_individual_model(
-        self, model: Any, X_test: pd.DataFrame, y_test: pd.Series, model_id: str
+        self,
+        model: Any,
+        X_test: pd.DataFrame,
+        y_test: pd.Series,
+        model_id: str,
     ) -> Dict[str, float]:
         """Evaluate individual model performance."""
         try:
             # Get predictions
             if hasattr(model, "predict_proba"):
-                if isinstance(model, (DNNModel, LSTMModel, GNNModel, TCNModel)):
+                if isinstance(
+                    model, (DNNModel, LSTMModel, GNNModel, TCNModel)
+                ):
                     # Neural network models
                     X_tensor = torch.FloatTensor(X_test.values)
                     probs = model.predict_proba(X_tensor)
@@ -1022,14 +1081,18 @@ class EnsembleTrainer:
 
         if isinstance(ensemble.ensemble_method, WeightedAverageEnsemble):
             active_models = [
-                mid for mid in ensemble.models.keys() if ensemble.models[mid].is_active
+                mid
+                for mid in ensemble.models.keys()
+                if ensemble.models[mid].is_active
             ]
             if (
                 hasattr(ensemble.ensemble_method, "weights")
                 and ensemble.ensemble_method.weights is not None
             ):
                 for i, model_id in enumerate(active_models):
-                    weights[model_id] = float(ensemble.ensemble_method.weights[i])
+                    weights[model_id] = float(
+                        ensemble.ensemble_method.weights[i]
+                    )
             else:
                 # Equal weights
                 equal_weight = 1.0 / len(active_models)
@@ -1038,7 +1101,9 @@ class EnsembleTrainer:
         else:
             # For stacking/blending, weights are implicit in meta-learner
             active_models = [
-                mid for mid in ensemble.models.keys() if ensemble.models[mid].is_active
+                mid
+                for mid in ensemble.models.keys()
+                if ensemble.models[mid].is_active
             ]
             equal_weight = 1.0 / len(active_models)
             for model_id in active_models:
@@ -1064,7 +1129,11 @@ def create_ensemble_from_results(
     ensemble = EnsembleModel(config)
 
     for model_id, result in results.items():
-        if hasattr(result, "success") and result.success and hasattr(result, "model"):
+        if (
+            hasattr(result, "success")
+            and result.success
+            and hasattr(result, "model")
+        ):
             model_type = getattr(result, "model_type", "unknown")
             performance_metrics = getattr(result, "test_metrics", {})
 
@@ -1127,5 +1196,7 @@ def get_stacking_ensemble_config() -> EnsembleConfig:
 def get_blending_ensemble_config() -> EnsembleConfig:
     """Get blending ensemble configuration."""
     return EnsembleConfig(
-        ensemble_method="blending", meta_learner="random_forest", holdout_ratio=0.2
+        ensemble_method="blending",
+        meta_learner="random_forest",
+        holdout_ratio=0.2,
     )

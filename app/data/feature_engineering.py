@@ -92,7 +92,8 @@ class BehavioralFeatureExtractor:
 
         # Credit utilization patterns
         if all(
-            col in data.columns for col in ["num_open_credit_accounts", "credit_score"]
+            col in data.columns
+            for col in ["num_open_credit_accounts", "credit_score"]
         ):
             behavioral_features["credit_utilization_ratio"] = (
                 self._calculate_credit_utilization(data)
@@ -125,10 +126,14 @@ class BehavioralFeatureExtractor:
         # Risk appetite indicators
         if all(
             col in data.columns
-            for col in ["loan_amount_inr", "loan_term_months", "annual_income_inr"]
+            for col in [
+                "loan_amount_inr",
+                "loan_term_months",
+                "annual_income_inr",
+            ]
         ):
-            behavioral_features["risk_appetite_score"] = self._calculate_risk_appetite(
-                data
+            behavioral_features["risk_appetite_score"] = (
+                self._calculate_risk_appetite(data)
             )
             behavioral_features["monthly_payment_burden"] = (
                 self._calculate_monthly_payment_burden(data)
@@ -163,7 +168,8 @@ class BehavioralFeatureExtractor:
         """Calculate payment reliability score."""
         # Higher score = more reliable
         base_score = 1 - (
-            data["num_delinquent_accounts"] / (data["num_open_credit_accounts"] + 1)
+            data["num_delinquent_accounts"]
+            / (data["num_open_credit_accounts"] + 1)
         )
         credit_score_factor = data["credit_score"] / 850
         past_default_penalty = 1 - data.get("past_default", 0) * 0.3
@@ -186,7 +192,9 @@ class BehavioralFeatureExtractor:
         term_factor = data["loan_term_months"] / 240  # Normalize by 20 years
         return np.clip(loan_ratio * term_factor, 0, 2)
 
-    def _calculate_monthly_payment_burden(self, data: pd.DataFrame) -> pd.Series:
+    def _calculate_monthly_payment_burden(
+        self, data: pd.DataFrame
+    ) -> pd.Series:
         """Calculate estimated monthly payment burden."""
         # Simplified calculation assuming 8% annual interest rate
         monthly_income = data["annual_income_inr"] / 12
@@ -215,10 +223,15 @@ class FinancialFeatureExtractor:
 
         # Income-based features
         if "annual_income_inr" in data.columns:
-            financial_features["income_percentile"] = self._calculate_percentile_rank(
-                data["annual_income_inr"], self.config.income_percentile_bins
+            financial_features["income_percentile"] = (
+                self._calculate_percentile_rank(
+                    data["annual_income_inr"],
+                    self.config.income_percentile_bins,
+                )
             )
-            financial_features["income_log"] = np.log1p(data["annual_income_inr"])
+            financial_features["income_log"] = np.log1p(
+                data["annual_income_inr"]
+            )
             financial_features["income_stability_proxy"] = (
                 self._calculate_income_stability(data)
             )
@@ -227,23 +240,30 @@ class FinancialFeatureExtractor:
         if "loan_amount_inr" in data.columns:
             financial_features["loan_amount_percentile"] = (
                 self._calculate_percentile_rank(
-                    data["loan_amount_inr"], self.config.loan_amount_percentile_bins
+                    data["loan_amount_inr"],
+                    self.config.loan_amount_percentile_bins,
                 )
             )
-            financial_features["loan_amount_log"] = np.log1p(data["loan_amount_inr"])
+            financial_features["loan_amount_log"] = np.log1p(
+                data["loan_amount_inr"]
+            )
 
         # Debt-to-income analysis
         if "debt_to_income_ratio" in data.columns:
-            financial_features["dti_risk_category"] = self._categorize_dti_risk(
-                data["debt_to_income_ratio"]
+            financial_features["dti_risk_category"] = (
+                self._categorize_dti_risk(data["debt_to_income_ratio"])
             )
-            financial_features["dti_squared"] = data["debt_to_income_ratio"] ** 2
+            financial_features["dti_squared"] = (
+                data["debt_to_income_ratio"] ** 2
+            )
 
         # Credit score features
         if "credit_score" in data.columns:
-            financial_features["credit_score_normalized"] = data["credit_score"] / 850
-            financial_features["credit_score_category"] = self._categorize_credit_score(
-                data["credit_score"]
+            financial_features["credit_score_normalized"] = (
+                data["credit_score"] / 850
+            )
+            financial_features["credit_score_category"] = (
+                self._categorize_credit_score(data["credit_score"])
             )
             financial_features["credit_score_squared"] = (
                 data["credit_score"] / 850
@@ -252,7 +272,11 @@ class FinancialFeatureExtractor:
         # Financial ratios and derived metrics
         if all(
             col in data.columns
-            for col in ["loan_amount_inr", "annual_income_inr", "loan_term_months"]
+            for col in [
+                "loan_amount_inr",
+                "annual_income_inr",
+                "loan_term_months",
+            ]
         ):
             financial_features["loan_affordability_ratio"] = (
                 self._calculate_affordability_ratio(data)
@@ -272,9 +296,13 @@ class FinancialFeatureExtractor:
         )
         return financial_features
 
-    def _calculate_percentile_rank(self, series: pd.Series, bins: int) -> pd.Series:
+    def _calculate_percentile_rank(
+        self, series: pd.Series, bins: int
+    ) -> pd.Series:
         """Calculate percentile rank and bin."""
-        return pd.qcut(series, q=bins, labels=False, duplicates="drop").fillna(0)
+        return pd.qcut(series, q=bins, labels=False, duplicates="drop").fillna(
+            0
+        )
 
     def _calculate_income_stability(self, data: pd.DataFrame) -> pd.Series:
         """Calculate income stability proxy based on employment type."""
@@ -348,9 +376,11 @@ class TemporalFeatureExtractor:
 
         # Loan term temporal features
         if "loan_term_months" in data.columns:
-            temporal_features["loan_term_years"] = data["loan_term_months"] / 12
-            temporal_features["loan_term_category"] = self._categorize_loan_term(
-                data["loan_term_months"]
+            temporal_features["loan_term_years"] = (
+                data["loan_term_months"] / 12
+            )
+            temporal_features["loan_term_category"] = (
+                self._categorize_loan_term(data["loan_term_months"])
             )
             temporal_features["is_long_term_loan"] = (
                 data["loan_term_months"] > 60
@@ -365,7 +395,9 @@ class TemporalFeatureExtractor:
 
         # Career stage features
         if all(col in data.columns for col in ["age", "employment_type"]):
-            temporal_features["career_stage"] = self._determine_career_stage(data)
+            temporal_features["career_stage"] = self._determine_career_stage(
+                data
+            )
             temporal_features["earning_potential_score"] = (
                 self._calculate_earning_potential(data)
             )
@@ -406,7 +438,9 @@ class TemporalFeatureExtractor:
         def classify_life_stage(row):
             age, marital = row["age"], row["marital_status"]
             if age < 25:
-                return "Young Single" if marital == "Single" else "Young Married"
+                return (
+                    "Young Single" if marital == "Single" else "Young Married"
+                )
             elif age < 35:
                 return f"Early Adult {marital}"
             elif age < 50:
@@ -414,16 +448,27 @@ class TemporalFeatureExtractor:
             else:
                 return f"Mature {marital}"
 
-        return data[["age", "marital_status"]].apply(classify_life_stage, axis=1)
+        return data[["age", "marital_status"]].apply(
+            classify_life_stage, axis=1
+        )
 
-    def _calculate_family_responsibility(self, data: pd.DataFrame) -> pd.Series:
+    def _calculate_family_responsibility(
+        self, data: pd.DataFrame
+    ) -> pd.Series:
         """Calculate family responsibility score."""
         base_score = 0.3  # Base responsibility
 
         # Marital status factor
         marital_factor = (
             data["marital_status"]
-            .map({"Single": 0.0, "Married": 0.4, "Divorced": 0.2, "Widowed": 0.3})
+            .map(
+                {
+                    "Single": 0.0,
+                    "Married": 0.4,
+                    "Divorced": 0.2,
+                    "Widowed": 0.3,
+                }
+            )
             .fillna(0.0)
         )
 
@@ -431,7 +476,9 @@ class TemporalFeatureExtractor:
         age_factor = np.where(
             data["age"] < 35,
             (data["age"] - 18) / 17 * 0.3,
-            np.where(data["age"] < 55, 0.3, 0.3 - (data["age"] - 55) / 45 * 0.2),
+            np.where(
+                data["age"] < 55, 0.3, 0.3 - (data["age"] - 55) / 45 * 0.2
+            ),
         )
 
         return base_score + marital_factor + age_factor
@@ -454,7 +501,9 @@ class TemporalFeatureExtractor:
             else:
                 return "Retirement Age"
 
-        return data[["age", "employment_type"]].apply(classify_career_stage, axis=1)
+        return data[["age", "employment_type"]].apply(
+            classify_career_stage, axis=1
+        )
 
     def _calculate_earning_potential(self, data: pd.DataFrame) -> pd.Series:
         """Calculate earning potential score."""
@@ -479,7 +528,9 @@ class TemporalFeatureExtractor:
             np.where(
                 data["age"] < 45,
                 0.3 + (data["age"] - 25) / 20 * 0.7,
-                np.where(data["age"] < 65, 1.0 - (data["age"] - 45) / 20 * 0.3, 0.4),
+                np.where(
+                    data["age"] < 65, 1.0 - (data["age"] - 45) / 20 * 0.3, 0.4
+                ),
             ),
         )
 
@@ -495,17 +546,23 @@ class OutlierDetector:
             "isolation_forest": IsolationForest(
                 contamination=config.outlier_contamination, random_state=42
             ),
-            "lof": LocalOutlierFactor(contamination=config.outlier_contamination),
+            "lof": LocalOutlierFactor(
+                contamination=config.outlier_contamination
+            ),
         }
 
-    def detect_outliers(self, data: pd.DataFrame) -> Tuple[pd.DataFrame, np.ndarray]:
+    def detect_outliers(
+        self, data: pd.DataFrame
+    ) -> Tuple[pd.DataFrame, np.ndarray]:
         """Detect outliers in the dataset."""
         if not self.config.enable_outlier_detection:
             return data, np.zeros(len(data), dtype=bool)
 
         # Select numeric columns for outlier detection
         numeric_columns = data.select_dtypes(include=[np.number]).columns
-        numeric_data = data[numeric_columns].fillna(data[numeric_columns].median())
+        numeric_data = data[numeric_columns].fillna(
+            data[numeric_columns].median()
+        )
 
         # Detect outliers
         detector = self.outlier_detectors[self.config.outlier_method]
@@ -593,7 +650,9 @@ class FeatureEngineeringPipeline(DataProcessor):
 
             # Separate features and target
             if target_column not in data.columns:
-                raise ValueError(f"Target column '{target_column}' not found in data")
+                raise ValueError(
+                    f"Target column '{target_column}' not found in data"
+                )
 
             X = data.drop(columns=[target_column])
             y = data[target_column]
@@ -666,7 +725,9 @@ class FeatureEngineeringPipeline(DataProcessor):
                 target=y_balanced,
                 feature_names=list(X_balanced.columns),
                 feature_importance=feature_importance,
-                outliers_detected=outlier_mask.sum() if len(outlier_mask) > 0 else 0,
+                outliers_detected=(
+                    outlier_mask.sum() if len(outlier_mask) > 0 else 0
+                ),
                 class_distribution=class_distribution,
                 processing_time_seconds=processing_time,
                 message="Feature engineering completed successfully",
@@ -728,12 +789,16 @@ class FeatureEngineeringPipeline(DataProcessor):
         """Handle missing values in the dataset."""
         # Separate numeric and categorical columns
         numeric_columns = data.select_dtypes(include=[np.number]).columns
-        categorical_columns = data.select_dtypes(include=["object", "category"]).columns
+        categorical_columns = data.select_dtypes(
+            include=["object", "category"]
+        ).columns
 
         # Handle numeric missing values with median imputation
         if len(numeric_columns) > 0:
             numeric_imputer = SimpleImputer(strategy="median")
-            data[numeric_columns] = numeric_imputer.fit_transform(data[numeric_columns])
+            data[numeric_columns] = numeric_imputer.fit_transform(
+                data[numeric_columns]
+            )
 
         # Handle categorical missing values with mode imputation
         if len(categorical_columns) > 0:
@@ -745,9 +810,13 @@ class FeatureEngineeringPipeline(DataProcessor):
         logger.info("Missing values handled")
         return data
 
-    def _encode_categorical_variables(self, data: pd.DataFrame) -> pd.DataFrame:
+    def _encode_categorical_variables(
+        self, data: pd.DataFrame
+    ) -> pd.DataFrame:
         """Encode categorical variables."""
-        categorical_columns = data.select_dtypes(include=["object", "category"]).columns
+        categorical_columns = data.select_dtypes(
+            include=["object", "category"]
+        ).columns
 
         if len(categorical_columns) == 0:
             return data
@@ -761,7 +830,9 @@ class FeatureEngineeringPipeline(DataProcessor):
             unique_values = data[column].nunique()
 
             if unique_values <= 10:  # One-hot encode
-                dummies = pd.get_dummies(data[column], prefix=column, drop_first=True)
+                dummies = pd.get_dummies(
+                    data[column], prefix=column, drop_first=True
+                )
                 encoded_data = pd.concat(
                     [encoded_data.drop(columns=[column]), dummies], axis=1
                 )
@@ -771,7 +842,9 @@ class FeatureEngineeringPipeline(DataProcessor):
                     data[column].astype(str)
                 )
 
-        logger.info(f"Encoded {len(categorical_columns)} categorical variables")
+        logger.info(
+            f"Encoded {len(categorical_columns)} categorical variables"
+        )
         return encoded_data
 
     def _calculate_feature_importance(
@@ -815,7 +888,9 @@ class FeatureEngineeringPipeline(DataProcessor):
                 )
 
             # Sort by importance score
-            feature_importance.sort(key=lambda x: x.importance_score, reverse=True)
+            feature_importance.sort(
+                key=lambda x: x.importance_score, reverse=True
+            )
 
         except ImportError:
             logger.warning(
@@ -868,7 +943,9 @@ class FeatureEngineeringPipeline(DataProcessor):
             "career_stage": "Career stage based on age and employment type",
         }
 
-        return descriptions.get(feature_name, f"Engineered feature: {feature_name}")
+        return descriptions.get(
+            feature_name, f"Engineered feature: {feature_name}"
+        )
 
 
 # Factory functions and utilities

@@ -65,13 +65,17 @@ class PIIDetector:
     def __init__(self):
         self.patterns = {
             PIIType.SSN: [r"\b\d{3}-\d{2}-\d{4}\b", r"\b\d{9}\b"],
-            PIIType.EMAIL: [r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"],
+            PIIType.EMAIL: [
+                r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+            ],
             PIIType.PHONE: [
                 r"\b\d{3}-\d{3}-\d{4}\b",
                 r"\b\(\d{3}\)\s*\d{3}-\d{4}\b",
                 r"\b\d{10}\b",
             ],
-            PIIType.CREDIT_CARD: [r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"],
+            PIIType.CREDIT_CARD: [
+                r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"
+            ],
             PIIType.ACCOUNT_NUMBER: [r"\b\d{8,20}\b"],
         }
 
@@ -101,7 +105,9 @@ class PIIDetector:
             column_lower = column.lower()
 
             # Check for name columns
-            if any(indicator in column_lower for indicator in self.name_indicators):
+            if any(
+                indicator in column_lower for indicator in self.name_indicators
+            ):
                 results.append(
                     PIIDetectionResult(
                         column=column,
@@ -114,7 +120,10 @@ class PIIDetector:
                 continue
 
             # Check for address columns
-            if any(indicator in column_lower for indicator in self.address_indicators):
+            if any(
+                indicator in column_lower
+                for indicator in self.address_indicators
+            ):
                 results.append(
                     PIIDetectionResult(
                         column=column,
@@ -172,7 +181,10 @@ class DataMasker:
         self.reverse_mapping: Dict[str, str] = {}
 
     def mask_data(
-        self, data: pd.DataFrame, pii_columns: List[str], mask_type: str = "hash"
+        self,
+        data: pd.DataFrame,
+        pii_columns: List[str],
+        mask_type: str = "hash",
     ) -> pd.DataFrame:
         """Mask PII data in specified columns."""
         masked_data = data.copy()
@@ -232,14 +244,18 @@ class DataMasker:
 
         return series.apply(partial_mask_value)
 
-    def detokenize_data(self, data: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
+    def detokenize_data(
+        self, data: pd.DataFrame, columns: List[str]
+    ) -> pd.DataFrame:
         """Reverse tokenization for specified columns."""
         detokenized_data = data.copy()
 
         for column in columns:
             if column in data.columns:
                 detokenized_data[column] = data[column].map(
-                    lambda x: self.reverse_mapping.get(x, x) if not pd.isna(x) else x
+                    lambda x: (
+                        self.reverse_mapping.get(x, x) if not pd.isna(x) else x
+                    )
                 )
 
         return detokenized_data
@@ -250,7 +266,9 @@ class KAnonymizer:
 
     def __init__(self, config: AnonymizationConfig):
         self.config = config
-        self.generalization_hierarchies = self._build_generalization_hierarchies()
+        self.generalization_hierarchies = (
+            self._build_generalization_hierarchies()
+        )
 
     def anonymize(
         self,
@@ -262,7 +280,9 @@ class KAnonymizer:
         anonymized_data = data.copy()
 
         # Apply k-anonymity
-        anonymized_data = self._apply_k_anonymity(anonymized_data, quasi_identifiers)
+        anonymized_data = self._apply_k_anonymity(
+            anonymized_data, quasi_identifiers
+        )
 
         # Apply l-diversity if sensitive attributes are specified
         if sensitive_attributes:
@@ -288,7 +308,10 @@ class KAnonymizer:
                 anonymized_data.append(group_data)
             else:
                 # Apply generalization or suppression
-                if len(group_data) / len(data) < self.config.suppress_threshold:
+                if (
+                    len(group_data) / len(data)
+                    < self.config.suppress_threshold
+                ):
                     # Suppress small groups
                     suppressed_count += len(group_data)
                 else:
@@ -303,7 +326,9 @@ class KAnonymizer:
         else:
             result = pd.DataFrame(columns=data.columns)
 
-        logger.info(f"K-anonymity applied: {suppressed_count} records suppressed")
+        logger.info(
+            f"K-anonymity applied: {suppressed_count} records suppressed"
+        )
         return result
 
     def _apply_l_diversity(
@@ -353,14 +378,20 @@ class KAnonymizer:
             if qi in self.generalization_hierarchies:
                 # Apply generalization hierarchy
                 hierarchy = self.generalization_hierarchies[qi]
-                generalized_data[qi] = self._apply_hierarchy(group_data[qi], hierarchy)
+                generalized_data[qi] = self._apply_hierarchy(
+                    group_data[qi], hierarchy
+                )
             else:
                 # Default generalization (e.g., age ranges)
-                generalized_data[qi] = self._default_generalization(group_data[qi])
+                generalized_data[qi] = self._default_generalization(
+                    group_data[qi]
+                )
 
         return generalized_data
 
-    def _apply_hierarchy(self, series: pd.Series, hierarchy: List[str]) -> pd.Series:
+    def _apply_hierarchy(
+        self, series: pd.Series, hierarchy: List[str]
+    ) -> pd.Series:
         """Apply generalization hierarchy."""
         # Simple implementation: use the most general level
         return hierarchy[-1] if hierarchy else series
@@ -379,7 +410,12 @@ class KAnonymizer:
     def _build_generalization_hierarchies(self) -> Dict[str, List[str]]:
         """Build generalization hierarchies for common attributes."""
         hierarchies = {
-            "age": ["specific_age", "age_group_5", "age_group_10", "adult/minor"],
+            "age": [
+                "specific_age",
+                "age_group_5",
+                "age_group_10",
+                "adult/minor",
+            ],
             "income": [
                 "exact_income",
                 "income_bracket_10k",
@@ -413,7 +449,9 @@ class DifferentialPrivacy:
         scale = sensitivity / self.epsilon
 
         for column in columns:
-            if column in data.columns and pd.api.types.is_numeric_dtype(data[column]):
+            if column in data.columns and pd.api.types.is_numeric_dtype(
+                data[column]
+            ):
                 noise = np.random.laplace(0, scale, size=len(data))
                 noisy_data[column] = data[column] + noise
 
@@ -426,10 +464,14 @@ class DifferentialPrivacy:
         noisy_data = data.copy()
 
         # Calculate noise scale for (epsilon, delta)-differential privacy
-        sigma = np.sqrt(2 * np.log(1.25 / self.delta)) * sensitivity / self.epsilon
+        sigma = (
+            np.sqrt(2 * np.log(1.25 / self.delta)) * sensitivity / self.epsilon
+        )
 
         for column in columns:
-            if column in data.columns and pd.api.types.is_numeric_dtype(data[column]):
+            if column in data.columns and pd.api.types.is_numeric_dtype(
+                data[column]
+            ):
                 noise = np.random.normal(0, sigma, size=len(data))
                 noisy_data[column] = data[column] + noise
 
@@ -446,7 +488,9 @@ class DifferentialPrivacy:
 
         # Calculate probabilities
         max_utility = max(utilities)
-        probabilities = np.exp(self.epsilon * np.array(utilities) / (2 * max_utility))
+        probabilities = np.exp(
+            self.epsilon * np.array(utilities) / (2 * max_utility)
+        )
         probabilities = probabilities / probabilities.sum()
 
         # Sample according to probabilities
@@ -475,8 +519,12 @@ class AnonymizationPipeline:
         # Extract configuration
         mask_columns = anonymization_strategy.get("mask_columns", [])
         quasi_identifiers = anonymization_strategy.get("quasi_identifiers", [])
-        sensitive_attributes = anonymization_strategy.get("sensitive_attributes", [])
-        dp_columns = anonymization_strategy.get("differential_privacy_columns", [])
+        sensitive_attributes = anonymization_strategy.get(
+            "sensitive_attributes", []
+        )
+        dp_columns = anonymization_strategy.get(
+            "differential_privacy_columns", []
+        )
 
         anonymized_data = data.copy()
 
@@ -581,7 +629,9 @@ class AnonymizationPipeline:
 
         return np.mean(utility_scores) if utility_scores else 0.0
 
-    def _assess_privacy_risk(self, anonymized_data: pd.DataFrame) -> Dict[str, Any]:
+    def _assess_privacy_risk(
+        self, anonymized_data: pd.DataFrame
+    ) -> Dict[str, Any]:
         """Assess privacy risk in anonymized data."""
         # Simple risk assessment
         risk_assessment = {

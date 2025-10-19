@@ -28,7 +28,10 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from core.logging import get_audit_logger, get_logger
-    from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from sustainability.energy_tracker import EnergyReport, EnergyTracker
 
     # Create minimal implementations for testing
@@ -114,7 +117,9 @@ class ESGMetric:
             ESGMetricType.CARBON_EMISSIONS,
             ESGMetricType.ENERGY_CONSUMPTION,
         ]:
-            return self.target_value / max(self.value, 0.001)  # Avoid division by zero
+            return self.target_value / max(
+                self.value, 0.001
+            )  # Avoid division by zero
         else:
             # For metrics where higher is better (e.g., fairness scores)
             return self.value / self.target_value
@@ -265,8 +270,12 @@ class ESGMetricsCollector:
             return metrics
 
         # Calculate total energy consumption
-        total_energy = sum(report.total_energy_kwh for report in energy_reports)
-        total_predictions = len(energy_reports)  # Assuming one prediction per report
+        total_energy = sum(
+            report.total_energy_kwh for report in energy_reports
+        )
+        total_predictions = len(
+            energy_reports
+        )  # Assuming one prediction per report
 
         # Energy consumption per prediction
         energy_per_prediction = total_energy / max(total_predictions, 1)
@@ -279,7 +288,9 @@ class ESGMetricsCollector:
                 timestamp=timestamp,
                 description="Average energy consumption per prediction",
                 target_value=self.targets[ESGMetricType.ENERGY_CONSUMPTION],
-                benchmark_value=self.benchmarks[ESGMetricType.ENERGY_CONSUMPTION],
+                benchmark_value=self.benchmarks[
+                    ESGMetricType.ENERGY_CONSUMPTION
+                ],
             )
         )
 
@@ -298,7 +309,9 @@ class ESGMetricsCollector:
                 timestamp=timestamp,
                 description="Average carbon emissions per prediction",
                 target_value=self.targets[ESGMetricType.CARBON_EMISSIONS],
-                benchmark_value=self.benchmarks[ESGMetricType.CARBON_EMISSIONS],
+                benchmark_value=self.benchmarks[
+                    ESGMetricType.CARBON_EMISSIONS
+                ],
             )
         )
 
@@ -316,7 +329,9 @@ class ESGMetricsCollector:
                     timestamp=timestamp,
                     description="Average carbon intensity of energy grid",
                     target_value=self.targets[ESGMetricType.CARBON_INTENSITY],
-                    benchmark_value=self.benchmarks[ESGMetricType.CARBON_INTENSITY],
+                    benchmark_value=self.benchmarks[
+                        ESGMetricType.CARBON_INTENSITY
+                    ],
                 )
             )
 
@@ -330,14 +345,20 @@ class ESGMetricsCollector:
                 unit="ratio",
                 timestamp=timestamp,
                 description="Estimated renewable energy ratio based on carbon intensity",
-                target_value=self.targets[ESGMetricType.RENEWABLE_ENERGY_RATIO],
-                benchmark_value=self.benchmarks[ESGMetricType.RENEWABLE_ENERGY_RATIO],
+                target_value=self.targets[
+                    ESGMetricType.RENEWABLE_ENERGY_RATIO
+                ],
+                benchmark_value=self.benchmarks[
+                    ESGMetricType.RENEWABLE_ENERGY_RATIO
+                ],
             )
         )
 
         # Calculate energy efficiency (predictions per kWh)
         efficiency = total_predictions / max(total_energy, 0.001)
-        normalized_efficiency = min(efficiency / 1000, 1.0)  # Normalize to 0-1 scale
+        normalized_efficiency = min(
+            efficiency / 1000, 1.0
+        )  # Normalize to 0-1 scale
 
         metrics.append(
             ESGMetric(
@@ -348,7 +369,9 @@ class ESGMetricsCollector:
                 timestamp=timestamp,
                 description="Energy efficiency score (predictions per kWh, normalized)",
                 target_value=self.targets[ESGMetricType.ENERGY_EFFICIENCY],
-                benchmark_value=self.benchmarks[ESGMetricType.ENERGY_EFFICIENCY],
+                benchmark_value=self.benchmarks[
+                    ESGMetricType.ENERGY_EFFICIENCY
+                ],
             )
         )
 
@@ -368,9 +391,7 @@ class ESGMetricsCollector:
             avg_fairness = np.mean(list(fairness_scores.values()))
         else:
             # Default/estimated fairness score
-            avg_fairness = (
-                0.85  # Placeholder - would be calculated from actual bias detection
-            )
+            avg_fairness = 0.85  # Placeholder - would be calculated from actual bias detection
 
         metrics.append(
             ESGMetric(
@@ -381,7 +402,9 @@ class ESGMetricsCollector:
                 timestamp=timestamp,
                 description="Average algorithmic fairness score across protected attributes",
                 target_value=self.targets[ESGMetricType.ALGORITHMIC_FAIRNESS],
-                benchmark_value=self.benchmarks[ESGMetricType.ALGORITHMIC_FAIRNESS],
+                benchmark_value=self.benchmarks[
+                    ESGMetricType.ALGORITHMIC_FAIRNESS
+                ],
             )
         )
 
@@ -390,7 +413,9 @@ class ESGMetricsCollector:
             privacy_score = privacy_metrics.get("overall_privacy_score", 0.8)
         else:
             # Estimate based on federated learning and differential privacy usage
-            privacy_score = 0.9  # High score due to federated learning implementation
+            privacy_score = (
+                0.9  # High score due to federated learning implementation
+            )
 
         metrics.append(
             ESGMetric(
@@ -401,7 +426,9 @@ class ESGMetricsCollector:
                 timestamp=timestamp,
                 description="Data privacy protection score",
                 target_value=self.targets[ESGMetricType.DATA_PRIVACY_SCORE],
-                benchmark_value=self.benchmarks[ESGMetricType.DATA_PRIVACY_SCORE],
+                benchmark_value=self.benchmarks[
+                    ESGMetricType.DATA_PRIVACY_SCORE
+                ],
             )
         )
 
@@ -418,12 +445,16 @@ class ESGMetricsCollector:
                 timestamp=timestamp,
                 description="System accessibility and usability score",
                 target_value=self.targets[ESGMetricType.ACCESSIBILITY_SCORE],
-                benchmark_value=self.benchmarks[ESGMetricType.ACCESSIBILITY_SCORE],
+                benchmark_value=self.benchmarks[
+                    ESGMetricType.ACCESSIBILITY_SCORE
+                ],
             )
         )
 
         # Transparency score (explainability coverage)
-        transparency_score = 0.95  # High score due to comprehensive explainability
+        transparency_score = (
+            0.95  # High score due to comprehensive explainability
+        )
         metrics.append(
             ESGMetric(
                 metric_type=ESGMetricType.TRANSPARENCY_SCORE,
@@ -433,7 +464,9 @@ class ESGMetricsCollector:
                 timestamp=timestamp,
                 description="Model transparency and explainability score",
                 target_value=self.targets[ESGMetricType.TRANSPARENCY_SCORE],
-                benchmark_value=self.benchmarks[ESGMetricType.TRANSPARENCY_SCORE],
+                benchmark_value=self.benchmarks[
+                    ESGMetricType.TRANSPARENCY_SCORE
+                ],
             )
         )
 
@@ -447,7 +480,9 @@ class ESGMetricsCollector:
         timestamp = datetime.now()
 
         # Model governance score
-        model_governance = 0.9  # High score due to comprehensive model management
+        model_governance = (
+            0.9  # High score due to comprehensive model management
+        )
         metrics.append(
             ESGMetric(
                 metric_type=ESGMetricType.MODEL_GOVERNANCE,
@@ -457,7 +492,9 @@ class ESGMetricsCollector:
                 timestamp=timestamp,
                 description="Model governance and lifecycle management score",
                 target_value=self.targets[ESGMetricType.MODEL_GOVERNANCE],
-                benchmark_value=self.benchmarks[ESGMetricType.MODEL_GOVERNANCE],
+                benchmark_value=self.benchmarks[
+                    ESGMetricType.MODEL_GOVERNANCE
+                ],
             )
         )
 
@@ -480,7 +517,9 @@ class ESGMetricsCollector:
         if compliance_data:
             compliance_score = compliance_data.get("overall_compliance", 0.95)
         else:
-            compliance_score = 0.95  # High score due to built-in compliance features
+            compliance_score = (
+                0.95  # High score due to built-in compliance features
+            )
 
         metrics.append(
             ESGMetric(
@@ -491,7 +530,9 @@ class ESGMetricsCollector:
                 timestamp=timestamp,
                 description="Regulatory compliance score",
                 target_value=self.targets[ESGMetricType.COMPLIANCE_SCORE],
-                benchmark_value=self.benchmarks[ESGMetricType.COMPLIANCE_SCORE],
+                benchmark_value=self.benchmarks[
+                    ESGMetricType.COMPLIANCE_SCORE
+                ],
             )
         )
 
@@ -532,9 +573,15 @@ class ESGMetricsCollector:
         timestamp = datetime.now()
 
         # Separate metrics by category
-        env_metrics = [m for m in metrics if m.category == ESGCategory.ENVIRONMENTAL]
-        social_metrics = [m for m in metrics if m.category == ESGCategory.SOCIAL]
-        gov_metrics = [m for m in metrics if m.category == ESGCategory.GOVERNANCE]
+        env_metrics = [
+            m for m in metrics if m.category == ESGCategory.ENVIRONMENTAL
+        ]
+        social_metrics = [
+            m for m in metrics if m.category == ESGCategory.SOCIAL
+        ]
+        gov_metrics = [
+            m for m in metrics if m.category == ESGCategory.GOVERNANCE
+        ]
 
         # Calculate category scores (0-100 scale)
         env_score = self._calculate_category_score(env_metrics)
@@ -604,7 +651,9 @@ class ESGMetricsCollector:
         all_metrics.extend(env_metrics)
 
         # Collect social metrics
-        social_metrics = self.collect_social_metrics(fairness_scores, privacy_metrics)
+        social_metrics = self.collect_social_metrics(
+            fairness_scores, privacy_metrics
+        )
         all_metrics.extend(social_metrics)
 
         # Collect governance metrics
@@ -635,7 +684,9 @@ class ESGMetricsCollector:
         """Get ESG metrics history for specified period."""
         cutoff_date = datetime.now() - timedelta(days=days)
         return [
-            metric for metric in self.metrics_history if metric.timestamp >= cutoff_date
+            metric
+            for metric in self.metrics_history
+            if metric.timestamp >= cutoff_date
         ]
 
     def generate_recommendations(self, metrics: List[ESGMetric]) -> List[str]:

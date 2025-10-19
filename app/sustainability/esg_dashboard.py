@@ -24,7 +24,9 @@ try:
     DASH_AVAILABLE = True
 except ImportError:
     DASH_AVAILABLE = False
-    warnings.warn("Dash/Plotly not available. Install with: pip install dash plotly")
+    warnings.warn(
+        "Dash/Plotly not available. Install with: pip install dash plotly"
+    )
 
     # Create mock objects when Dash is not available
     class MockHtml:
@@ -169,10 +171,22 @@ class ESGDashboard:
                                         dcc.Dropdown(
                                             id="time-period-dropdown",
                                             options=[
-                                                {"label": "Last 24 Hours", "value": 1},
-                                                {"label": "Last 7 Days", "value": 7},
-                                                {"label": "Last 30 Days", "value": 30},
-                                                {"label": "Last 90 Days", "value": 90},
+                                                {
+                                                    "label": "Last 24 Hours",
+                                                    "value": 1,
+                                                },
+                                                {
+                                                    "label": "Last 7 Days",
+                                                    "value": 7,
+                                                },
+                                                {
+                                                    "label": "Last 30 Days",
+                                                    "value": 30,
+                                                },
+                                                {
+                                                    "label": "Last 90 Days",
+                                                    "value": 90,
+                                                },
                                             ],
                                             value=7,
                                             style={"width": "200px"},
@@ -201,7 +215,10 @@ class ESGDashboard:
                                     style={"display": "inline-block"},
                                 ),
                             ],
-                            style={"textAlign": "center", "marginBottom": "30px"},
+                            style={
+                                "textAlign": "center",
+                                "marginBottom": "30px",
+                            },
                         ),
                     ]
                 ),
@@ -212,11 +229,17 @@ class ESGDashboard:
                     [
                         html.H2(
                             "ESG Scores",
-                            style={"textAlign": "center", "marginBottom": "20px"},
+                            style={
+                                "textAlign": "center",
+                                "marginBottom": "20px",
+                            },
                         ),
                         html.Div(
                             id="esg-score-cards",
-                            style={"display": "flex", "justifyContent": "space-around"},
+                            style={
+                                "display": "flex",
+                                "justifyContent": "space-around",
+                            },
                         ),
                     ],
                     style={"marginBottom": "40px"},
@@ -241,13 +264,17 @@ class ESGDashboard:
                     [
                         html.H2(
                             "Detailed Metrics",
-                            style={"textAlign": "center", "marginBottom": "20px"},
+                            style={
+                                "textAlign": "center",
+                                "marginBottom": "20px",
+                            },
                         ),
                         # Environmental Metrics
                         html.Div(
                             [
                                 html.H3(
-                                    "Environmental Metrics", style={"color": "#228B22"}
+                                    "Environmental Metrics",
+                                    style={"color": "#228B22"},
                                 ),
                                 dcc.Graph(id="environmental-metrics-chart"),
                             ],
@@ -256,7 +283,10 @@ class ESGDashboard:
                         # Social Metrics
                         html.Div(
                             [
-                                html.H3("Social Metrics", style={"color": "#4169E1"}),
+                                html.H3(
+                                    "Social Metrics",
+                                    style={"color": "#4169E1"},
+                                ),
                                 dcc.Graph(id="social-metrics-chart"),
                             ],
                             style={"marginBottom": "30px"},
@@ -265,7 +295,8 @@ class ESGDashboard:
                         html.Div(
                             [
                                 html.H3(
-                                    "Governance Metrics", style={"color": "#8B4513"}
+                                    "Governance Metrics",
+                                    style={"color": "#8B4513"},
                                 ),
                                 dcc.Graph(id="governance-metrics-chart"),
                             ],
@@ -278,7 +309,10 @@ class ESGDashboard:
                     [
                         html.H2(
                             "Benchmarking",
-                            style={"textAlign": "center", "marginBottom": "20px"},
+                            style={
+                                "textAlign": "center",
+                                "marginBottom": "20px",
+                            },
                         ),
                         html.Div(
                             [dcc.Graph(id="benchmark-comparison-chart")],
@@ -295,7 +329,10 @@ class ESGDashboard:
                     [
                         html.H2(
                             "Recommendations",
-                            style={"textAlign": "center", "marginBottom": "20px"},
+                            style={
+                                "textAlign": "center",
+                                "marginBottom": "20px",
+                            },
                         ),
                         html.Div(id="recommendations-section"),
                     ],
@@ -365,7 +402,9 @@ class ESGDashboard:
                         empty_fig,  # governance-metrics-chart
                         empty_fig,  # benchmark-comparison-chart
                         empty_fig,  # target-progress-chart
-                        html.Div("No recommendations"),  # recommendations-section
+                        html.Div(
+                            "No recommendations"
+                        ),  # recommendations-section
                     )
 
                 # Calculate ESG score
@@ -373,26 +412,36 @@ class ESGDashboard:
 
                 # Generate alerts and recommendations
                 alerts = self.esg_collector.generate_alerts(metrics)
-                recommendations = self.esg_collector.generate_recommendations(metrics)
+                recommendations = self.esg_collector.generate_recommendations(
+                    metrics
+                )
 
                 # Create components
                 alerts_component = self._create_alerts_component(alerts)
                 score_cards = self._create_score_cards(esg_score)
                 trends_chart = self._create_trends_chart(metrics)
-                breakdown_chart = self._create_category_breakdown_chart(esg_score)
+                breakdown_chart = self._create_category_breakdown_chart(
+                    esg_score
+                )
                 env_chart = self._create_metrics_chart(
                     metrics, ESGCategory.ENVIRONMENTAL
                 )
-                social_chart = self._create_metrics_chart(metrics, ESGCategory.SOCIAL)
-                gov_chart = self._create_metrics_chart(metrics, ESGCategory.GOVERNANCE)
+                social_chart = self._create_metrics_chart(
+                    metrics, ESGCategory.SOCIAL
+                )
+                gov_chart = self._create_metrics_chart(
+                    metrics, ESGCategory.GOVERNANCE
+                )
                 benchmark_chart = self._create_benchmark_chart(metrics)
                 target_chart = self._create_target_progress_chart(metrics)
-                recommendations_component = self._create_recommendations_component(
-                    recommendations
+                recommendations_component = (
+                    self._create_recommendations_component(recommendations)
                 )
 
                 # Store data for other callbacks
-                data_store = json.dumps([metric.to_dict() for metric in metrics])
+                data_store = json.dumps(
+                    [metric.to_dict() for metric in metrics]
+                )
 
                 return (
                     data_store,
@@ -479,7 +528,10 @@ class ESGDashboard:
         return self.esg_collector.collect_all_metrics(
             energy_reports=energy_reports,
             carbon_footprints=carbon_footprints,
-            fairness_scores={"demographic_parity": 0.85, "equal_opportunity": 0.88},
+            fairness_scores={
+                "demographic_parity": 0.85,
+                "equal_opportunity": 0.88,
+            },
             privacy_metrics={"overall_privacy_score": 0.9},
             compliance_data={"overall_compliance": 0.95},
         )
@@ -515,7 +567,10 @@ class ESGDashboard:
 
             alert_items.append(
                 html.Div(
-                    [html.Span(icon, style={"marginRight": "10px"}), html.Span(alert)],
+                    [
+                        html.Span(icon, style={"marginRight": "10px"}),
+                        html.Span(alert),
+                    ],
                     style={
                         "color": color,
                         "marginBottom": "10px",
@@ -531,11 +586,14 @@ class ESGDashboard:
     def _create_score_cards(self, esg_score: ESGScore) -> List[html.Div]:
         """Create ESG score cards."""
 
-        def create_score_card(title: str, score: float, color: str) -> html.Div:
+        def create_score_card(
+            title: str, score: float, color: str
+        ) -> html.Div:
             return html.Div(
                 [
                     html.H3(
-                        title, style={"textAlign": "center", "marginBottom": "10px"}
+                        title,
+                        style={"textAlign": "center", "marginBottom": "10px"},
                     ),
                     html.Div(
                         f"{score:.1f}",
@@ -546,7 +604,9 @@ class ESGDashboard:
                             "color": color,
                         },
                     ),
-                    html.Div("/ 100", style={"textAlign": "center", "color": "gray"}),
+                    html.Div(
+                        "/ 100", style={"textAlign": "center", "color": "gray"}
+                    ),
                 ],
                 style={
                     "border": f"2px solid {color}",
@@ -562,8 +622,12 @@ class ESGDashboard:
                 "Environmental", esg_score.environmental_score, "#228B22"
             ),
             create_score_card("Social", esg_score.social_score, "#4169E1"),
-            create_score_card("Governance", esg_score.governance_score, "#8B4513"),
-            create_score_card("Overall ESG", esg_score.overall_score, "#2E8B57"),
+            create_score_card(
+                "Governance", esg_score.governance_score, "#8B4513"
+            ),
+            create_score_card(
+                "Overall ESG", esg_score.overall_score, "#2E8B57"
+            ),
         ]
 
     def _create_trends_chart(self, metrics: List[ESGMetric]) -> go.Figure:
@@ -610,7 +674,9 @@ class ESGDashboard:
             cat_data = df[df["category"] == category]
             # Average performance ratio over time
             avg_performance = (
-                cat_data.groupby("timestamp")["performance_ratio"].mean().reset_index()
+                cat_data.groupby("timestamp")["performance_ratio"]
+                .mean()
+                .reset_index()
             )
 
             fig.add_trace(
@@ -633,7 +699,9 @@ class ESGDashboard:
 
         return fig
 
-    def _create_category_breakdown_chart(self, esg_score: ESGScore) -> go.Figure:
+    def _create_category_breakdown_chart(
+        self, esg_score: ESGScore
+    ) -> go.Figure:
         """Create category breakdown pie chart."""
 
         labels = ["Environmental", "Social", "Governance"]
@@ -681,7 +749,8 @@ class ESGDashboard:
 
         # Create bar chart comparing current vs target values
         metric_names = [
-            m.metric_type.value.replace("_", " ").title() for m in category_metrics
+            m.metric_type.value.replace("_", " ").title()
+            for m in category_metrics
         ]
         current_values = [m.value for m in category_metrics]
         target_values = [m.target_value or 0 for m in category_metrics]
@@ -699,7 +768,10 @@ class ESGDashboard:
 
         fig.add_trace(
             go.Bar(
-                name="Target", x=metric_names, y=target_values, marker_color="darkblue"
+                name="Target",
+                x=metric_names,
+                y=target_values,
+                marker_color="darkblue",
             )
         )
 
@@ -723,7 +795,9 @@ class ESGDashboard:
 
         for metric in metrics:
             if metric.benchmark_value is not None:
-                metric_names.append(metric.metric_type.value.replace("_", " ").title())
+                metric_names.append(
+                    metric.metric_type.value.replace("_", " ").title()
+                )
                 current_values.append(metric.value)
                 benchmark_values.append(metric.benchmark_value)
 
@@ -769,7 +843,9 @@ class ESGDashboard:
 
         return fig
 
-    def _create_target_progress_chart(self, metrics: List[ESGMetric]) -> go.Figure:
+    def _create_target_progress_chart(
+        self, metrics: List[ESGMetric]
+    ) -> go.Figure:
         """Create target progress chart."""
 
         # Show progress towards targets as percentage
@@ -779,7 +855,9 @@ class ESGDashboard:
         for metric in metrics:
             performance_ratio = metric.performance_ratio()
             if performance_ratio is not None:
-                metric_names.append(metric.metric_type.value.replace("_", " ").title())
+                metric_names.append(
+                    metric.metric_type.value.replace("_", " ").title()
+                )
                 progress_percentages.append(min(performance_ratio * 100, 100))
 
         if not metric_names:
@@ -818,7 +896,10 @@ class ESGDashboard:
 
         # Add target line at 100%
         fig.add_hline(
-            y=100, line_dash="dash", line_color="blue", annotation_text="Target (100%)"
+            y=100,
+            line_dash="dash",
+            line_color="blue",
+            annotation_text="Target (100%)",
         )
 
         fig.update_layout(
@@ -831,7 +912,9 @@ class ESGDashboard:
 
         return fig
 
-    def _create_recommendations_component(self, recommendations: List[str]) -> html.Div:
+    def _create_recommendations_component(
+        self, recommendations: List[str]
+    ) -> html.Div:
         """Create recommendations component."""
 
         if not recommendations:
@@ -914,4 +997,6 @@ if __name__ == "__main__":
     if DASH_AVAILABLE:
         run_esg_dashboard(debug=True)
     else:
-        print("Dash/Plotly not available. Install with: pip install dash plotly")
+        print(
+            "Dash/Plotly not available. Install with: pip install dash plotly"
+        )

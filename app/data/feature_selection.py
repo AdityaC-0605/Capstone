@@ -40,7 +40,9 @@ class FeatureSelectionConfig:
 
     # Statistical methods
     enable_statistical_selection: bool = True
-    statistical_method: str = "mutual_info"  # "chi2", "f_classif", "mutual_info"
+    statistical_method: str = (
+        "mutual_info"  # "chi2", "f_classif", "mutual_info"
+    )
     statistical_k_features: int = 20
     statistical_percentile: float = 50.0
 
@@ -51,7 +53,9 @@ class FeatureSelectionConfig:
 
     # Recursive feature elimination
     enable_rfe: bool = True
-    rfe_estimator: str = "random_forest"  # "random_forest", "logistic_regression"
+    rfe_estimator: str = (
+        "random_forest"  # "random_forest", "logistic_regression"
+    )
     rfe_n_features: Optional[int] = None  # If None, uses cross-validation
     rfe_cv_folds: int = 5
 
@@ -106,7 +110,9 @@ class StatisticalFeatureSelector:
         self.config = config
         self.selectors = {
             "chi2": SelectKBest(chi2, k=config.statistical_k_features),
-            "f_classif": SelectKBest(f_classif, k=config.statistical_k_features),
+            "f_classif": SelectKBest(
+                f_classif, k=config.statistical_k_features
+            ),
             "mutual_info": SelectKBest(
                 mutual_info_classif, k=config.statistical_k_features
             ),
@@ -131,8 +137,12 @@ class StatisticalFeatureSelector:
             if method == "chi2":
                 X_processed = X.copy()
                 # Make all values non-negative
-                for col in X_processed.select_dtypes(include=[np.number]).columns:
-                    X_processed[col] = X_processed[col] - X_processed[col].min() + 1e-6
+                for col in X_processed.select_dtypes(
+                    include=[np.number]
+                ).columns:
+                    X_processed[col] = (
+                        X_processed[col] - X_processed[col].min() + 1e-6
+                    )
             else:
                 X_processed = X
 
@@ -189,7 +199,9 @@ class CorrelationAnalyzer:
                 if corr_value > threshold:
                     feature1 = corr_matrix.columns[i]
                     feature2 = corr_matrix.columns[j]
-                    multicollinear_pairs.append((feature1, feature2, corr_value))
+                    multicollinear_pairs.append(
+                        (feature1, feature2, corr_value)
+                    )
 
         # Calculate target correlations
         target_correlations = {}
@@ -232,7 +244,10 @@ class CorrelationAnalyzer:
 
         # Decide which features to remove
         for feature1, feature2, corr_value in multicollinear_pairs:
-            if feature1 in features_to_remove or feature2 in features_to_remove:
+            if (
+                feature1 in features_to_remove
+                or feature2 in features_to_remove
+            ):
                 continue
 
             # Keep the feature with higher target correlation
@@ -253,7 +268,9 @@ class CorrelationAnalyzer:
         # Remove features
         X_filtered = X.drop(columns=list(features_to_remove))
 
-        logger.info(f"Removed {len(features_to_remove)} multicollinear features")
+        logger.info(
+            f"Removed {len(features_to_remove)} multicollinear features"
+        )
 
         return X_filtered, removed_features
 
@@ -264,8 +281,12 @@ class RecursiveFeatureEliminator:
     def __init__(self, config: FeatureSelectionConfig):
         self.config = config
         self.estimators = {
-            "random_forest": RandomForestClassifier(n_estimators=50, random_state=42),
-            "logistic_regression": LogisticRegression(random_state=42, max_iter=1000),
+            "random_forest": RandomForestClassifier(
+                n_estimators=50, random_state=42
+            ),
+            "logistic_regression": LogisticRegression(
+                random_state=42, max_iter=1000
+            ),
         }
 
     def select_features(
@@ -277,7 +298,9 @@ class RecursiveFeatureEliminator:
 
         estimator = self.estimators.get(self.config.rfe_estimator)
         if estimator is None:
-            logger.warning(f"Unknown RFE estimator: {self.config.rfe_estimator}")
+            logger.warning(
+                f"Unknown RFE estimator: {self.config.rfe_estimator}"
+            )
             return list(X.columns), {}
 
         try:
@@ -291,7 +314,8 @@ class RecursiveFeatureEliminator:
                 )
             else:
                 selector = RFE(
-                    estimator=estimator, n_features_to_select=self.config.rfe_n_features
+                    estimator=estimator,
+                    n_features_to_select=self.config.rfe_n_features,
                 )
 
             # Fit selector
@@ -321,9 +345,14 @@ class ModelBasedFeatureSelector:
     def __init__(self, config: FeatureSelectionConfig):
         self.config = config
         self.estimators = {
-            "random_forest": RandomForestClassifier(n_estimators=100, random_state=42),
+            "random_forest": RandomForestClassifier(
+                n_estimators=100, random_state=42
+            ),
             "logistic_regression": LogisticRegression(
-                random_state=42, max_iter=1000, penalty="l1", solver="liblinear"
+                random_state=42,
+                max_iter=1000,
+                penalty="l1",
+                solver="liblinear",
             ),
         }
 
@@ -344,7 +373,8 @@ class ModelBasedFeatureSelector:
         try:
             # Create selector
             selector = SelectFromModel(
-                estimator=estimator, threshold=self.config.model_based_threshold
+                estimator=estimator,
+                threshold=self.config.model_based_threshold,
             )
 
             # Fit selector
@@ -403,8 +433,8 @@ class FeatureSelectionPipeline(DataProcessor):
 
             # 1. Remove low variance features
             if self.config.enable_variance_threshold:
-                X_current, low_var_removed = self._remove_low_variance_features(
-                    X_current
+                X_current, low_var_removed = (
+                    self._remove_low_variance_features(X_current)
                 )
                 removed_features.update(low_var_removed)
 
@@ -441,7 +471,9 @@ class FeatureSelectionPipeline(DataProcessor):
                     all_feature_scores[feature].mutual_info_score = score
 
             # 4. Recursive feature elimination
-            rfe_features, rfe_rankings = self.rfe_selector.select_features(X_current, y)
+            rfe_features, rfe_rankings = self.rfe_selector.select_features(
+                X_current, y
+            )
 
             # Update RFE rankings
             for feature, ranking in rfe_rankings.items():
@@ -449,14 +481,16 @@ class FeatureSelectionPipeline(DataProcessor):
                     all_feature_scores[feature].rfe_ranking = ranking
 
             # 5. Model-based feature selection
-            model_features, model_importance = self.model_selector.select_features(
-                X_current, y
+            model_features, model_importance = (
+                self.model_selector.select_features(X_current, y)
             )
 
             # Update model importance scores
             for feature, importance in model_importance.items():
                 if feature in all_feature_scores:
-                    all_feature_scores[feature].model_importance_score = importance
+                    all_feature_scores[feature].model_importance_score = (
+                        importance
+                    )
 
             # 6. Combine selection results
             selected_features = self._combine_selection_results(
@@ -547,10 +581,14 @@ class FeatureSelectionPipeline(DataProcessor):
 
             # Check for constant features
             numeric_features = data.select_dtypes(include=[np.number])
-            constant_features = numeric_features.columns[numeric_features.var() == 0]
+            constant_features = numeric_features.columns[
+                numeric_features.var() == 0
+            ]
 
             if len(constant_features) > 0:
-                logger.warning(f"Constant features detected: {list(constant_features)}")
+                logger.warning(
+                    f"Constant features detected: {list(constant_features)}"
+                )
 
             return True
 
@@ -573,7 +611,9 @@ class FeatureSelectionPipeline(DataProcessor):
             selected_numeric = numeric_features.loc[:, selector.get_support()]
 
             # Combine with categorical features
-            X_filtered = pd.concat([selected_numeric, categorical_features], axis=1)
+            X_filtered = pd.concat(
+                [selected_numeric, categorical_features], axis=1
+            )
 
             # Track removed features
             removed_features = {}
@@ -655,22 +695,34 @@ class FeatureSelectionPipeline(DataProcessor):
     ) -> List[FeatureImportanceScore]:
         """Calculate combined scores and create final ranking."""
         # Normalize scores to 0-1 range
-        all_mutual_info = [score.mutual_info_score for score in feature_scores.values()]
-        all_correlation = [score.correlation_score for score in feature_scores.values()]
+        all_mutual_info = [
+            score.mutual_info_score for score in feature_scores.values()
+        ]
+        all_correlation = [
+            score.correlation_score for score in feature_scores.values()
+        ]
         all_model_importance = [
             score.model_importance_score for score in feature_scores.values()
         ]
 
-        max_mutual_info = max(all_mutual_info) if max(all_mutual_info) > 0 else 1
-        max_correlation = max(all_correlation) if max(all_correlation) > 0 else 1
+        max_mutual_info = (
+            max(all_mutual_info) if max(all_mutual_info) > 0 else 1
+        )
+        max_correlation = (
+            max(all_correlation) if max(all_correlation) > 0 else 1
+        )
         max_model_importance = (
             max(all_model_importance) if max(all_model_importance) > 0 else 1
         )
 
         # Calculate combined scores
         for feature_name, score_obj in feature_scores.items():
-            normalized_mutual_info = score_obj.mutual_info_score / max_mutual_info
-            normalized_correlation = score_obj.correlation_score / max_correlation
+            normalized_mutual_info = (
+                score_obj.mutual_info_score / max_mutual_info
+            )
+            normalized_correlation = (
+                score_obj.correlation_score / max_correlation
+            )
             normalized_model_importance = (
                 score_obj.model_importance_score / max_model_importance
             )
@@ -701,7 +753,9 @@ def create_feature_selection_pipeline(
 
 
 def select_banking_features(
-    X: pd.DataFrame, y: pd.Series, config: Optional[FeatureSelectionConfig] = None
+    X: pd.DataFrame,
+    y: pd.Series,
+    config: Optional[FeatureSelectionConfig] = None,
 ) -> FeatureSelectionResult:
     """Convenience function to select banking features."""
     pipeline = create_feature_selection_pipeline(config)
@@ -716,5 +770,7 @@ def get_default_selection_config() -> FeatureSelectionConfig:
 def get_fast_selection_config() -> FeatureSelectionConfig:
     """Get fast feature selection configuration for testing."""
     return FeatureSelectionConfig(
-        statistical_k_features=15, enable_rfe=False, top_k_features=20  # RFE is slow
+        statistical_k_features=15,
+        enable_rfe=False,
+        top_k_features=20,  # RFE is slow
     )

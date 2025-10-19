@@ -47,7 +47,9 @@ def get_default_distillation_config() -> DistillationConfig:
     return DistillationConfig()
 
 
-def get_high_temperature_config(temperature: float = 8.0) -> DistillationConfig:
+def get_high_temperature_config(
+    temperature: float = 8.0,
+) -> DistillationConfig:
     """Get high temperature distillation configuration for better knowledge transfer."""
     return DistillationConfig(
         temperature=temperature,
@@ -104,11 +106,15 @@ def create_student_model(
             if isinstance(layer, nn.Linear):
                 # Reduce linear layer size
                 in_features = layer.in_features
-                out_features = max(1, int(layer.out_features * compression_ratio))
+                out_features = max(
+                    1, int(layer.out_features * compression_ratio)
+                )
                 student_layers.append(nn.Linear(in_features, out_features))
 
                 # Update input size for next layer
-                if student_layers and isinstance(student_layers[-2], nn.Linear):
+                if student_layers and isinstance(
+                    student_layers[-2], nn.Linear
+                ):
                     student_layers[-2] = nn.Linear(
                         student_layers[-2].in_features, out_features
                     )
@@ -149,8 +155,12 @@ def analyze_distillation_impact(
     y_test_tensor = torch.FloatTensor(y_test.values)
 
     # Evaluate both models
-    teacher_perf = _evaluate_model_simple(teacher_model, X_test_tensor, y_test_tensor)
-    student_perf = _evaluate_model_simple(student_model, X_test_tensor, y_test_tensor)
+    teacher_perf = _evaluate_model_simple(
+        teacher_model, X_test_tensor, y_test_tensor
+    )
+    student_perf = _evaluate_model_simple(
+        student_model, X_test_tensor, y_test_tensor
+    )
 
     # Calculate model statistics
     teacher_params = sum(p.numel() for p in teacher_model.parameters())
@@ -164,11 +174,15 @@ def analyze_distillation_impact(
     ) / (1024 * 1024)
 
     # Compression metrics
-    compression_ratio = teacher_params / student_params if student_params > 0 else 1.0
+    compression_ratio = (
+        teacher_params / student_params if student_params > 0 else 1.0
+    )
     parameter_reduction = (
         1.0 - (student_params / teacher_params) if teacher_params > 0 else 0.0
     )
-    size_reduction = 1.0 - (student_size / teacher_size) if teacher_size > 0 else 0.0
+    size_reduction = (
+        1.0 - (student_size / teacher_size) if teacher_size > 0 else 0.0
+    )
 
     # Performance impact
     performance_drop = {
@@ -276,8 +290,12 @@ def validate_distilled_model(
     y_test_tensor = torch.FloatTensor(y_test.values)
 
     # Evaluate both models
-    teacher_perf = _evaluate_model_simple(teacher_model, X_test_tensor, y_test_tensor)
-    student_perf = _evaluate_model_simple(student_model, X_test_tensor, y_test_tensor)
+    teacher_perf = _evaluate_model_simple(
+        teacher_model, X_test_tensor, y_test_tensor
+    )
+    student_perf = _evaluate_model_simple(
+        student_model, X_test_tensor, y_test_tensor
+    )
 
     # Calculate drops
     accuracy_drop = teacher_perf["accuracy"] - student_perf["accuracy"]
@@ -324,7 +342,9 @@ def load_distilled_model(model_path: str) -> Tuple[nn.Module, Dict[str, Any]]:
         "saved_at": checkpoint.get("saved_at"),
     }
 
-    print(f"Loaded distilled model with temperature: {metadata['temperature']}")
+    print(
+        f"Loaded distilled model with temperature: {metadata['temperature']}"
+    )
 
     # Note: This is a placeholder - actual implementation would need to reconstruct
     # the student model architecture based on the saved configuration
@@ -365,7 +385,9 @@ def create_ensemble_student(
         f"Ensemble distillation with {len(teacher_models)} teachers (simplified to use first teacher)"
     )
 
-    return distill_knowledge(primary_teacher, student_architecture, X, y, config)
+    return distill_knowledge(
+        primary_teacher, student_architecture, X, y, config
+    )
 
 
 # Helper functions

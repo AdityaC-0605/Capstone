@@ -93,7 +93,9 @@ class CarbonIntensityAPI:
 
     def get_current_carbon_intensity(self) -> float:
         """Get current carbon intensity for the region."""
-        cache_key = f"{self.config.region}_{datetime.now().strftime('%Y%m%d_%H%M')}"
+        cache_key = (
+            f"{self.config.region}_{datetime.now().strftime('%Y%m%d_%H%M')}"
+        )
 
         # Check cache first
         if cache_key in self.cache:
@@ -149,7 +151,9 @@ class CarbonIntensityAPI:
         }
         return defaults.get(self.config.region, 400.0)
 
-    def get_forecast(self, hours_ahead: int = 24) -> List[Tuple[datetime, float]]:
+    def get_forecast(
+        self, hours_ahead: int = 24
+    ) -> List[Tuple[datetime, float]]:
         """Get carbon intensity forecast."""
         # For demo purposes, generate a realistic forecast
         current_intensity = self.get_current_carbon_intensity()
@@ -164,7 +168,9 @@ class CarbonIntensityAPI:
             if 2 <= hour_of_day <= 6:
                 intensity = current_intensity * 0.7  # 30% lower at night
             elif 10 <= hour_of_day <= 16:
-                intensity = current_intensity * 1.2  # 20% higher during peak hours
+                intensity = (
+                    current_intensity * 1.2
+                )  # 20% higher during peak hours
             else:
                 intensity = current_intensity
 
@@ -206,12 +212,16 @@ class CarbonAwareScheduler:
             )
         else:
             # Check if we should wait for cleaner energy
-            forecast = self.carbon_api.get_forecast(int(self.config.max_wait_hours))
+            forecast = self.carbon_api.get_forecast(
+                int(self.config.max_wait_hours)
+            )
 
             # Find the next low-carbon period
             for time_point, intensity in forecast:
                 if intensity <= self.config.low_carbon_threshold:
-                    wait_hours = (time_point - datetime.now()).total_seconds() / 3600
+                    wait_hours = (
+                        time_point - datetime.now()
+                    ).total_seconds() / 3600
                     if wait_hours <= self.config.max_wait_hours:
                         return (
                             False,
@@ -226,7 +236,9 @@ class CarbonAwareScheduler:
                 current_intensity,
             )
 
-    def wait_for_clean_energy(self, max_wait_hours: Optional[float] = None) -> float:
+    def wait_for_clean_energy(
+        self, max_wait_hours: Optional[float] = None
+    ) -> float:
         """
         Wait for a period of clean energy before starting training.
 
@@ -242,11 +254,15 @@ class CarbonAwareScheduler:
             should_train, reason, intensity = self.should_train_now()
 
             if should_train:
-                logger.info(f"Starting training: {reason} ({intensity:.0f} gCO2/kWh)")
+                logger.info(
+                    f"Starting training: {reason} ({intensity:.0f} gCO2/kWh)"
+                )
                 return intensity
 
             # Check if we've waited too long
-            elapsed_hours = (datetime.now() - start_time).total_seconds() / 3600
+            elapsed_hours = (
+                datetime.now() - start_time
+            ).total_seconds() / 3600
             if elapsed_hours >= max_wait:
                 logger.warning(
                     f"Max wait time exceeded, starting training anyway ({intensity:.0f} gCO2/kWh)"
@@ -291,7 +307,9 @@ class DynamicModelScaler:
         logger.info(f"Model scaled to {scale_factor:.1%} of original size")
         return scaled_model
 
-    def _create_scaled_model(self, model: nn.Module, scale_factor: float) -> nn.Module:
+    def _create_scaled_model(
+        self, model: nn.Module, scale_factor: float
+    ) -> nn.Module:
         """Create a scaled version of the model."""
         # This is a simplified implementation
         # In practice, you'd need model-specific scaling logic
@@ -307,9 +325,13 @@ class DynamicModelScaler:
                 scaled_layer = nn.Linear(module.in_features, scaled_features)
                 # Copy and scale weights
                 with torch.no_grad():
-                    scaled_layer.weight.data = module.weight.data[:scaled_features, :]
+                    scaled_layer.weight.data = module.weight.data[
+                        :scaled_features, :
+                    ]
                     if module.bias is not None:
-                        scaled_layer.bias.data = module.bias.data[:scaled_features]
+                        scaled_layer.bias.data = module.bias.data[
+                            :scaled_features
+                        ]
 
                 # Replace in scaled model
                 setattr(scaled_model, name, scaled_layer)
@@ -339,8 +361,12 @@ class CarbonBudgetEnforcer:
             self.daily_usage = 0.0
             self.last_reset = current_date
 
-        remaining_budget = self.config.daily_carbon_budget_kg - self.daily_usage
-        usage_percentage = (self.daily_usage / self.config.daily_carbon_budget_kg) * 100
+        remaining_budget = (
+            self.config.daily_carbon_budget_kg - self.daily_usage
+        )
+        usage_percentage = (
+            self.daily_usage / self.config.daily_carbon_budget_kg
+        ) * 100
 
         if usage_percentage >= self.config.emergency_stop_threshold * 100:
             return (
@@ -369,7 +395,11 @@ class CarbonBudgetEnforcer:
         )
 
     def estimate_training_carbon(
-        self, model: nn.Module, dataset_size: int, epochs: int, carbon_intensity: float
+        self,
+        model: nn.Module,
+        dataset_size: int,
+        epochs: int,
+        carbon_intensity: float,
     ) -> float:
         """Estimate carbon footprint of training job."""
         # Rough estimation based on model parameters and dataset size
@@ -466,11 +496,15 @@ class CarbonAwareOptimizer:
             if not should_train:
                 logger.info(f"Waiting for cleaner energy: {reason}")
                 intensity = self.scheduler.wait_for_clean_energy()
-                optimization_report["strategies_applied"].append("carbon_scheduling")
+                optimization_report["strategies_applied"].append(
+                    "carbon_scheduling"
+                )
 
             optimization_report["optimized_carbon_intensity"] = intensity
         else:
-            intensity = self.scheduler.carbon_api.get_current_carbon_intensity()
+            intensity = (
+                self.scheduler.carbon_api.get_current_carbon_intensity()
+            )
             optimization_report["original_carbon_intensity"] = intensity
             optimization_report["optimized_carbon_intensity"] = intensity
 
@@ -490,8 +524,12 @@ class CarbonAwareOptimizer:
         if self.config.enable_dynamic_scaling:
             scale_factor = self.model_scaler.get_optimal_model_scale(intensity)
             if scale_factor < 1.0:
-                optimized_model = self.model_scaler.scale_model(model, scale_factor)
-                optimization_report["strategies_applied"].append("dynamic_scaling")
+                optimized_model = self.model_scaler.scale_model(
+                    model, scale_factor
+                )
+                optimization_report["strategies_applied"].append(
+                    "dynamic_scaling"
+                )
                 logger.info(
                     f"Model scaled to {scale_factor:.1%} due to high carbon intensity"
                 )
@@ -508,7 +546,9 @@ class CarbonAwareOptimizer:
             logger.info(f"Using {precision} precision due to carbon intensity")
 
         # 5. Execute training with energy tracking
-        experiment_id = f"carbon_optimized_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        experiment_id = (
+            f"carbon_optimized_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
 
         with self.energy_tracker.track(experiment_id) as tracker:
             # Execute training
@@ -524,7 +564,9 @@ class CarbonAwareOptimizer:
 
         # 7. Update budget
         if self.config.enable_budget_enforcement:
-            self.budget_enforcer.add_carbon_usage(carbon_footprint.total_emissions_kg)
+            self.budget_enforcer.add_carbon_usage(
+                carbon_footprint.total_emissions_kg
+            )
 
         # 8. Calculate savings (estimate what it would have been without optimization)
         baseline_intensity = optimization_report["original_carbon_intensity"]
@@ -558,7 +600,9 @@ class CarbonAwareOptimizer:
 
     def get_carbon_recommendations(self) -> List[str]:
         """Get personalized carbon reduction recommendations."""
-        current_intensity = self.scheduler.carbon_api.get_current_carbon_intensity()
+        current_intensity = (
+            self.scheduler.carbon_api.get_current_carbon_intensity()
+        )
         recommendations = []
 
         if current_intensity > self.config.high_carbon_threshold:

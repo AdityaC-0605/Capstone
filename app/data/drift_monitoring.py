@@ -150,7 +150,9 @@ class StatisticalDriftDetector:
 
             drift_detected = p_value < self.config.ks_test_threshold
 
-            test_info = f"KS test: statistic={ks_statistic:.4f}, p-value={p_value:.4f}"
+            test_info = (
+                f"KS test: statistic={ks_statistic:.4f}, p-value={p_value:.4f}"
+            )
 
             return drift_detected, ks_statistic, test_info
 
@@ -175,13 +177,13 @@ class StatisticalDriftDetector:
 
             # Chi-square test
             if sum(ref_aligned) > 0 and sum(curr_aligned) > 0:
-                chi2_stat, p_value, _, _ = chi2_contingency([ref_aligned, curr_aligned])
+                chi2_stat, p_value, _, _ = chi2_contingency(
+                    [ref_aligned, curr_aligned]
+                )
 
                 drift_detected = p_value < self.config.chi2_threshold
 
-                test_info = (
-                    f"Chi-square test: statistic={chi2_stat:.4f}, p-value={p_value:.4f}"
-                )
+                test_info = f"Chi-square test: statistic={chi2_stat:.4f}, p-value={p_value:.4f}"
 
                 return drift_detected, chi2_stat, test_info
             else:
@@ -192,17 +194,26 @@ class StatisticalDriftDetector:
             return False, 0.0, f"Error: {str(e)}"
 
     def calculate_psi(
-        self, reference_data: pd.Series, current_data: pd.Series, bins: int = 10
+        self,
+        reference_data: pd.Series,
+        current_data: pd.Series,
+        bins: int = 10,
     ) -> Tuple[bool, float]:
         """Calculate Population Stability Index (PSI)."""
         try:
             # Create bins based on reference data
             if pd.api.types.is_numeric_dtype(reference_data):
                 # Numerical data
-                bin_edges = np.histogram_bin_edges(reference_data.dropna(), bins=bins)
+                bin_edges = np.histogram_bin_edges(
+                    reference_data.dropna(), bins=bins
+                )
 
-                ref_hist, _ = np.histogram(reference_data.dropna(), bins=bin_edges)
-                curr_hist, _ = np.histogram(current_data.dropna(), bins=bin_edges)
+                ref_hist, _ = np.histogram(
+                    reference_data.dropna(), bins=bin_edges
+                )
+                curr_hist, _ = np.histogram(
+                    current_data.dropna(), bins=bin_edges
+                )
             else:
                 # Categorical data
                 ref_counts = reference_data.value_counts()
@@ -210,7 +221,9 @@ class StatisticalDriftDetector:
 
                 all_categories = set(ref_counts.index) | set(curr_counts.index)
 
-                ref_hist = np.array([ref_counts.get(cat, 0) for cat in all_categories])
+                ref_hist = np.array(
+                    [ref_counts.get(cat, 0) for cat in all_categories]
+                )
                 curr_hist = np.array(
                     [curr_counts.get(cat, 0) for cat in all_categories]
                 )
@@ -276,9 +289,12 @@ class ConceptDriftDetector:
             if len(self.performance_history) > 1:
                 # Compare with recent average
                 recent_metrics = [
-                    entry["metrics"] for entry in self.performance_history[-10:]
+                    entry["metrics"]
+                    for entry in self.performance_history[-10:]
                 ]
-                avg_recent_accuracy = np.mean([m["accuracy"] for m in recent_metrics])
+                avg_recent_accuracy = np.mean(
+                    [m["accuracy"] for m in recent_metrics]
+                )
 
                 # Compare with reference performance
                 if self.reference_performance:
@@ -288,7 +304,10 @@ class ConceptDriftDetector:
 
                     accuracy_drop = ref_accuracy - current_metrics["accuracy"]
 
-                    if accuracy_drop > self.config.performance_degradation_threshold:
+                    if (
+                        accuracy_drop
+                        > self.config.performance_degradation_threshold
+                    ):
                         drift_detected = True
                         drift_info = f"Performance degradation detected: accuracy dropped by {accuracy_drop:.3f}"
                 else:
@@ -420,11 +439,17 @@ class DataQualityMonitor:
                     lower_bound = Q1 - 1.5 * IQR
                     upper_bound = Q3 + 1.5 * IQR
 
-                    outliers = ((series < lower_bound) | (series > upper_bound)).sum()
+                    outliers = (
+                        (series < lower_bound) | (series > upper_bound)
+                    ).sum()
                     total_outliers += outliers
                     total_values += len(series)
 
-            return (total_outliers / total_values) * 100 if total_values > 0 else 0.0
+            return (
+                (total_outliers / total_values) * 100
+                if total_values > 0
+                else 0.0
+            )
 
         except Exception as e:
             logger.warning(f"Outlier calculation failed: {e}")
@@ -582,14 +607,20 @@ class AlertManager:
     ) -> List[DriftAlert]:
         """Get active alerts, optionally filtered by severity."""
         if severity:
-            return [alert for alert in self.active_alerts if alert.severity == severity]
+            return [
+                alert
+                for alert in self.active_alerts
+                if alert.severity == severity
+            ]
         return self.active_alerts.copy()
 
     def cleanup_old_alerts(self, days: int = 30):
         """Clean up old alerts from history."""
         cutoff_date = datetime.now() - timedelta(days=days)
         self.alert_history = [
-            alert for alert in self.alert_history if alert.timestamp > cutoff_date
+            alert
+            for alert in self.alert_history
+            if alert.timestamp > cutoff_date
         ]
 
 
@@ -615,7 +646,9 @@ class DriftMonitor(DataProcessor):
         self.reference_data = reference_data.copy()
 
         # Calculate reference statistics
-        self.reference_statistics = self._calculate_reference_statistics(reference_data)
+        self.reference_statistics = self._calculate_reference_statistics(
+            reference_data
+        )
 
         # Set reference performance if target is available
         if target_column and target_column in reference_data.columns:
@@ -632,7 +665,9 @@ class DriftMonitor(DataProcessor):
                         X_encoded, y, test_size=0.2, random_state=42
                     )
 
-                    model = RandomForestClassifier(n_estimators=50, random_state=42)
+                    model = RandomForestClassifier(
+                        n_estimators=50, random_state=42
+                    )
                     model.fit(X_train, y_train)
 
                     y_pred = model.predict(X_test)
@@ -648,7 +683,9 @@ class DriftMonitor(DataProcessor):
                         )
                     )
 
-                    self.concept_detector.set_reference_performance(reference_metrics)
+                    self.concept_detector.set_reference_performance(
+                        reference_metrics
+                    )
 
                 except Exception as e:
                     logger.warning(f"Failed to set reference performance: {e}")
@@ -693,8 +730,8 @@ class DriftMonitor(DataProcessor):
             drift_scores.update(data_drift_scores)
 
             # 2. Feature drift detection
-            feature_drift_detected, feature_drift_scores = self._detect_feature_drift(
-                current_data
+            feature_drift_detected, feature_drift_scores = (
+                self._detect_feature_drift(current_data)
             )
             drift_scores.update(feature_drift_scores)
 
@@ -709,7 +746,9 @@ class DriftMonitor(DataProcessor):
                             prediction_probabilities,
                         )
                     )
-                    drift_scores["concept_drift"] = concept_metrics.get("accuracy", 0.0)
+                    drift_scores["concept_drift"] = concept_metrics.get(
+                        "accuracy", 0.0
+                    )
 
                     if concept_drift_detected:
                         alert = self.alert_manager.create_alert(
@@ -727,7 +766,9 @@ class DriftMonitor(DataProcessor):
                         )
 
             # 4. Data quality assessment
-            quality_metrics_obj = self.quality_monitor.assess_data_quality(current_data)
+            quality_metrics_obj = self.quality_monitor.assess_data_quality(
+                current_data
+            )
             quality_metrics = {
                 "missing_data_percentage": quality_metrics_obj.missing_data_percentage,
                 "duplicate_percentage": quality_metrics_obj.duplicate_percentage,
@@ -772,11 +813,15 @@ class DriftMonitor(DataProcessor):
 
             # 5. Generate recommendations
             if data_drift_detected or feature_drift_detected:
-                recommendations.append("Consider retraining models with recent data")
+                recommendations.append(
+                    "Consider retraining models with recent data"
+                )
                 recommendations.append("Review feature engineering pipeline")
 
             if quality_metrics_obj.overall_quality_score < 0.7:
-                recommendations.append("Improve data quality before model inference")
+                recommendations.append(
+                    "Improve data quality before model inference"
+                )
 
             processing_time = (datetime.now() - start_time).total_seconds()
 
@@ -795,7 +840,9 @@ class DriftMonitor(DataProcessor):
                 },
             )
 
-            logger.info(f"Drift detection completed: {len(alerts)} alerts generated")
+            logger.info(
+                f"Drift detection completed: {len(alerts)} alerts generated"
+            )
 
             return DriftDetectionResult(
                 timestamp=datetime.now(),
@@ -835,7 +882,9 @@ class DriftMonitor(DataProcessor):
 
             if self.reference_data is not None:
                 # Check if columns match reference data
-                missing_columns = set(self.reference_data.columns) - set(data.columns)
+                missing_columns = set(self.reference_data.columns) - set(
+                    data.columns
+                )
                 if missing_columns:
                     logger.warning(
                         f"Missing columns compared to reference: {missing_columns}"
@@ -854,7 +903,9 @@ class DriftMonitor(DataProcessor):
         drift_detected = False
         drift_scores = {}
 
-        common_columns = set(self.reference_data.columns) & set(current_data.columns)
+        common_columns = set(self.reference_data.columns) & set(
+            current_data.columns
+        )
 
         for column in common_columns:
             ref_series = self.reference_data[column]
@@ -882,7 +933,9 @@ class DriftMonitor(DataProcessor):
 
                 # Create alert
                 severity = (
-                    AlertSeverity.HIGH if drift_score > 0.5 else AlertSeverity.MEDIUM
+                    AlertSeverity.HIGH
+                    if drift_score > 0.5
+                    else AlertSeverity.MEDIUM
                 )
                 alert = self.alert_manager.create_alert(
                     DriftType.DATA_DRIFT,
@@ -904,7 +957,9 @@ class DriftMonitor(DataProcessor):
             )
             drift_scores[f"{column}_psi"] = psi_score
 
-            if psi_drift and not column_drift:  # Only alert if not already alerted
+            if (
+                psi_drift and not column_drift
+            ):  # Only alert if not already alerted
                 alert = self.alert_manager.create_alert(
                     DriftType.DATA_DRIFT,
                     AlertSeverity.MEDIUM,
@@ -959,7 +1014,9 @@ class DriftMonitor(DataProcessor):
 
         return drift_detected, drift_scores
 
-    def _calculate_reference_statistics(self, data: pd.DataFrame) -> Dict[str, Any]:
+    def _calculate_reference_statistics(
+        self, data: pd.DataFrame
+    ) -> Dict[str, Any]:
         """Calculate reference statistics for drift detection."""
         stats = {}
 
@@ -971,7 +1028,9 @@ class DriftMonitor(DataProcessor):
                     "std": data[column].std(),
                     "min": data[column].min(),
                     "max": data[column].max(),
-                    "quantiles": data[column].quantile([0.25, 0.5, 0.75]).to_dict(),
+                    "quantiles": data[column]
+                    .quantile([0.25, 0.5, 0.75])
+                    .to_dict(),
                 }
             else:
                 stats[column] = {
@@ -989,10 +1048,15 @@ class DriftMonitor(DataProcessor):
         encoded_data = data.copy()
 
         for column in data.columns:
-            if data[column].dtype == "object" or data[column].dtype.name == "category":
+            if (
+                data[column].dtype == "object"
+                or data[column].dtype.name == "category"
+            ):
                 try:
                     le = LabelEncoder()
-                    encoded_data[column] = le.fit_transform(data[column].astype(str))
+                    encoded_data[column] = le.fit_transform(
+                        data[column].astype(str)
+                    )
                 except:
                     # If encoding fails, drop the column
                     encoded_data = encoded_data.drop(columns=[column])
@@ -1006,7 +1070,9 @@ class DriftMonitor(DataProcessor):
         return {
             "monitoring_active": self.monitoring_active,
             "reference_data_samples": (
-                len(self.reference_data) if self.reference_data is not None else 0
+                len(self.reference_data)
+                if self.reference_data is not None
+                else 0
             ),
             "reference_features": (
                 len(self.reference_data.columns)
@@ -1061,7 +1127,9 @@ class DriftMonitor(DataProcessor):
 
 
 # Factory functions and utilities
-def create_drift_monitor(config: Optional[DriftDetectionConfig] = None) -> DriftMonitor:
+def create_drift_monitor(
+    config: Optional[DriftDetectionConfig] = None,
+) -> DriftMonitor:
     """Create a drift monitor instance."""
     return DriftMonitor(config)
 

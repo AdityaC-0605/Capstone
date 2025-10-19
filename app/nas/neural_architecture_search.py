@@ -85,12 +85,16 @@ class SearchSpace:
     min_linear_layers: int = 2
 
     # Convolutional layer options
-    conv_channels: List[int] = field(default_factory=lambda: [32, 64, 128, 256])
+    conv_channels: List[int] = field(
+        default_factory=lambda: [32, 64, 128, 256]
+    )
     conv_kernel_sizes: List[int] = field(default_factory=lambda: [3, 5, 7])
     max_conv_layers: int = 4
 
     # LSTM layer options
-    lstm_hidden_sizes: List[int] = field(default_factory=lambda: [64, 128, 256])
+    lstm_hidden_sizes: List[int] = field(
+        default_factory=lambda: [64, 128, 256]
+    )
     lstm_num_layers: List[int] = field(default_factory=lambda: [1, 2, 3])
 
     # Attention layer options
@@ -110,7 +114,9 @@ class SearchSpace:
     use_layer_norm: List[bool] = field(default_factory=lambda: [True, False])
 
     # Skip connections
-    use_skip_connections: List[bool] = field(default_factory=lambda: [True, False])
+    use_skip_connections: List[bool] = field(
+        default_factory=lambda: [True, False]
+    )
     skip_connection_types: List[str] = field(
         default_factory=lambda: ["residual", "dense"]
     )
@@ -135,7 +141,11 @@ class NASConfig:
         default_factory=lambda: ["accuracy", "latency", "energy"]
     )
     objective_weights: Dict[str, float] = field(
-        default_factory=lambda: {"accuracy": 0.6, "latency": 0.2, "energy": 0.2}
+        default_factory=lambda: {
+            "accuracy": 0.6,
+            "latency": 0.2,
+            "energy": 0.2,
+        }
     )
 
     # Search parameters
@@ -193,7 +203,9 @@ class ArchitectureGenerator(ABC):
     """Abstract base class for architecture generators."""
 
     @abstractmethod
-    def generate_architecture(self, search_space: SearchSpace) -> ArchitectureSpec:
+    def generate_architecture(
+        self, search_space: SearchSpace
+    ) -> ArchitectureSpec:
         """Generate a new architecture."""
         pass
 
@@ -218,7 +230,9 @@ class ArchitectureGenerator(ABC):
 class RandomArchitectureGenerator(ArchitectureGenerator):
     """Random architecture generator."""
 
-    def generate_architecture(self, search_space: SearchSpace) -> ArchitectureSpec:
+    def generate_architecture(
+        self, search_space: SearchSpace
+    ) -> ArchitectureSpec:
         """Generate a random architecture."""
         layers = []
         architecture_id = f"random_{int(time.time() * 1000000) % 1000000}"
@@ -237,11 +251,17 @@ class RandomArchitectureGenerator(ArchitectureGenerator):
             if layer_type == "linear":
                 layer_spec = {
                     "type": "linear",
-                    "hidden_size": random.choice(search_space.linear_hidden_sizes),
+                    "hidden_size": random.choice(
+                        search_space.linear_hidden_sizes
+                    ),
                     "activation": random.choice(search_space.activations),
                     "dropout": random.choice(search_space.dropout_rates),
-                    "use_batch_norm": random.choice(search_space.use_batch_norm),
-                    "use_layer_norm": random.choice(search_space.use_layer_norm),
+                    "use_batch_norm": random.choice(
+                        search_space.use_batch_norm
+                    ),
+                    "use_layer_norm": random.choice(
+                        search_space.use_layer_norm
+                    ),
                 }
 
             layers.append(layer_spec)
@@ -253,7 +273,9 @@ class RandomArchitectureGenerator(ArchitectureGenerator):
     ) -> ArchitectureSpec:
         """Mutate an architecture by changing random parameters."""
         mutated = copy.deepcopy(architecture)
-        mutated.architecture_id = f"mutated_{int(time.time() * 1000000) % 1000000}"
+        mutated.architecture_id = (
+            f"mutated_{int(time.time() * 1000000) % 1000000}"
+        )
         mutated.is_evaluated = False
         mutated.performance_metrics = {}
 
@@ -268,14 +290,20 @@ class RandomArchitectureGenerator(ArchitectureGenerator):
             )
 
             if mutation_type == "hidden_size" and layer["type"] == "linear":
-                layer["hidden_size"] = random.choice(search_space.linear_hidden_sizes)
+                layer["hidden_size"] = random.choice(
+                    search_space.linear_hidden_sizes
+                )
             elif mutation_type == "activation":
                 layer["activation"] = random.choice(search_space.activations)
             elif mutation_type == "dropout":
                 layer["dropout"] = random.choice(search_space.dropout_rates)
             elif mutation_type == "normalization":
-                layer["use_batch_norm"] = random.choice(search_space.use_batch_norm)
-                layer["use_layer_norm"] = random.choice(search_space.use_layer_norm)
+                layer["use_batch_norm"] = random.choice(
+                    search_space.use_batch_norm
+                )
+                layer["use_layer_norm"] = random.choice(
+                    search_space.use_layer_norm
+                )
 
         return mutated
 
@@ -293,7 +321,9 @@ class RandomArchitectureGenerator(ArchitectureGenerator):
         max_layers = max(len(parent1.layers), len(parent2.layers))
 
         # Choose crossover point
-        crossover_point = random.randint(1, min_layers - 1) if min_layers > 1 else 1
+        crossover_point = (
+            random.randint(1, min_layers - 1) if min_layers > 1 else 1
+        )
 
         # Create offspring layers
         offspring_layers = []
@@ -302,9 +332,13 @@ class RandomArchitectureGenerator(ArchitectureGenerator):
 
         # Ensure we don't exceed max layers
         if len(offspring_layers) > search_space.max_linear_layers:
-            offspring_layers = offspring_layers[: search_space.max_linear_layers]
+            offspring_layers = offspring_layers[
+                : search_space.max_linear_layers
+            ]
 
-        return ArchitectureSpec(architecture_id=offspring_id, layers=offspring_layers)
+        return ArchitectureSpec(
+            architecture_id=offspring_id, layers=offspring_layers
+        )
 
 
 class ArchitectureEvaluator:
@@ -332,10 +366,14 @@ class ArchitectureEvaluator:
 
         try:
             # Create model from architecture
-            model = self._create_model_from_architecture(architecture, X.shape[1])
+            model = self._create_model_from_architecture(
+                architecture, X.shape[1]
+            )
 
             # Calculate model statistics
-            architecture.total_params = sum(p.numel() for p in model.parameters())
+            architecture.total_params = sum(
+                p.numel() for p in model.parameters()
+            )
             architecture.memory_mb = self._estimate_memory_usage(model)
             architecture.estimated_latency_ms = self._estimate_latency(
                 model, X.shape[1]
@@ -356,8 +394,11 @@ class ArchitectureEvaluator:
             performance_metrics = self._train_and_evaluate_model(model, X, y)
 
             # Calculate energy consumption
-            architecture.estimated_energy_mj = self._estimate_energy_consumption(
-                architecture.total_params, self.config.max_epochs_per_architecture
+            architecture.estimated_energy_mj = (
+                self._estimate_energy_consumption(
+                    architecture.total_params,
+                    self.config.max_epochs_per_architecture,
+                )
             )
 
             # Store results
@@ -397,7 +438,9 @@ class ArchitectureEvaluator:
         for layer_spec in architecture.layers:
             if layer_spec["type"] == "linear":
                 # Linear layer
-                layers.append(nn.Linear(current_dim, layer_spec["hidden_size"]))
+                layers.append(
+                    nn.Linear(current_dim, layer_spec["hidden_size"])
+                )
                 current_dim = layer_spec["hidden_size"]
 
                 # Normalization
@@ -429,8 +472,12 @@ class ArchitectureEvaluator:
 
     def _estimate_memory_usage(self, model: nn.Module) -> float:
         """Estimate memory usage in MB."""
-        param_size = sum(p.numel() * p.element_size() for p in model.parameters())
-        buffer_size = sum(b.numel() * b.element_size() for b in model.buffers())
+        param_size = sum(
+            p.numel() * p.element_size() for p in model.parameters()
+        )
+        buffer_size = sum(
+            b.numel() * b.element_size() for b in model.buffers()
+        )
 
         # Estimate activation memory (rough approximation)
         activation_memory = param_size * 2  # Rough estimate
@@ -448,7 +495,9 @@ class ArchitectureEvaluator:
 
         return max(0.1, estimated_latency)  # Minimum 0.1ms
 
-    def _estimate_energy_consumption(self, num_params: int, epochs: int) -> float:
+    def _estimate_energy_consumption(
+        self, num_params: int, epochs: int
+    ) -> float:
         """Estimate energy consumption in millijoules."""
         # Simple estimation based on parameter count and training epochs
         # Rough approximation: 1M parameters * 1 epoch ≈ 1 mJ
@@ -511,7 +560,9 @@ class ArchitectureEvaluator:
             metrics = {
                 "accuracy": np.mean(val_preds == y_val.values),
                 "roc_auc": roc_auc_score(y_val.values, val_probs),
-                "f1_score": f1_score(y_val.values, val_preds, average="weighted"),
+                "f1_score": f1_score(
+                    y_val.values, val_preds, average="weighted"
+                ),
             }
 
             return metrics
@@ -597,7 +648,9 @@ class NeuralArchitectureSearch:
 
                 # Check early stopping
                 if self._should_stop_early(convergence_history):
-                    logger.info(f"Early stopping at generation {generation + 1}")
+                    logger.info(
+                        f"Early stopping at generation {generation + 1}"
+                    )
                     break
 
             # Get final results
@@ -660,7 +713,9 @@ class NeuralArchitectureSearch:
         """Initialize the population with random architectures."""
         self.population = []
         for _ in range(self.config.population_size):
-            architecture = self.generator.generate_architecture(self.search_space)
+            architecture = self.generator.generate_architecture(
+                self.search_space
+            )
             self.population.append(architecture)
 
     def _evaluate_population(self, X: pd.DataFrame, y: pd.Series):
@@ -682,7 +737,10 @@ class NeuralArchitectureSearch:
 
         while len(offspring) < self.config.population_size:
             # Crossover
-            if random.random() < self.config.crossover_rate and len(parents) >= 2:
+            if (
+                random.random() < self.config.crossover_rate
+                and len(parents) >= 2
+            ):
                 parent1, parent2 = random.sample(parents, 2)
                 child = self.generator.crossover_architectures(
                     parent1, parent2, self.search_space
@@ -692,12 +750,16 @@ class NeuralArchitectureSearch:
             # Mutation
             if random.random() < self.config.mutation_rate and parents:
                 parent = random.choice(parents)
-                mutated = self.generator.mutate_architecture(parent, self.search_space)
+                mutated = self.generator.mutate_architecture(
+                    parent, self.search_space
+                )
                 offspring.append(mutated)
 
             # Random generation
             if len(offspring) < self.config.population_size:
-                random_arch = self.generator.generate_architecture(self.search_space)
+                random_arch = self.generator.generate_architecture(
+                    self.search_space
+                )
                 offspring.append(random_arch)
 
         # Evaluate offspring
@@ -716,14 +778,20 @@ class NeuralArchitectureSearch:
         new_population = []
 
         for _ in range(self.config.population_size):
-            architecture = self.generator.generate_architecture(self.search_space)
-            evaluated_arch = self.evaluator.evaluate_architecture(architecture, X, y)
+            architecture = self.generator.generate_architecture(
+                self.search_space
+            )
+            evaluated_arch = self.evaluator.evaluate_architecture(
+                architecture, X, y
+            )
             new_population.append(evaluated_arch)
             self.search_history.append(evaluated_arch)
 
         self.population = new_population
 
-    def _tournament_selection(self, tournament_size: int = 3) -> List[ArchitectureSpec]:
+    def _tournament_selection(
+        self, tournament_size: int = 3
+    ) -> List[ArchitectureSpec]:
         """Select parents using tournament selection."""
         parents = []
 
@@ -738,7 +806,10 @@ class NeuralArchitectureSearch:
 
     def _calculate_fitness(self, architecture: ArchitectureSpec) -> float:
         """Calculate fitness score for an architecture."""
-        if not architecture.is_evaluated or not architecture.performance_metrics:
+        if (
+            not architecture.is_evaluated
+            or not architecture.performance_metrics
+        ):
             return 0.0
 
         # Multi-objective fitness calculation
@@ -748,21 +819,30 @@ class NeuralArchitectureSearch:
 
         # Normalize objectives (lower is better for latency and energy)
         normalized_accuracy = accuracy  # Already 0-1
-        normalized_latency = 1.0 / (1.0 + latency / 100.0)  # Normalize around 100ms
-        normalized_energy = 1.0 / (1.0 + energy / 10.0)  # Normalize around 10mJ
+        normalized_latency = 1.0 / (
+            1.0 + latency / 100.0
+        )  # Normalize around 100ms
+        normalized_energy = 1.0 / (
+            1.0 + energy / 10.0
+        )  # Normalize around 10mJ
 
         # Weighted combination
         fitness = (
-            self.config.objective_weights.get("accuracy", 0.6) * normalized_accuracy
-            + self.config.objective_weights.get("latency", 0.2) * normalized_latency
-            + self.config.objective_weights.get("energy", 0.2) * normalized_energy
+            self.config.objective_weights.get("accuracy", 0.6)
+            * normalized_accuracy
+            + self.config.objective_weights.get("latency", 0.2)
+            * normalized_latency
+            + self.config.objective_weights.get("energy", 0.2)
+            * normalized_energy
         )
 
         return fitness
 
     def _update_pareto_front(self):
         """Update the Pareto front with non-dominated solutions."""
-        all_evaluated = [arch for arch in self.search_history if arch.is_evaluated]
+        all_evaluated = [
+            arch for arch in self.search_history if arch.is_evaluated
+        ]
 
         if not all_evaluated:
             return
@@ -789,7 +869,9 @@ class NeuralArchitectureSearch:
 
         self.pareto_front = pareto_front
 
-    def _dominates(self, arch1: ArchitectureSpec, arch2: ArchitectureSpec) -> bool:
+    def _dominates(
+        self, arch1: ArchitectureSpec, arch2: ArchitectureSpec
+    ) -> bool:
         """Check if arch1 dominates arch2 in multi-objective sense."""
         if not (arch1.is_evaluated and arch2.is_evaluated):
             return False
@@ -811,7 +893,12 @@ class NeuralArchitectureSearch:
         # At least one objective must be strictly better
         strictly_better = acc1 > acc2 or lat1 < lat2 or eng1 < eng2
 
-        return better_accuracy and better_latency and better_energy and strictly_better
+        return (
+            better_accuracy
+            and better_latency
+            and better_energy
+            and strictly_better
+        )
 
     def _select_diverse_solutions(
         self, solutions: List[ArchitectureSpec], target_size: int
@@ -861,20 +948,31 @@ class NeuralArchitectureSearch:
         eng2 = arch2.estimated_energy_mj / 10.0
 
         # Euclidean distance in normalized objective space
-        distance = np.sqrt((acc1 - acc2) ** 2 + (lat1 - lat2) ** 2 + (eng1 - eng2) ** 2)
+        distance = np.sqrt(
+            (acc1 - acc2) ** 2 + (lat1 - lat2) ** 2 + (eng1 - eng2) ** 2
+        )
         return distance
 
     def _get_best_scores(self) -> Dict[str, float]:
         """Get best scores for each objective."""
-        evaluated_archs = [arch for arch in self.search_history if arch.is_evaluated]
+        evaluated_archs = [
+            arch for arch in self.search_history if arch.is_evaluated
+        ]
 
         if not evaluated_archs:
-            return {"accuracy": 0.0, "latency": float("inf"), "energy": float("inf")}
+            return {
+                "accuracy": 0.0,
+                "latency": float("inf"),
+                "energy": float("inf"),
+            }
 
         best_accuracy = max(
-            arch.performance_metrics.get("roc_auc", 0.0) for arch in evaluated_archs
+            arch.performance_metrics.get("roc_auc", 0.0)
+            for arch in evaluated_archs
         )
-        best_latency = min(arch.estimated_latency_ms for arch in evaluated_archs)
+        best_latency = min(
+            arch.estimated_latency_ms for arch in evaluated_archs
+        )
         best_energy = min(arch.estimated_energy_mj for arch in evaluated_archs)
 
         return {
@@ -889,12 +987,16 @@ class NeuralArchitectureSearch:
             return self.pareto_front
 
         # Fallback: return top architectures by fitness
-        evaluated_archs = [arch for arch in self.search_history if arch.is_evaluated]
+        evaluated_archs = [
+            arch for arch in self.search_history if arch.is_evaluated
+        ]
         evaluated_archs.sort(key=self._calculate_fitness, reverse=True)
 
         return evaluated_archs[: min(5, len(evaluated_archs))]
 
-    def _should_stop_early(self, convergence_history: List[Dict[str, float]]) -> bool:
+    def _should_stop_early(
+        self, convergence_history: List[Dict[str, float]]
+    ) -> bool:
         """Check if search should stop early."""
         if len(convergence_history) < self.config.early_stopping_patience:
             return False
@@ -902,7 +1004,9 @@ class NeuralArchitectureSearch:
         # Check if accuracy hasn't improved significantly
         recent_scores = [
             h.get("accuracy", 0.0)
-            for h in convergence_history[-self.config.early_stopping_patience :]
+            for h in convergence_history[
+                -self.config.early_stopping_patience :
+            ]
         ]
 
         if len(recent_scores) < 2:
@@ -980,7 +1084,9 @@ def get_sustainable_search_space() -> SearchSpace:
     )
 
 
-def create_architecture_from_config(config: Dict[str, Any]) -> ArchitectureSpec:
+def create_architecture_from_config(
+    config: Dict[str, Any],
+) -> ArchitectureSpec:
     """
     Create architecture specification from configuration dictionary.
 
@@ -1015,7 +1121,9 @@ def create_architecture_from_config(config: Dict[str, Any]) -> ArchitectureSpec:
     )
 
 
-def export_architecture_to_config(architecture: ArchitectureSpec) -> Dict[str, Any]:
+def export_architecture_to_config(
+    architecture: ArchitectureSpec,
+) -> Dict[str, Any]:
     """
     Export architecture specification to configuration dictionary.
 

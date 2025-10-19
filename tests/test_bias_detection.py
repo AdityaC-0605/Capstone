@@ -3,7 +3,6 @@
 import os
 import sys
 
-import numpy as np
 import pytest
 
 # Add src to path for imports
@@ -18,6 +17,7 @@ class TestBiasDetection:
         # Mock demographic parity test
         mock_parity_score = 0.95
         assert mock_parity_score > 0.8  # Should be fair
+        pytest.skip("Bias detection test placeholder")
 
     def test_equal_opportunity(self):
         """Test equal opportunity metrics."""

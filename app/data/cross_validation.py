@@ -78,7 +78,13 @@ class CVConfig:
 
     # Scoring and evaluation
     scoring_metrics: List[str] = field(
-        default_factory=lambda: ["accuracy", "precision", "recall", "f1", "roc_auc"]
+        default_factory=lambda: [
+            "accuracy",
+            "precision",
+            "recall",
+            "f1",
+            "roc_auc",
+        ]
     )
     primary_metric: str = "roc_auc"
 
@@ -232,7 +238,9 @@ class TimeSeriesValidator(BaseCrossValidator):
                 "test_start_idx": test_idx[0],
                 "test_end_idx": test_idx[-1],
                 "gap_size": (
-                    test_idx[0] - train_idx[-1] - 1 if len(train_idx) > 0 else 0
+                    test_idx[0] - train_idx[-1] - 1
+                    if len(train_idx) > 0
+                    else 0
                 ),
             }
 
@@ -248,7 +256,9 @@ class TimeSeriesValidator(BaseCrossValidator):
     def validate_data(self, X: pd.DataFrame, y: pd.Series) -> bool:
         """Validate data for time series CV."""
         # Check if we have enough samples for time series splits
-        min_samples_needed = (self.config.n_splits + 1) * (self.config.test_size or 1)
+        min_samples_needed = (self.config.n_splits + 1) * (
+            self.config.test_size or 1
+        )
 
         if len(X) < min_samples_needed:
             logger.error(
@@ -310,7 +320,9 @@ class NestedCrossValidator:
             best_score = -np.inf
             best_params = None
             best_estimator = None
-            fold_inner_scores = {metric: [] for metric in self.config.scoring_metrics}
+            fold_inner_scores = {
+                metric: [] for metric in self.config.scoring_metrics
+            }
 
             # Grid search over parameters
             for params in ParameterGrid(param_grid):
@@ -336,7 +348,10 @@ class NestedCrossValidator:
 
                     # Calculate scores
                     scores = self._calculate_scores(
-                        y_test_inner, y_pred_inner, estimator_clone, X_test_inner
+                        y_test_inner,
+                        y_pred_inner,
+                        estimator_clone,
+                        X_test_inner,
                     )
                     for metric, score in scores.items():
                         inner_fold_scores[metric].append(score)
@@ -348,7 +363,9 @@ class NestedCrossValidator:
                 }
 
                 # Check if this is the best parameter set
-                primary_score = avg_inner_scores.get(self.config.primary_metric, 0)
+                primary_score = avg_inner_scores.get(
+                    self.config.primary_metric, 0
+                )
                 if primary_score > best_score:
                     best_score = primary_score
                     best_params = params
@@ -429,10 +446,15 @@ class NestedCrossValidator:
                 try:
                     y_proba = estimator.predict_proba(X_test)
                     if y_proba.shape[1] == 2:  # Binary classification
-                        scores["roc_auc"] = roc_auc_score(y_true, y_proba[:, 1])
+                        scores["roc_auc"] = roc_auc_score(
+                            y_true, y_proba[:, 1]
+                        )
                     else:  # Multiclass
                         scores["roc_auc"] = roc_auc_score(
-                            y_true, y_proba, multi_class="ovr", average="weighted"
+                            y_true,
+                            y_proba,
+                            multi_class="ovr",
+                            average="weighted",
                         )
                 except:
                     scores["roc_auc"] = 0.0
@@ -459,10 +481,16 @@ class NestedCrossValidator:
             all_param_names.update(params.keys())
 
         for param_name in all_param_names:
-            param_values = [params.get(param_name) for params in best_params_per_fold]
+            param_values = [
+                params.get(param_name) for params in best_params_per_fold
+            ]
 
             # Calculate stability (consistency across folds)
-            if all(isinstance(v, (int, float)) for v in param_values if v is not None):
+            if all(
+                isinstance(v, (int, float))
+                for v in param_values
+                if v is not None
+            ):
                 # Numerical parameter - use coefficient of variation
                 param_values = [v for v in param_values if v is not None]
                 if param_values:
@@ -506,7 +534,9 @@ class CrossValidationManager(DataProcessor):
                 )
 
             def split(self, X, y):
-                for fold_id, (train_idx, test_idx) in enumerate(self.cv.split(X)):
+                for fold_id, (train_idx, test_idx) in enumerate(
+                    self.cv.split(X)
+                ):
                     yield CVFold(
                         fold_id=fold_id,
                         train_indices=train_idx,
@@ -544,7 +574,9 @@ class CrossValidationManager(DataProcessor):
             # Regular CV
             validator = self.validators.get(self.config.strategy)
             if not validator:
-                raise ValueError(f"Unsupported CV strategy: {self.config.strategy}")
+                raise ValueError(
+                    f"Unsupported CV strategy: {self.config.strategy}"
+                )
 
             # Validate data
             if not validator.validate_data(X, y):
@@ -590,10 +622,12 @@ class CrossValidationManager(DataProcessor):
 
             # Calculate summary statistics
             mean_scores = {
-                metric: np.mean(score_list) for metric, score_list in scores.items()
+                metric: np.mean(score_list)
+                for metric, score_list in scores.items()
             }
             std_scores = {
-                metric: np.std(score_list) for metric, score_list in scores.items()
+                metric: np.std(score_list)
+                for metric, score_list in scores.items()
             }
 
             # Find best and worst folds
@@ -619,7 +653,9 @@ class CrossValidationManager(DataProcessor):
                 details={
                     "strategy": self.config.strategy.value,
                     "n_splits": self.config.n_splits,
-                    "mean_score": mean_scores.get(self.config.primary_metric, 0.0),
+                    "mean_score": mean_scores.get(
+                        self.config.primary_metric, 0.0
+                    ),
                     "cv_time_seconds": cv_time,
                 },
             )
@@ -698,10 +734,13 @@ class CrossValidationManager(DataProcessor):
 
                     tests[metric] = {
                         "normality_p_value": normality_p,
-                        "is_normal": normality_p > self.config.significance_level,
+                        "is_normal": normality_p
+                        > self.config.significance_level,
                         "confidence_interval_95": (ci_lower, ci_upper),
                         "coefficient_of_variation": (
-                            std_score / mean_score if mean_score != 0 else float("inf")
+                            std_score / mean_score
+                            if mean_score != 0
+                            else float("inf")
                         ),
                     }
 
@@ -712,7 +751,9 @@ class CrossValidationManager(DataProcessor):
 
 
 # Factory functions and utilities
-def create_cv_manager(config: Optional[CVConfig] = None) -> CrossValidationManager:
+def create_cv_manager(
+    config: Optional[CVConfig] = None,
+) -> CrossValidationManager:
     """Create a cross-validation manager instance."""
     return CrossValidationManager(config)
 
@@ -824,7 +865,9 @@ class CVResultAnalyzer:
                 "std": std_score,
                 "min": min(scores) if scores else 0,
                 "max": max(scores) if scores else 0,
-                "cv": std_score / mean_score if mean_score != 0 else float("inf"),
+                "cv": (
+                    std_score / mean_score if mean_score != 0 else float("inf")
+                ),
             }
 
         # Stability analysis
@@ -836,7 +879,8 @@ class CVResultAnalyzer:
                 "score_range": max(primary_scores) - min(primary_scores),
                 "coefficient_of_variation": np.std(primary_scores)
                 / np.mean(primary_scores),
-                "is_stable": np.std(primary_scores) / np.mean(primary_scores) < 0.1,
+                "is_stable": np.std(primary_scores) / np.mean(primary_scores)
+                < 0.1,
             }
 
         # Generate recommendations
@@ -869,7 +913,9 @@ class CVResultAnalyzer:
         return analysis
 
     @staticmethod
-    def analyze_nested_cv_results(nested_result: NestedCVResult) -> Dict[str, Any]:
+    def analyze_nested_cv_results(
+        nested_result: NestedCVResult,
+    ) -> Dict[str, Any]:
         """Analyze nested cross-validation results."""
         analysis = {
             "generalization": nested_result.generalization_score,
@@ -888,13 +934,15 @@ class CVResultAnalyzer:
 
             for param in all_params:
                 values = [
-                    params.get(param) for params in nested_result.best_params_per_fold
+                    params.get(param)
+                    for params in nested_result.best_params_per_fold
                 ]
                 unique_values = len(set(v for v in values if v is not None))
                 param_consistency[param] = {
                     "unique_values": unique_values,
                     "consistency_ratio": 1.0
-                    - (unique_values - 1) / len(nested_result.best_params_per_fold),
+                    - (unique_values - 1)
+                    / len(nested_result.best_params_per_fold),
                     "most_common": (
                         max(set(values), key=values.count) if values else None
                     ),
@@ -965,8 +1013,12 @@ class CVResultAnalyzer:
 
         # Statistical significance tests
         for metric in metrics:
-            scores_lists = [result.scores.get(metric, []) for result in results]
-            valid_scores = [scores for scores in scores_lists if len(scores) > 1]
+            scores_lists = [
+                result.scores.get(metric, []) for result in results
+            ]
+            valid_scores = [
+                scores for scores in scores_lists if len(scores) > 1
+            ]
 
             if len(valid_scores) >= 2:
                 try:
@@ -974,7 +1026,8 @@ class CVResultAnalyzer:
                     if all(len(scores) >= 3 for scores in valid_scores):
                         # Check normality
                         normal_tests = [
-                            stats.shapiro(scores)[1] > 0.05 for scores in valid_scores
+                            stats.shapiro(scores)[1] > 0.05
+                            for scores in valid_scores
                         ]
 
                         if all(normal_tests):
@@ -992,7 +1045,9 @@ class CVResultAnalyzer:
                             "significant": p_value < 0.05,
                         }
                 except Exception as e:
-                    logger.warning(f"Statistical test failed for {metric}: {e}")
+                    logger.warning(
+                        f"Statistical test failed for {metric}: {e}"
+                    )
 
         # Generate recommendations
         recommendations = []
@@ -1003,7 +1058,9 @@ class CVResultAnalyzer:
             primary_metric = list(results[0].scores.keys())[0]
 
         if primary_metric in comparison["performance_comparison"]:
-            means = comparison["performance_comparison"][primary_metric]["means"]
+            means = comparison["performance_comparison"][primary_metric][
+                "means"
+            ]
             best_idx = np.argmax(means)
             recommendations.append(
                 f"Best performing model: {labels[best_idx]} ({primary_metric}: {means[best_idx]:.3f})"
@@ -1035,17 +1092,21 @@ def export_cv_results(
         export_data = {
             "timestamp": datetime.now().isoformat(),
             "cv_result": (
-                cv_result.__dict__ if hasattr(cv_result, "__dict__") else str(cv_result)
+                cv_result.__dict__
+                if hasattr(cv_result, "__dict__")
+                else str(cv_result)
             ),
         }
 
         # Add analysis if requested
         if include_analysis:
             if isinstance(cv_result, CVResult):
-                export_data["analysis"] = CVResultAnalyzer.analyze_cv_results(cv_result)
-            elif isinstance(cv_result, NestedCVResult):
-                export_data["analysis"] = CVResultAnalyzer.analyze_nested_cv_results(
+                export_data["analysis"] = CVResultAnalyzer.analyze_cv_results(
                     cv_result
+                )
+            elif isinstance(cv_result, NestedCVResult):
+                export_data["analysis"] = (
+                    CVResultAnalyzer.analyze_nested_cv_results(cv_result)
                 )
 
         # Convert numpy arrays and other non-serializable objects

@@ -39,7 +39,10 @@ try:
         CarbonAwareConfig,
         CarbonAwareOptimizer,
     )
-    from ..sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from ..sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from ..sustainability.energy_tracker import EnergyTracker
 except ImportError:
     # Fallback for direct execution
@@ -63,7 +66,10 @@ except ImportError:
         CarbonAwareConfig,
         CarbonAwareOptimizer,
     )
-    from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from sustainability.energy_tracker import EnergyTracker
 
 logger = get_logger(__name__)
@@ -73,7 +79,9 @@ audit_logger = get_audit_logger()
 class CarbonAwareSelectionStrategy(Enum):
     """Carbon-aware client selection strategies."""
 
-    LOWEST_CARBON = "lowest_carbon"  # Select clients with lowest carbon intensity
+    LOWEST_CARBON = (
+        "lowest_carbon"  # Select clients with lowest carbon intensity
+    )
     CARBON_BUDGET = "carbon_budget"  # Select clients within carbon budget
     ADAPTIVE = "adaptive"  # Adapt selection based on carbon intensity trends
     HYBRID = "hybrid"  # Balance carbon efficiency with performance
@@ -133,13 +141,19 @@ class CarbonAwareFederatedConfig(FederatedConfig):
     carbon_budget_per_round: float = 0.1  # kg CO2e per round
 
     # Carbon intensity API settings
-    carbon_intensity_api_url: str = "https://api.carbonintensity.org.uk/regional"
+    carbon_intensity_api_url: str = (
+        "https://api.carbonintensity.org.uk/regional"
+    )
     carbon_intensity_update_interval: int = 300  # seconds
     enable_real_time_carbon: bool = True
 
     # Sustainability optimization
-    sustainability_weight: float = 0.3  # Weight for sustainability in client selection
-    performance_weight: float = 0.7  # Weight for performance in client selection
+    sustainability_weight: float = (
+        0.3  # Weight for sustainability in client selection
+    )
+    performance_weight: float = (
+        0.7  # Weight for performance in client selection
+    )
     carbon_efficiency_threshold: float = 0.7
 
     # Carbon offset integration
@@ -156,7 +170,9 @@ class CarbonAwareFederatedConfig(FederatedConfig):
 class CarbonIntensityAPI:
     """Interface for real-time carbon intensity data."""
 
-    def __init__(self, api_url: str = "https://api.carbonintensity.org.uk/regional"):
+    def __init__(
+        self, api_url: str = "https://api.carbonintensity.org.uk/regional"
+    ):
         self.api_url = api_url
         self.cache: Dict[str, Dict[str, Any]] = {}
         self.cache_duration = 300  # 5 minutes
@@ -175,7 +191,10 @@ class CarbonIntensityAPI:
             # Check cache first
             if region in self.cache:
                 cached_data = self.cache[region]
-                if time.time() - cached_data["timestamp"] < self.cache_duration:
+                if (
+                    time.time() - cached_data["timestamp"]
+                    < self.cache_duration
+                ):
                     return cached_data["data"]
 
             # For demo purposes, simulate API call
@@ -183,7 +202,10 @@ class CarbonIntensityAPI:
             carbon_intensity = self._simulate_carbon_intensity(region)
 
             # Cache the result
-            self.cache[region] = {"data": carbon_intensity, "timestamp": time.time()}
+            self.cache[region] = {
+                "data": carbon_intensity,
+                "timestamp": time.time(),
+            }
 
             return carbon_intensity
 
@@ -205,17 +227,26 @@ class CarbonIntensityAPI:
             "US-TX": {"carbon_intensity": 420.0, "renewable_percentage": 20.0},
             "EU-DE": {"carbon_intensity": 350.0, "renewable_percentage": 35.0},
             "EU-FR": {"carbon_intensity": 80.0, "renewable_percentage": 70.0},
-            "ASIA-CN": {"carbon_intensity": 580.0, "renewable_percentage": 15.0},
-            "DEFAULT": {"carbon_intensity": 300.0, "renewable_percentage": 25.0},
+            "ASIA-CN": {
+                "carbon_intensity": 580.0,
+                "renewable_percentage": 15.0,
+            },
+            "DEFAULT": {
+                "carbon_intensity": 300.0,
+                "renewable_percentage": 25.0,
+            },
         }
 
         # Add some randomness to simulate real-time variations
-        base_data = region_intensities.get(region, region_intensities["DEFAULT"])
+        base_data = region_intensities.get(
+            region, region_intensities["DEFAULT"]
+        )
         variation = random.uniform(0.8, 1.2)
 
         return {
             "carbon_intensity": base_data["carbon_intensity"] * variation,
-            "renewable_percentage": base_data["renewable_percentage"] * variation,
+            "renewable_percentage": base_data["renewable_percentage"]
+            * variation,
             "timestamp": datetime.now().isoformat(),
             "region": region,
         }
@@ -242,9 +273,14 @@ class CarbonAwareClientSelector(ClientSelector):
         """Monitor carbon intensity for all clients."""
         while True:
             try:
-                await asyncio.sleep(self.config.carbon_intensity_update_interval)
+                await asyncio.sleep(
+                    self.config.carbon_intensity_update_interval
+                )
 
-                for client_id, carbon_info in self.carbon_aware_clients.items():
+                for (
+                    client_id,
+                    carbon_info,
+                ) in self.carbon_aware_clients.items():
                     # Update carbon intensity
                     carbon_data = await self.carbon_api.get_carbon_intensity(
                         carbon_info.region
@@ -276,7 +312,9 @@ class CarbonAwareClientSelector(ClientSelector):
     ) -> float:
         """Calculate carbon efficiency score for a client."""
         # Normalize carbon intensity (lower is better)
-        carbon_score = max(0, 1 - (carbon_info.carbon_intensity_gco2_kwh / 600.0))
+        carbon_score = max(
+            0, 1 - (carbon_info.carbon_intensity_gco2_kwh / 600.0)
+        )
 
         # Normalize renewable energy percentage (higher is better)
         renewable_score = carbon_info.renewable_energy_percentage / 100.0
@@ -317,7 +355,9 @@ class CarbonAwareClientSelector(ClientSelector):
             return True
 
         except Exception as e:
-            logger.error(f"Failed to register carbon-aware client {client_id}: {e}")
+            logger.error(
+                f"Failed to register carbon-aware client {client_id}: {e}"
+            )
             return False
 
     def select_clients(
@@ -341,7 +381,8 @@ class CarbonAwareClientSelector(ClientSelector):
         active_clients = [
             client
             for client in available_clients
-            if client.is_active() and client.status.value in ["connected", "ready"]
+            if client.is_active()
+            and client.status.value in ["connected", "ready"]
         ]
 
         if len(active_clients) < self.config.min_clients_per_round:
@@ -367,7 +408,8 @@ class CarbonAwareClientSelector(ClientSelector):
         ):
             return self._select_adaptive_clients(active_clients, round_number)
         elif (
-            self.config.carbon_selection_strategy == CarbonAwareSelectionStrategy.HYBRID
+            self.config.carbon_selection_strategy
+            == CarbonAwareSelectionStrategy.HYBRID
         ):
             return self._select_hybrid_clients(active_clients)
         else:
@@ -420,7 +462,9 @@ class CarbonAwareClientSelector(ClientSelector):
             # Fall back to lowest carbon selection
             return self._select_lowest_carbon_clients(clients)
 
-        num_clients = min(len(budget_clients), self.config.max_clients_per_round)
+        num_clients = min(
+            len(budget_clients), self.config.max_clients_per_round
+        )
         return budget_clients[:num_clients]
 
     def _select_adaptive_clients(
@@ -430,7 +474,9 @@ class CarbonAwareClientSelector(ClientSelector):
         # Analyze carbon intensity trends
         current_avg_carbon = np.mean(
             [
-                self.carbon_aware_clients[client.client_id].carbon_intensity_gco2_kwh
+                self.carbon_aware_clients[
+                    client.client_id
+                ].carbon_intensity_gco2_kwh
                 for client in clients
                 if client.client_id in self.carbon_aware_clients
             ]
@@ -444,7 +490,9 @@ class CarbonAwareClientSelector(ClientSelector):
             # Low carbon intensity - can be more flexible
             return self._select_hybrid_clients(clients)
 
-    def _select_hybrid_clients(self, clients: List[ClientInfo]) -> List[ClientInfo]:
+    def _select_hybrid_clients(
+        self, clients: List[ClientInfo]
+    ) -> List[ClientInfo]:
         """Select clients balancing carbon efficiency and performance."""
         scored_clients = []
 
@@ -478,7 +526,9 @@ class CarbonAwareClientSelector(ClientSelector):
         num_clients = min(len(clients), self.config.max_clients_per_round)
         return [client for client, _ in scored_clients[:num_clients]]
 
-    def update_client_carbon_budget(self, client_id: str, carbon_used: float) -> bool:
+    def update_client_carbon_budget(
+        self, client_id: str, carbon_used: float
+    ) -> bool:
         """
         Update client's carbon budget after training.
 
@@ -501,11 +551,15 @@ class CarbonAwareClientSelector(ClientSelector):
                 )
                 return True
             else:
-                logger.warning(f"Client {client_id} not found in carbon-aware clients")
+                logger.warning(
+                    f"Client {client_id} not found in carbon-aware clients"
+                )
                 return False
 
         except Exception as e:
-            logger.error(f"Failed to update carbon budget for client {client_id}: {e}")
+            logger.error(
+                f"Failed to update carbon budget for client {client_id}: {e}"
+            )
             return False
 
     def get_carbon_aware_client_info(
@@ -536,7 +590,9 @@ class CarbonAwareClientSelector(ClientSelector):
         sustainability_ratings = {}
         for info in self.carbon_aware_clients.values():
             rating = info.sustainability_rating
-            sustainability_ratings[rating] = sustainability_ratings.get(rating, 0) + 1
+            sustainability_ratings[rating] = (
+                sustainability_ratings.get(rating, 0) + 1
+            )
 
         return {
             "total_carbon_aware_clients": total_clients,
@@ -581,7 +637,9 @@ class CarbonAwareFederatedServer(FederatedServer):
         """Monitor carbon consumption and generate reports."""
         while True:
             try:
-                await asyncio.sleep(self.carbon_config.carbon_reporting_interval)
+                await asyncio.sleep(
+                    self.carbon_config.carbon_reporting_interval
+                )
 
                 # Generate carbon report
                 carbon_report = self._generate_carbon_report()
@@ -603,7 +661,9 @@ class CarbonAwareFederatedServer(FederatedServer):
         return {
             "timestamp": datetime.now().isoformat(),
             "total_carbon_consumed": self.total_carbon_consumed,
-            "carbon_aware_clients": len(self.client_selector.carbon_aware_clients),
+            "carbon_aware_clients": len(
+                self.client_selector.carbon_aware_clients
+            ),
             "carbon_summary": self.client_selector.get_carbon_summary(),
             "rounds_completed": len(self.round_history),
             "average_carbon_per_round": self.total_carbon_consumed
@@ -617,7 +677,9 @@ class CarbonAwareFederatedServer(FederatedServer):
             report_dir.mkdir(exist_ok=True)
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            report_file = report_dir / f"carbon_aware_federated_report_{timestamp}.json"
+            report_file = (
+                report_dir / f"carbon_aware_federated_report_{timestamp}.json"
+            )
 
             with open(report_file, "w") as f:
                 json.dump(report, f, indent=2)
@@ -676,7 +738,9 @@ class CarbonAwareFederatedServer(FederatedServer):
 
         return success
 
-    def complete_federated_round(self, client_updates: List[ModelUpdate]) -> bool:
+    def complete_federated_round(
+        self, client_updates: List[ModelUpdate]
+    ) -> bool:
         """
         Complete federated round with carbon tracking.
 
@@ -692,8 +756,10 @@ class CarbonAwareFederatedServer(FederatedServer):
             # Estimate carbon from energy consumption
             if update.energy_consumed > 0:
                 # Get client's carbon intensity
-                carbon_info = self.client_selector.get_carbon_aware_client_info(
-                    update.client_id
+                carbon_info = (
+                    self.client_selector.get_carbon_aware_client_info(
+                        update.client_id
+                    )
                 )
                 if carbon_info:
                     carbon_intensity = carbon_info.carbon_intensity_gco2_kwh
@@ -719,7 +785,9 @@ class CarbonAwareFederatedServer(FederatedServer):
 
         if success:
             # Log carbon consumption
-            logger.info(f"Round completed with {round_carbon:.4f} kg CO2e consumed")
+            logger.info(
+                f"Round completed with {round_carbon:.4f} kg CO2e consumed"
+            )
 
             # Check if carbon offset is needed
             if (
@@ -734,7 +802,9 @@ class CarbonAwareFederatedServer(FederatedServer):
         """Trigger automatic carbon offset for the round."""
         try:
             # This would integrate with the carbon offset marketplace
-            logger.info(f"Triggering carbon offset for {carbon_amount:.4f} kg CO2e")
+            logger.info(
+                f"Triggering carbon offset for {carbon_amount:.4f} kg CO2e"
+            )
 
             # For demo purposes, just log the offset
             # In production, this would call the carbon offset marketplace
@@ -796,7 +866,9 @@ def create_carbon_aware_federated_server(
 
 
 async def simulate_carbon_aware_federated_learning(
-    num_clients: int = 5, num_rounds: int = 10, regions: Optional[List[str]] = None
+    num_clients: int = 5,
+    num_rounds: int = 10,
+    regions: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     Simulate carbon-aware federated learning.
@@ -875,7 +947,9 @@ async def simulate_carbon_aware_federated_learning(
         success = server.complete_federated_round(client_updates)
         if success:
             simulation_results["rounds_completed"] += 1
-            simulation_results["total_carbon_consumed"] = server.total_carbon_consumed
+            simulation_results["total_carbon_consumed"] = (
+                server.total_carbon_consumed
+            )
 
     return simulation_results
 
@@ -906,7 +980,8 @@ def compare_carbon_aware_strategies(
 
         # Create configuration
         config = CarbonAwareFederatedConfig(
-            carbon_selection_strategy=strategy, enable_carbon_aware_selection=True
+            carbon_selection_strategy=strategy,
+            enable_carbon_aware_selection=True,
         )
 
         # Run simulation
@@ -951,7 +1026,8 @@ def compare_carbon_aware_strategies(
 
         results[strategy.value] = {
             "total_carbon_consumed": total_carbon,
-            "carbon_efficiency": 1.0 / (total_carbon + 0.001),  # Higher is better
+            "carbon_efficiency": 1.0
+            / (total_carbon + 0.001),  # Higher is better
             "strategy": strategy.value,
         }
 

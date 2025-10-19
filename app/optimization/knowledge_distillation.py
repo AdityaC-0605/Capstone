@@ -102,7 +102,9 @@ class DistillationConfig:
 
     # Validation
     validate_distillation: bool = True
-    accuracy_threshold: float = 0.05  # Max acceptable accuracy drop from teacher
+    accuracy_threshold: float = (
+        0.05  # Max acceptable accuracy drop from teacher
+    )
 
     # Model saving
     save_student_model: bool = True
@@ -171,17 +173,25 @@ class DistillationLoss(nn.Module):
             Total loss and loss components
         """
         # Student loss (standard task loss)
-        student_loss = self.student_criterion(student_logits.squeeze(), targets)
+        student_loss = self.student_criterion(
+            student_logits.squeeze(), targets
+        )
 
         # Distillation loss
         if self.config.loss_function == "kl_divergence":
-            distillation_loss = self._kl_divergence_loss(student_logits, teacher_logits)
+            distillation_loss = self._kl_divergence_loss(
+                student_logits, teacher_logits
+            )
         elif self.config.loss_function == "mse":
             distillation_loss = self._mse_loss(student_logits, teacher_logits)
         elif self.config.loss_function == "cosine":
-            distillation_loss = self._cosine_loss(student_logits, teacher_logits)
+            distillation_loss = self._cosine_loss(
+                student_logits, teacher_logits
+            )
         else:
-            distillation_loss = self._kl_divergence_loss(student_logits, teacher_logits)
+            distillation_loss = self._kl_divergence_loss(
+                student_logits, teacher_logits
+            )
 
         # Combined loss
         total_loss = self.alpha * distillation_loss + self.beta * student_loss
@@ -209,8 +219,12 @@ class DistillationLoss(nn.Module):
             teacher_probs = torch.sigmoid(teacher_logits / self.temperature)
 
             # Stack to create [neg_prob, pos_prob] format
-            student_probs_2d = torch.stack([1 - student_probs, student_probs], dim=-1)
-            teacher_probs_2d = torch.stack([1 - teacher_probs, teacher_probs], dim=-1)
+            student_probs_2d = torch.stack(
+                [1 - student_probs, student_probs], dim=-1
+            )
+            teacher_probs_2d = torch.stack(
+                [1 - teacher_probs, teacher_probs], dim=-1
+            )
 
             student_log_probs = torch.log(student_probs_2d + 1e-8)
 
@@ -218,7 +232,9 @@ class DistillationLoss(nn.Module):
                 student_log_probs, teacher_probs_2d, reduction="batchmean"
             )
         else:
-            kl_loss = F.kl_div(student_soft, teacher_soft, reduction="batchmean")
+            kl_loss = F.kl_div(
+                student_soft, teacher_soft, reduction="batchmean"
+            )
 
         # Scale by temperature squared (standard practice)
         return kl_loss * (self.temperature**2)
@@ -233,7 +249,9 @@ class DistillationLoss(nn.Module):
         self, student_logits: torch.Tensor, teacher_logits: torch.Tensor
     ) -> torch.Tensor:
         """Cosine similarity loss between logits."""
-        cosine_sim = F.cosine_similarity(student_logits, teacher_logits, dim=-1)
+        cosine_sim = F.cosine_similarity(
+            student_logits, teacher_logits, dim=-1
+        )
         return 1.0 - cosine_sim.mean()
 
 
@@ -342,40 +360,49 @@ class KnowledgeDistiller:
 
             # Train student model
             if self.config.use_progressive_distillation:
-                trained_student, training_history = self._progressive_distillation(
-                    teacher_model,
-                    student_model,
-                    X_train_tensor,
-                    y_train_tensor,
-                    X_val_tensor,
-                    y_val_tensor,
+                trained_student, training_history = (
+                    self._progressive_distillation(
+                        teacher_model,
+                        student_model,
+                        X_train_tensor,
+                        y_train_tensor,
+                        X_val_tensor,
+                        y_val_tensor,
+                    )
                 )
             else:
-                trained_student, training_history = self._standard_distillation(
-                    teacher_model,
-                    student_model,
-                    X_train_tensor,
-                    y_train_tensor,
-                    X_val_tensor,
-                    y_val_tensor,
+                trained_student, training_history = (
+                    self._standard_distillation(
+                        teacher_model,
+                        student_model,
+                        X_train_tensor,
+                        y_train_tensor,
+                        X_val_tensor,
+                        y_val_tensor,
+                    )
                 )
 
             # Evaluate student model
             student_performance = self._evaluate_model(
                 trained_student, X_val_tensor, y_val_tensor
             )
-            student_params = sum(p.numel() for p in trained_student.parameters())
+            student_params = sum(
+                p.numel() for p in trained_student.parameters()
+            )
 
             # Calculate metrics
             compression_ratio = (
                 teacher_params / student_params if student_params > 0 else 1.0
             )
             parameter_reduction = (
-                1.0 - (student_params / teacher_params) if teacher_params > 0 else 0.0
+                1.0 - (student_params / teacher_params)
+                if teacher_params > 0
+                else 0.0
             )
 
             performance_drop = {
-                key: teacher_performance[key] - student_performance.get(key, 0.0)
+                key: teacher_performance[key]
+                - student_performance.get(key, 0.0)
                 for key in teacher_performance.keys()
             }
 
@@ -478,7 +505,9 @@ class KnowledgeDistiller:
         # Setup training
         optimizer = self._setup_optimizer(student_model)
         scheduler = (
-            self._setup_scheduler(optimizer) if self.config.use_scheduler else None
+            self._setup_scheduler(optimizer)
+            if self.config.use_scheduler
+            else None
         )
         scaler = GradScaler() if self.config.use_mixed_precision else None
 
@@ -519,7 +548,8 @@ class KnowledgeDistiller:
                     if self.config.gradient_clip_value > 0:
                         scaler.unscale_(optimizer)
                         torch.nn.utils.clip_grad_norm_(
-                            student_model.parameters(), self.config.gradient_clip_value
+                            student_model.parameters(),
+                            self.config.gradient_clip_value,
                         )
 
                     scaler.step(optimizer)
@@ -534,7 +564,8 @@ class KnowledgeDistiller:
 
                     if self.config.gradient_clip_value > 0:
                         torch.nn.utils.clip_grad_norm_(
-                            student_model.parameters(), self.config.gradient_clip_value
+                            student_model.parameters(),
+                            self.config.gradient_clip_value,
                         )
 
                     optimizer.step()
@@ -609,7 +640,9 @@ class KnowledgeDistiller:
         all_training_history = []
         current_student = copy.deepcopy(student_model)
 
-        epochs_per_stage = self.config.epochs // len(self.config.progressive_stages)
+        epochs_per_stage = self.config.epochs // len(
+            self.config.progressive_stages
+        )
 
         for stage, temperature in enumerate(self.config.progressive_stages):
             logger.info(
@@ -625,13 +658,22 @@ class KnowledgeDistiller:
             # Train for this stage
             stage_config = copy.deepcopy(self.config)
             stage_config.epochs = epochs_per_stage
-            stage_config.early_stopping_patience = max(3, epochs_per_stage // 3)
+            stage_config.early_stopping_patience = max(
+                3, epochs_per_stage // 3
+            )
 
             # Create temporary distiller for this stage
             temp_distiller = KnowledgeDistiller(stage_config)
 
-            current_student, stage_history = temp_distiller._standard_distillation(
-                teacher_model, current_student, X_train, y_train, X_val, y_val
+            current_student, stage_history = (
+                temp_distiller._standard_distillation(
+                    teacher_model,
+                    current_student,
+                    X_train,
+                    y_train,
+                    X_val,
+                    y_val,
+                )
             )
 
             # Adjust epoch numbers for global history

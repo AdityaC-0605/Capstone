@@ -58,7 +58,9 @@ class CounterfactualConfig:
     # Generation parameters
     max_iterations: int = 1000
     learning_rate: float = 0.01
-    target_class: Optional[int] = None  # None for flip, specific class otherwise
+    target_class: Optional[int] = (
+        None  # None for flip, specific class otherwise
+    )
 
     # Optimization constraints
     feature_ranges: Optional[Dict[str, Tuple[float, float]]] = None
@@ -112,7 +114,9 @@ class CounterfactualExplanation:
     feasibility_scores: List[float]
 
     # Feature changes
-    feature_changes: List[Dict[str, Tuple[float, float]]]  # feature -> (original, new)
+    feature_changes: List[
+        Dict[str, Tuple[float, float]]
+    ]  # feature -> (original, new)
     changed_features: List[List[str]]
 
     # Metadata
@@ -138,7 +142,9 @@ class CounterfactualExplanation:
             "counterfactual_predictions": [
                 float(p) for p in self.counterfactual_predictions
             ],
-            "counterfactual_classes": [int(c) for c in self.counterfactual_classes],
+            "counterfactual_classes": [
+                int(c) for c in self.counterfactual_classes
+            ],
             "distances": [float(d) for d in self.distances],
             "sparsity_scores": [float(s) for s in self.sparsity_scores],
             "validity_scores": [float(v) for v in self.validity_scores],
@@ -195,18 +201,25 @@ class CounterfactualGenerator(ABC):
         elif self.config.distance_metric == "manhattan":
             return np.sum(np.abs(x1 - x2))
         elif self.config.distance_metric == "cosine":
-            return 1 - np.dot(x1, x2) / (np.linalg.norm(x1) * np.linalg.norm(x2))
+            return 1 - np.dot(x1, x2) / (
+                np.linalg.norm(x1) * np.linalg.norm(x2)
+            )
         else:
             return np.linalg.norm(x1 - x2)
 
     def _calculate_sparsity(
-        self, original: np.ndarray, counterfactual: np.ndarray, threshold: float = 1e-6
+        self,
+        original: np.ndarray,
+        counterfactual: np.ndarray,
+        threshold: float = 1e-6,
     ) -> float:
         """Calculate sparsity score (fraction of changed features)."""
         changes = np.abs(original - counterfactual) > threshold
         return np.sum(changes) / len(original)
 
-    def _apply_constraints(self, x: np.ndarray, feature_names: List[str]) -> np.ndarray:
+    def _apply_constraints(
+        self, x: np.ndarray, feature_names: List[str]
+    ) -> np.ndarray:
         """Apply feature constraints to ensure feasibility."""
         x_constrained = x.copy()
 
@@ -215,7 +228,9 @@ class CounterfactualGenerator(ABC):
             for i, feature_name in enumerate(feature_names):
                 if feature_name in self.config.feature_ranges:
                     min_val, max_val = self.config.feature_ranges[feature_name]
-                    x_constrained[i] = np.clip(x_constrained[i], min_val, max_val)
+                    x_constrained[i] = np.clip(
+                        x_constrained[i], min_val, max_val
+                    )
 
         # Handle categorical features (round to nearest integer)
         for feature_name in self.config.categorical_features:
@@ -290,7 +305,9 @@ class GradientBasedGenerator(CounterfactualGenerator):
                 # Apply constraints
                 with torch.no_grad():
                     x_np = x.cpu().numpy()
-                    x_constrained = self._apply_constraints(x_np, feature_names)
+                    x_constrained = self._apply_constraints(
+                        x_np, feature_names
+                    )
                     x.data = torch.FloatTensor(x_constrained).to(self.device)
 
                 # Check convergence
@@ -343,13 +360,15 @@ class GeneticAlgorithmGenerator(CounterfactualGenerator):
                 class_obj = pred_prob  # Minimize probability for class 1
 
             # Distance penalty
-            distance_penalty = self.config.lambda_distance * self._calculate_distance(
-                instance, x
+            distance_penalty = (
+                self.config.lambda_distance
+                * self._calculate_distance(instance, x)
             )
 
             # Sparsity penalty
-            sparsity_penalty = self.config.lambda_sparsity * self._calculate_sparsity(
-                instance, x
+            sparsity_penalty = (
+                self.config.lambda_sparsity
+                * self._calculate_sparsity(instance, x)
             )
 
             return class_obj + distance_penalty + sparsity_penalty
@@ -365,7 +384,9 @@ class GeneticAlgorithmGenerator(CounterfactualGenerator):
             else:
                 # Default bounds: ±3 standard deviations from original value
                 std_dev = np.std(instance) if np.std(instance) > 0 else 1.0
-                bounds.append((instance[i] - 3 * std_dev, instance[i] + 3 * std_dev))
+                bounds.append(
+                    (instance[i] - 3 * std_dev, instance[i] + 3 * std_dev)
+                )
 
         counterfactuals = []
 
@@ -380,7 +401,9 @@ class GeneticAlgorithmGenerator(CounterfactualGenerator):
                 )
 
                 if result.success:
-                    candidate = self._apply_constraints(result.x, feature_names)
+                    candidate = self._apply_constraints(
+                        result.x, feature_names
+                    )
                     pred_prob, pred_class = self._get_prediction(
                         torch.FloatTensor(candidate)
                     )
@@ -389,7 +412,9 @@ class GeneticAlgorithmGenerator(CounterfactualGenerator):
                         counterfactuals.append(candidate)
 
             except Exception as e:
-                logger.warning(f"Genetic algorithm attempt {attempt} failed: {e}")
+                logger.warning(
+                    f"Genetic algorithm attempt {attempt} failed: {e}"
+                )
                 continue
 
         return counterfactuals
@@ -468,7 +493,9 @@ class DiceGenerator(CounterfactualGenerator):
                 # Apply constraints
                 with torch.no_grad():
                     x_np = x.cpu().numpy()
-                    x_constrained = self._apply_constraints(x_np, feature_names)
+                    x_constrained = self._apply_constraints(
+                        x_np, feature_names
+                    )
                     x.data = torch.FloatTensor(x_constrained).to(self.device)
 
             # Check if valid counterfactual
@@ -523,12 +550,16 @@ class WachterGenerator(CounterfactualGenerator):
                 # Loss function from Wachter et al.
                 if target_class == 1:
                     prediction_loss = (
-                        torch.max(torch.tensor(0.0).to(self.device), 0.5 - pred_prob)
+                        torch.max(
+                            torch.tensor(0.0).to(self.device), 0.5 - pred_prob
+                        )
                         ** 2
                     )
                 else:
                     prediction_loss = (
-                        torch.max(torch.tensor(0.0).to(self.device), pred_prob - 0.5)
+                        torch.max(
+                            torch.tensor(0.0).to(self.device), pred_prob - 0.5
+                        )
                         ** 2
                     )
 
@@ -538,7 +569,8 @@ class WachterGenerator(CounterfactualGenerator):
                 )
 
                 total_loss = (
-                    prediction_loss + self.config.lambda_distance * distance_loss
+                    prediction_loss
+                    + self.config.lambda_distance * distance_loss
                 )
                 total_loss.backward()
 
@@ -551,7 +583,9 @@ class WachterGenerator(CounterfactualGenerator):
                 # Apply constraints
                 with torch.no_grad():
                     x_np = x.cpu().numpy()
-                    x_constrained = self._apply_constraints(x_np, feature_names)
+                    x_constrained = self._apply_constraints(
+                        x_np, feature_names
+                    )
                     x.data = torch.FloatTensor(x_constrained).to(self.device)
 
             # Check validity
@@ -568,7 +602,9 @@ class WachterGenerator(CounterfactualGenerator):
 class CounterfactualExplainer:
     """Main class for counterfactual explanation generation and analysis."""
 
-    def __init__(self, model: nn.Module, config: Optional[CounterfactualConfig] = None):
+    def __init__(
+        self, model: nn.Module, config: Optional[CounterfactualConfig] = None
+    ):
         self.model = model
         self.config = config or CounterfactualConfig()
 
@@ -590,10 +626,15 @@ class CounterfactualExplainer:
         elif self.config.method == "wachter":
             return WachterGenerator(self.model, self.config)
         else:
-            raise ValueError(f"Unknown counterfactual method: {self.config.method}")
+            raise ValueError(
+                f"Unknown counterfactual method: {self.config.method}"
+            )
 
     def explain(
-        self, instance: np.ndarray, feature_names: List[str], instance_id: str = None
+        self,
+        instance: np.ndarray,
+        feature_names: List[str],
+        instance_id: str = None,
     ) -> CounterfactualExplanation:
         """Generate counterfactual explanation for a single instance."""
 
@@ -601,13 +642,17 @@ class CounterfactualExplainer:
 
         # Get original prediction
         original_tensor = torch.FloatTensor(instance)
-        original_pred, original_class = self.generator._get_prediction(original_tensor)
+        original_pred, original_class = self.generator._get_prediction(
+            original_tensor
+        )
 
         # Generate counterfactuals
         counterfactuals = self.generator.generate(instance, feature_names)
 
         if not counterfactuals:
-            logger.warning(f"No valid counterfactuals found for instance {instance_id}")
+            logger.warning(
+                f"No valid counterfactuals found for instance {instance_id}"
+            )
             # Return empty explanation
             return self._create_empty_explanation(
                 instance, original_pred, original_class, instance_id
@@ -615,7 +660,11 @@ class CounterfactualExplainer:
 
         # Analyze counterfactuals
         analysis_results = self._analyze_counterfactuals(
-            instance, counterfactuals, feature_names, original_pred, original_class
+            instance,
+            counterfactuals,
+            feature_names,
+            original_pred,
+            original_class,
         )
 
         # Rank counterfactuals
@@ -626,7 +675,8 @@ class CounterfactualExplainer:
         generation_time = (datetime.now() - start_time).total_seconds()
 
         explanation = CounterfactualExplanation(
-            instance_id=instance_id or f"cf_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            instance_id=instance_id
+            or f"cf_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
             original_instance=instance,
             original_prediction=original_pred,
             original_class=original_class,
@@ -705,7 +755,9 @@ class CounterfactualExplainer:
 
             # Validity score (how confident is the prediction flip)
             if original_class != cf_class:
-                validity = abs(cf_pred - 0.5)  # Distance from decision boundary
+                validity = abs(
+                    cf_pred - 0.5
+                )  # Distance from decision boundary
             else:
                 validity = 0.0
             results["validity_scores"].append(validity)
@@ -738,7 +790,10 @@ class CounterfactualExplainer:
             for i, feature_name in enumerate(feature_names):
                 if feature_name in self.config.feature_ranges:
                     min_val, max_val = self.config.feature_ranges[feature_name]
-                    if counterfactual[i] < min_val or counterfactual[i] > max_val:
+                    if (
+                        counterfactual[i] < min_val
+                        or counterfactual[i] > max_val
+                    ):
                         feasibility_score *= 0.5  # Penalty for out-of-range
 
         # Check immutable features
@@ -787,7 +842,9 @@ class CounterfactualExplainer:
             scores.append(score)
 
         # Return indices sorted by score (descending)
-        return sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+        return sorted(
+            range(len(scores)), key=lambda i: scores[i], reverse=True
+        )
 
     def _create_empty_explanation(
         self,
@@ -830,7 +887,9 @@ class CounterfactualExplainer:
             save_dir.mkdir(parents=True, exist_ok=True)
 
             # Save explanation
-            save_path = save_dir / f"{explanation.instance_id}_counterfactual.json"
+            save_path = (
+                save_dir / f"{explanation.instance_id}_counterfactual.json"
+            )
 
             with open(save_path, "w") as f:
                 json.dump(explanation.to_dict(), f, indent=2)
@@ -856,7 +915,9 @@ class CounterfactualExplainer:
             instance_id = instance_ids[i] if instance_ids else f"batch_cf_{i}"
 
             try:
-                explanation = self.explain(instance, feature_names, instance_id)
+                explanation = self.explain(
+                    instance, feature_names, instance_id
+                )
                 explanations.append(explanation)
             except Exception as e:
                 logger.error(
@@ -889,7 +950,10 @@ class CounterfactualExplainer:
 
         # Determine feature range
         feature_name = feature_names[feature_idx]
-        if self.config.feature_ranges and feature_name in self.config.feature_ranges:
+        if (
+            self.config.feature_ranges
+            and feature_name in self.config.feature_ranges
+        ):
             min_val, max_val = self.config.feature_ranges[feature_name]
         else:
             # Use ±3 standard deviations from original value
@@ -1067,7 +1131,11 @@ def explore_decision_boundary(
     explainer = CounterfactualExplainer(model, config)
 
     if feature_name not in feature_names:
-        raise ValueError(f"Feature '{feature_name}' not found in feature_names")
+        raise ValueError(
+            f"Feature '{feature_name}' not found in feature_names"
+        )
 
     feature_idx = feature_names.index(feature_name)
-    return explainer.analyze_decision_boundary(instance, feature_names, feature_idx)
+    return explainer.analyze_decision_boundary(
+        instance, feature_names, feature_idx
+    )

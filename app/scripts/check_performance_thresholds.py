@@ -80,7 +80,9 @@ class PerformanceThresholdChecker:
 
         return passed
 
-    def check_resource_utilization_thresholds(self, stats: Dict[str, Any]) -> bool:
+    def check_resource_utilization_thresholds(
+        self, stats: Dict[str, Any]
+    ) -> bool:
         """Check resource utilization thresholds"""
         passed = True
 
@@ -95,7 +97,10 @@ class PerformanceThresholdChecker:
 
         # Check memory utilization
         memory_utilization = stats.get("memory_utilization_percent", 0)
-        if memory_utilization > self.thresholds["max_memory_utilization_percent"]:
+        if (
+            memory_utilization
+            > self.thresholds["max_memory_utilization_percent"]
+        ):
             self.violations.append(
                 f"Memory utilization {memory_utilization}% exceeds maximum threshold "
                 f"{self.thresholds['max_memory_utilization_percent']}%"
@@ -114,19 +119,29 @@ class PerformanceThresholdChecker:
 
             # Extract statistics using regex patterns
             # Average response time
-            avg_match = re.search(r"Average.*?(\d+\.?\d*)\s*ms", content, re.IGNORECASE)
+            avg_match = re.search(
+                r"Average.*?(\d+\.?\d*)\s*ms", content, re.IGNORECASE
+            )
             if avg_match:
                 stats["avg_response_time"] = float(avg_match.group(1))
 
             # 95th percentile
-            p95_match = re.search(r"95%.*?(\d+\.?\d*)\s*ms", content, re.IGNORECASE)
+            p95_match = re.search(
+                r"95%.*?(\d+\.?\d*)\s*ms", content, re.IGNORECASE
+            )
             if p95_match:
-                stats["95th_percentile_response_time"] = float(p95_match.group(1))
+                stats["95th_percentile_response_time"] = float(
+                    p95_match.group(1)
+                )
 
             # 99th percentile
-            p99_match = re.search(r"99%.*?(\d+\.?\d*)\s*ms", content, re.IGNORECASE)
+            p99_match = re.search(
+                r"99%.*?(\d+\.?\d*)\s*ms", content, re.IGNORECASE
+            )
             if p99_match:
-                stats["99th_percentile_response_time"] = float(p99_match.group(1))
+                stats["99th_percentile_response_time"] = float(
+                    p99_match.group(1)
+                )
 
             # Requests per second
             rps_match = re.search(r"(\d+\.?\d*)\s*RPS", content, re.IGNORECASE)
@@ -134,7 +149,9 @@ class PerformanceThresholdChecker:
                 stats["requests_per_second"] = float(rps_match.group(1))
 
             # Error rate
-            error_match = re.search(r"(\d+\.?\d*)%.*?error", content, re.IGNORECASE)
+            error_match = re.search(
+                r"(\d+\.?\d*)%.*?error", content, re.IGNORECASE
+            )
             if error_match:
                 stats["error_rate_percent"] = float(error_match.group(1))
             else:
@@ -165,7 +182,10 @@ class PerformanceThresholdChecker:
             ("Response Time", self.check_response_time_thresholds),
             ("Throughput", self.check_throughput_thresholds),
             ("Error Rate", self.check_error_rate_thresholds),
-            ("Resource Utilization", self.check_resource_utilization_thresholds),
+            (
+                "Resource Utilization",
+                self.check_resource_utilization_thresholds,
+            ),
         ]
 
         all_passed = True
@@ -201,8 +221,16 @@ class PerformanceThresholdChecker:
 
         metrics = [
             ("Average Response Time", "avg_response_time", "ms"),
-            ("95th Percentile Response Time", "95th_percentile_response_time", "ms"),
-            ("99th Percentile Response Time", "99th_percentile_response_time", "ms"),
+            (
+                "95th Percentile Response Time",
+                "95th_percentile_response_time",
+                "ms",
+            ),
+            (
+                "99th Percentile Response Time",
+                "99th_percentile_response_time",
+                "ms",
+            ),
             ("Requests Per Second", "requests_per_second", "RPS"),
             ("Error Rate", "error_rate_percent", "%"),
             ("CPU Utilization", "cpu_utilization_percent", "%"),
@@ -238,8 +266,12 @@ def main():
     parser = argparse.ArgumentParser(
         description="Check performance test results against thresholds"
     )
-    parser.add_argument("report_file", help="Path to the performance test report file")
-    parser.add_argument("--thresholds", help="Path to custom thresholds JSON file")
+    parser.add_argument(
+        "report_file", help="Path to the performance test report file"
+    )
+    parser.add_argument(
+        "--thresholds", help="Path to custom thresholds JSON file"
+    )
     parser.add_argument(
         "--format",
         choices=["html", "json"],

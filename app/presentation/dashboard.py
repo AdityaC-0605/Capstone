@@ -175,8 +175,12 @@ def show_prediction_demo():
 
     with col1:
         age = st.slider("Age", 18, 80, 35)
-        annual_income = st.number_input("Annual Income (INR)", 100000, 2000000, 500000)
-        loan_amount = st.number_input("Loan Amount (INR)", 50000, 1000000, 200000)
+        annual_income = st.number_input(
+            "Annual Income (INR)", 100000, 2000000, 500000
+        )
+        loan_amount = st.number_input(
+            "Loan Amount (INR)", 50000, 1000000, 200000
+        )
         credit_score = st.slider("Credit Score", 300, 850, 650)
 
     with col2:
@@ -246,7 +250,9 @@ def show_prediction_demo():
             )
 
             fig.update_layout(
-                title="Feature Importance", xaxis_title="Importance Score", height=400
+                title="Feature Importance",
+                xaxis_title="Importance Score",
+                height=400,
             )
 
             st.plotly_chart(fig, use_container_width=True)
@@ -391,7 +397,16 @@ def show_sustainability_dashboard():
             "🟢 ACTIVE",
             "🟢 ACTIVE",
         ],
-        "Carbon Savings": ["25%", "18%", "100%", "12%", "22%", "8%", "15%", "20%"],
+        "Carbon Savings": [
+            "25%",
+            "18%",
+            "100%",
+            "12%",
+            "22%",
+            "8%",
+            "15%",
+            "20%",
+        ],
         "Innovation Level": [
             "🚀 BREAKTHROUGH",
             "🚀 BREAKTHROUGH",
@@ -423,7 +438,9 @@ def show_sustainability_dashboard():
 
     with col1:
         if st.button("🚀 Run Carbon-Aware NAS Demo", type="primary"):
-            with st.spinner("Running carbon-aware neural architecture search..."):
+            with st.spinner(
+                "Running carbon-aware neural architecture search..."
+            ):
                 import time
 
                 time.sleep(4)
@@ -465,7 +482,9 @@ def show_sustainability_dashboard():
                 """
                 )
 
-                st.success("✅ **Achieved 100% carbon neutrality automatically!**")
+                st.success(
+                    "✅ **Achieved 100% carbon neutrality automatically!**"
+                )
 
     with col3:
         if st.button("🌐 Run Federated Learning Demo", type="primary"):
@@ -577,10 +596,16 @@ def show_sustainability_dashboard():
         annotation_text="Low Carbon (Optimal)",
     )
     fig.add_hline(
-        y=400, line_dash="dash", line_color="orange", annotation_text="Medium Carbon"
+        y=400,
+        line_dash="dash",
+        line_color="orange",
+        annotation_text="Medium Carbon",
     )
     fig.add_hline(
-        y=600, line_dash="dash", line_color="red", annotation_text="High Carbon (Avoid)"
+        y=600,
+        line_dash="dash",
+        line_color="red",
+        annotation_text="High Carbon (Avoid)",
     )
 
     fig.update_layout(
@@ -602,7 +627,9 @@ def show_sustainability_dashboard():
         )
     else:
         acceptable_hours = [
-            h for h, intensity in zip(hours, forecast_intensity) if intensity < 400
+            h
+            for h, intensity in zip(hours, forecast_intensity)
+            if intensity < 400
         ]
         if acceptable_hours:
             st.warning(

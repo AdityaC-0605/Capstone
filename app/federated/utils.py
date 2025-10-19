@@ -38,7 +38,10 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from core.logging import get_logger
-    from federated.communication import FederatedCommunicationManager, MessageType
+    from federated.communication import (
+        FederatedCommunicationManager,
+        MessageType,
+    )
     from federated.federated_server import (
         AggregationMethod,
         ClientInfo,
@@ -75,7 +78,10 @@ class FederatedClientSimulator:
     """Simulates federated clients for testing and development."""
 
     def __init__(
-        self, client_id: str, data_size: int, model_config: Optional[DNNConfig] = None
+        self,
+        client_id: str,
+        data_size: int,
+        model_config: Optional[DNNConfig] = None,
     ):
         self.client_id = client_id
         self.data_size = data_size
@@ -86,10 +92,14 @@ class FederatedClientSimulator:
 
         # Performance characteristics
         self.connection_quality = random.uniform(0.7, 1.0)
-        self.computational_power = random.uniform(0.5, 1.5)  # Relative to baseline
+        self.computational_power = random.uniform(
+            0.5, 1.5
+        )  # Relative to baseline
         self.privacy_budget = random.uniform(5.0, 10.0)
 
-        logger.debug(f"Created client simulator {client_id} with {data_size} samples")
+        logger.debug(
+            f"Created client simulator {client_id} with {data_size} samples"
+        )
 
     def generate_synthetic_data(
         self, input_size: int = 20, noise_level: float = 0.1
@@ -118,7 +128,8 @@ class FederatedClientSimulator:
         # Generate labels with some client-specific pattern
         weights = np.random.normal(0, 1, input_size)
         y_prob = 1 / (
-            1 + np.exp(-(X @ weights + np.random.normal(0, 0.1, self.data_size)))
+            1
+            + np.exp(-(X @ weights + np.random.normal(0, 0.1, self.data_size)))
         )
         y = (y_prob > 0.5).astype(float)
 
@@ -129,7 +140,9 @@ class FederatedClientSimulator:
         )
         return self.local_data
 
-    def initialize_local_model(self, global_weights: Dict[str, torch.Tensor]) -> bool:
+    def initialize_local_model(
+        self, global_weights: Dict[str, torch.Tensor]
+    ) -> bool:
         """
         Initialize local model with global weights.
 
@@ -150,7 +163,9 @@ class FederatedClientSimulator:
                         if name in global_weights:
                             param.copy_(global_weights[name])
 
-            logger.debug(f"Initialized local model for client {self.client_id}")
+            logger.debug(
+                f"Initialized local model for client {self.client_id}"
+            )
             return True
 
         except Exception as e:
@@ -179,7 +194,9 @@ class FederatedClientSimulator:
 
         # Setup training
         criterion = nn.BCEWithLogitsLoss()
-        optimizer = torch.optim.SGD(self.local_model.parameters(), lr=learning_rate)
+        optimizer = torch.optim.SGD(
+            self.local_model.parameters(), lr=learning_rate
+        )
 
         X_train, y_train = self.local_data
 
@@ -305,7 +322,10 @@ class FederatedLearningSimulator:
         self.simulation_results: List[Dict[str, Any]] = []
 
     def add_client(
-        self, client_id: str, data_size: int, model_config: Optional[DNNConfig] = None
+        self,
+        client_id: str,
+        data_size: int,
+        model_config: Optional[DNNConfig] = None,
     ) -> bool:
         """
         Add a simulated client to the federation.
@@ -320,7 +340,9 @@ class FederatedLearningSimulator:
         """
         try:
             # Create client simulator
-            client_sim = FederatedClientSimulator(client_id, data_size, model_config)
+            client_sim = FederatedClientSimulator(
+                client_id, data_size, model_config
+            )
             self.clients[client_id] = client_sim
 
             # Register with server
@@ -354,7 +376,9 @@ class FederatedLearningSimulator:
         """
         try:
             # Create simple global model for testing
-            global_model = SimpleTestModel(input_size=input_size, hidden_size=64)
+            global_model = SimpleTestModel(
+                input_size=input_size, hidden_size=64
+            )
 
             # Set global model in server
             success = self.server.set_global_model(global_model)
@@ -391,7 +415,9 @@ class FederatedLearningSimulator:
                 global_weights = self.server.get_global_model_weights()
                 client_sim.initialize_local_model(global_weights)
 
-            logger.info(f"Generated synthetic data for {len(self.clients)} clients")
+            logger.info(
+                f"Generated synthetic data for {len(self.clients)} clients"
+            )
             return True
 
         except Exception as e:
@@ -484,7 +510,9 @@ class FederatedLearningSimulator:
 
                 return completed_round
             else:
-                logger.error(f"Failed to complete federated round {round_number}")
+                logger.error(
+                    f"Failed to complete federated round {round_number}"
+                )
                 return None
 
         except Exception as e:
@@ -510,7 +538,9 @@ class FederatedLearningSimulator:
         Returns:
             Simulation results dictionary
         """
-        logger.info(f"Starting federated learning simulation with {num_rounds} rounds")
+        logger.info(
+            f"Starting federated learning simulation with {num_rounds} rounds"
+        )
 
         start_time = datetime.now()
         successful_rounds = 0
@@ -548,10 +578,16 @@ class FederatedLearningSimulator:
             "performance_metrics": {
                 "total_simulation_time": total_time,
                 "average_round_time": (
-                    total_time / successful_rounds if successful_rounds > 0 else 0
+                    total_time / successful_rounds
+                    if successful_rounds > 0
+                    else 0
                 ),
-                "convergence_achieved": self.server.metrics["convergence_achieved"],
-                "total_energy_consumed": self.server.metrics["total_energy_consumed"],
+                "convergence_achieved": self.server.metrics[
+                    "convergence_achieved"
+                ],
+                "total_energy_consumed": self.server.metrics[
+                    "total_energy_consumed"
+                ],
             },
             "round_results": self.simulation_results,
             "server_status": self.server.get_server_status(),
@@ -579,20 +615,26 @@ class FederatedLearningSimulator:
             # Extract data for plotting
             rounds = [r["round_number"] for r in self.simulation_results]
             losses = [r["average_loss"] for r in self.simulation_results]
-            energy = [r["total_energy_consumed"] for r in self.simulation_results]
+            energy = [
+                r["total_energy_consumed"] for r in self.simulation_results
+            ]
 
             # Create subplots
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
 
             # Plot loss convergence
-            ax1.plot(rounds, losses, "b-", marker="o", linewidth=2, markersize=6)
+            ax1.plot(
+                rounds, losses, "b-", marker="o", linewidth=2, markersize=6
+            )
             ax1.set_xlabel("Federated Round")
             ax1.set_ylabel("Average Training Loss")
             ax1.set_title("Federated Learning Convergence")
             ax1.grid(True, alpha=0.3)
 
             # Plot energy consumption
-            ax2.plot(rounds, energy, "g-", marker="s", linewidth=2, markersize=6)
+            ax2.plot(
+                rounds, energy, "g-", marker="s", linewidth=2, markersize=6
+            )
             ax2.set_xlabel("Federated Round")
             ax2.set_ylabel("Energy Consumed (kWh)")
             ax2.set_title("Energy Consumption per Round")
@@ -607,7 +649,9 @@ class FederatedLearningSimulator:
             plt.show()
 
         except ImportError:
-            logger.warning("Matplotlib not available, skipping plot generation")
+            logger.warning(
+                "Matplotlib not available, skipping plot generation"
+            )
         except Exception as e:
             logger.error(f"Error plotting simulation results: {e}")
 

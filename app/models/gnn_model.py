@@ -164,8 +164,12 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.reduction = reduction
 
-    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        ce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+    def forward(
+        self, inputs: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
+        ce_loss = F.binary_cross_entropy_with_logits(
+            inputs, targets, reduction="none"
+        )
         pt = torch.exp(-ce_loss)
         focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
 
@@ -183,7 +187,9 @@ class AttentionPooling(nn.Module):
     def __init__(self, input_dim: int, attention_dim: int):
         super(AttentionPooling, self).__init__()
         self.attention = nn.Sequential(
-            nn.Linear(input_dim, attention_dim), nn.Tanh(), nn.Linear(attention_dim, 1)
+            nn.Linear(input_dim, attention_dim),
+            nn.Tanh(),
+            nn.Linear(attention_dim, 1),
         )
 
     def forward(self, x: torch.Tensor, batch: torch.Tensor) -> torch.Tensor:
@@ -197,7 +203,9 @@ class AttentionPooling(nn.Module):
         """
         # Calculate attention scores
         attention_scores = self.attention(x)  # (num_nodes, 1)
-        attention_weights = torch.softmax(attention_scores, dim=0)  # (num_nodes, 1)
+        attention_weights = torch.softmax(
+            attention_scores, dim=0
+        )  # (num_nodes, 1)
 
         # Apply attention weights and pool
         weighted_features = x * attention_weights  # (num_nodes, input_dim)
@@ -213,12 +221,16 @@ class AttentionPooling(nn.Module):
 class GraphConstructor:
     """Constructs graphs from tabular data using various methods."""
 
-    def __init__(self, method: str = "knn", k: int = 5, threshold: float = 0.7):
+    def __init__(
+        self, method: str = "knn", k: int = 5, threshold: float = 0.7
+    ):
         self.method = method
         self.k = k
         self.threshold = threshold
 
-    def construct_graph(self, X: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:
+    def construct_graph(
+        self, X: np.ndarray
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Construct graph from feature matrix.
 
@@ -236,9 +248,13 @@ class GraphConstructor:
         elif self.method == "correlation":
             return self._construct_correlation_graph(X)
         else:
-            raise ValueError(f"Unknown graph construction method: {self.method}")
+            raise ValueError(
+                f"Unknown graph construction method: {self.method}"
+            )
 
-    def _construct_knn_graph(self, X: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _construct_knn_graph(
+        self, X: np.ndarray
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Construct k-nearest neighbors graph."""
         # Build k-NN graph
         knn_graph = kneighbors_graph(
@@ -360,7 +376,10 @@ class GNNModel(BaseModel):
         if self.config.device == "auto":
             if torch.cuda.is_available():
                 return torch.device("cuda")
-            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            elif (
+                hasattr(torch.backends, "mps")
+                and torch.backends.mps.is_available()
+            ):
                 return torch.device("mps")
             else:
                 return torch.device("cpu")
@@ -386,14 +405,18 @@ class GNNModel(BaseModel):
             elif self.config.conv_type == "graph_conv":
                 conv = GraphConv(input_dim, hidden_dim)
             else:
-                raise ValueError(f"Unknown convolution type: {self.config.conv_type}")
+                raise ValueError(
+                    f"Unknown convolution type: {self.config.conv_type}"
+                )
 
             self.conv_layers.append(conv)
             input_dim = hidden_dim
 
         # Graph pooling
         if self.config.pooling_method == "attention":
-            self.pooling = AttentionPooling(input_dim, self.config.attention_dim)
+            self.pooling = AttentionPooling(
+                input_dim, self.config.attention_dim
+            )
         else:
             self.pooling = None
 
@@ -459,7 +482,9 @@ class GNNModel(BaseModel):
                 x = conv(x, edge_index, edge_attr)
 
             x = F.relu(x)
-            x = F.dropout(x, p=self.config.dropout_rate, training=self.training)
+            x = F.dropout(
+                x, p=self.config.dropout_rate, training=self.training
+            )
 
         # Graph pooling
         if self.config.pooling_method == "attention":
@@ -490,7 +515,9 @@ class GNNModel(BaseModel):
             neg_probs = 1 - probabilities
             return torch.stack([neg_probs, probabilities], dim=1)
 
-    def predict(self, data_list: List[Data], threshold: float = 0.5) -> torch.Tensor:
+    def predict(
+        self, data_list: List[Data], threshold: float = 0.5
+    ) -> torch.Tensor:
         """Make binary predictions."""
         probs = self.predict_proba(data_list)
         return (probs[:, 1] > threshold).long()
@@ -505,7 +532,10 @@ class GNNModel(BaseModel):
 
             # Create dummy graph data
             dummy_x = torch.randn(
-                10, self.config.input_dim, requires_grad=True, device=self.device
+                10,
+                self.config.input_dim,
+                requires_grad=True,
+                device=self.device,
             )
             dummy_edge_index = torch.tensor(
                 [[0, 1, 2, 3, 4], [1, 2, 3, 4, 0]], device=self.device
@@ -523,22 +553,28 @@ class GNNModel(BaseModel):
             output = self.forward(dummy_data)
 
             # Compute gradients
-            gradients = torch.autograd.grad(output.sum(), dummy_x, create_graph=False)[
-                0
-            ]
+            gradients = torch.autograd.grad(
+                output.sum(), dummy_x, create_graph=False
+            )[0]
             importance_scores = torch.abs(gradients).mean(dim=0).cpu().numpy()
 
             # Create feature importance dictionary
             feature_importance = {}
             for i, score in enumerate(importance_scores):
                 feature_name = (
-                    self.feature_names[i] if self.feature_names else f"feature_{i}"
+                    self.feature_names[i]
+                    if self.feature_names
+                    else f"feature_{i}"
                 )
                 feature_importance[feature_name] = float(score)
 
             # Sort by importance
             feature_importance = dict(
-                sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
+                sorted(
+                    feature_importance.items(),
+                    key=lambda x: x[1],
+                    reverse=True,
+                )
             )
 
             return feature_importance
@@ -548,7 +584,8 @@ class GNNModel(BaseModel):
             # Fallback: uniform importance
             if self.feature_names:
                 return {
-                    name: 1.0 / len(self.feature_names) for name in self.feature_names
+                    name: 1.0 / len(self.feature_names)
+                    for name in self.feature_names
                 }
             else:
                 return {
@@ -688,7 +725,11 @@ class GNNTrainer:
             )
 
             X_train, X_val, y_train, y_val = train_test_split(
-                X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+                X_train,
+                y_train,
+                test_size=0.2,
+                random_state=42,
+                stratify=y_train,
             )
 
             logger.info(
@@ -706,8 +747,12 @@ class GNNTrainer:
             train_graphs, train_targets = self._create_graph_data(
                 model, X_train, y_train
             )
-            val_graphs, val_targets = self._create_graph_data(model, X_val, y_val)
-            test_graphs, test_targets = self._create_graph_data(model, X_test, y_test)
+            val_graphs, val_targets = self._create_graph_data(
+                model, X_val, y_val
+            )
+            test_graphs, test_targets = self._create_graph_data(
+                model, X_test, y_test
+            )
 
             # Calculate graph statistics
             graph_stats = self._calculate_graph_statistics(train_graphs)
@@ -755,12 +800,16 @@ class GNNTrainer:
                     "training_time_seconds": training_time,
                     "test_auc": test_metrics.get("roc_auc", 0.0),
                     "best_epoch": best_epoch,
-                    "num_parameters": sum(p.numel() for p in model.parameters()),
+                    "num_parameters": sum(
+                        p.numel() for p in model.parameters()
+                    ),
                     "graph_statistics": graph_stats,
                 },
             )
 
-            logger.info(f"GNN training completed in {training_time:.2f} seconds")
+            logger.info(
+                f"GNN training completed in {training_time:.2f} seconds"
+            )
 
             return GNNResult(
                 success=True,
@@ -809,7 +858,9 @@ class GNNTrainer:
         )
 
         # Construct graph
-        edge_index, edge_attr = model.graph_constructor.construct_graph(X_scaled)
+        edge_index, edge_attr = model.graph_constructor.construct_graph(
+            X_scaled
+        )
 
         # Create node features (each sample becomes a node)
         node_features = torch.FloatTensor(X_scaled)
@@ -849,7 +900,9 @@ class GNNTrainer:
                     edge_index[1, edge_idx].item(),
                 )
                 if src in node_mapping and dst in node_mapping:
-                    sub_edge_index.append([node_mapping[src], node_mapping[dst]])
+                    sub_edge_index.append(
+                        [node_mapping[src], node_mapping[dst]]
+                    )
                     sub_edge_attr.append(edge_attr[edge_idx].item())
 
             if not sub_edge_index:
@@ -862,7 +915,9 @@ class GNNTrainer:
             sub_edge_index = (
                 torch.tensor(sub_edge_index, dtype=torch.long).t().contiguous()
             )
-            sub_edge_attr = torch.tensor(sub_edge_attr, dtype=torch.float).unsqueeze(1)
+            sub_edge_attr = torch.tensor(
+                sub_edge_attr, dtype=torch.float
+            ).unsqueeze(1)
 
             graph_data = Data(
                 x=sub_x,
@@ -875,7 +930,9 @@ class GNNTrainer:
 
         return graphs, targets
 
-    def _calculate_graph_statistics(self, graphs: List[Data]) -> Dict[str, Any]:
+    def _calculate_graph_statistics(
+        self, graphs: List[Data]
+    ) -> Dict[str, Any]:
         """Calculate statistics about the constructed graphs."""
         num_nodes = [graph.x.shape[0] for graph in graphs]
         num_edges = [graph.edge_index.shape[1] for graph in graphs]
@@ -1005,11 +1062,15 @@ class GNNTrainer:
 
                         # Add L1/L2 regularization
                         if self.config.l1_lambda > 0:
-                            l1_reg = sum(p.abs().sum() for p in model.parameters())
+                            l1_reg = sum(
+                                p.abs().sum() for p in model.parameters()
+                            )
                             loss += self.config.l1_lambda * l1_reg
 
                         if self.config.l2_lambda > 0:
-                            l2_reg = sum(p.pow(2).sum() for p in model.parameters())
+                            l2_reg = sum(
+                                p.pow(2).sum() for p in model.parameters()
+                            )
                             loss += self.config.l2_lambda * l2_reg
 
                     scaler.scale(loss).backward()
@@ -1033,7 +1094,9 @@ class GNNTrainer:
                         loss += self.config.l1_lambda * l1_reg
 
                     if self.config.l2_lambda > 0:
-                        l2_reg = sum(p.pow(2).sum() for p in model.parameters())
+                        l2_reg = sum(
+                            p.pow(2).sum() for p in model.parameters()
+                        )
                         loss += self.config.l2_lambda * l2_reg
 
                     loss.backward()
@@ -1075,12 +1138,20 @@ class GNNTrainer:
             val_pred_binary = (val_predictions > 0.5).astype(int)
 
             val_auc = roc_auc_score(val_targets_array, val_predictions)
-            val_f1 = f1_score(val_targets_array, val_pred_binary, average="weighted")
+            val_f1 = f1_score(
+                val_targets_array, val_pred_binary, average="weighted"
+            )
             val_precision = precision_score(
-                val_targets_array, val_pred_binary, average="weighted", zero_division=0
+                val_targets_array,
+                val_pred_binary,
+                average="weighted",
+                zero_division=0,
             )
             val_recall = recall_score(
-                val_targets_array, val_pred_binary, average="weighted", zero_division=0
+                val_targets_array,
+                val_pred_binary,
+                average="weighted",
+                zero_division=0,
             )
 
             # Create training metrics
@@ -1160,13 +1231,22 @@ class GNNTrainer:
             metrics = {
                 "accuracy": accuracy_score(targets_np, predictions_np),
                 "precision": precision_score(
-                    targets_np, predictions_np, average="weighted", zero_division=0
+                    targets_np,
+                    predictions_np,
+                    average="weighted",
+                    zero_division=0,
                 ),
                 "recall": recall_score(
-                    targets_np, predictions_np, average="weighted", zero_division=0
+                    targets_np,
+                    predictions_np,
+                    average="weighted",
+                    zero_division=0,
                 ),
                 "f1_score": f1_score(
-                    targets_np, predictions_np, average="weighted", zero_division=0
+                    targets_np,
+                    predictions_np,
+                    average="weighted",
+                    zero_division=0,
                 ),
                 "roc_auc": roc_auc_score(targets_np, probs_np[:, 1]),
             }

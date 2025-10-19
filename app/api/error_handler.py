@@ -163,7 +163,9 @@ class InputSanitizer:
             self.sanitization_rules[rule.field_name] = []
         self.sanitization_rules[rule.field_name].append(rule)
 
-    def sanitize_input(self, data: Dict[str, Any]) -> Tuple[Dict[str, Any], List[str]]:
+    def sanitize_input(
+        self, data: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], List[str]]:
         """Sanitize input data and return cleaned data with warnings."""
         sanitized_data = data.copy()
         warnings = []
@@ -172,22 +174,26 @@ class InputSanitizer:
             if field_name in self.sanitization_rules:
                 for rule in self.sanitization_rules[field_name]:
                     try:
-                        sanitized_value, warning = self._apply_sanitization_rule(
-                            value, rule
+                        sanitized_value, warning = (
+                            self._apply_sanitization_rule(value, rule)
                         )
                         sanitized_data[field_name] = sanitized_value
                         if warning:
                             warnings.append(f"{field_name}: {warning}")
                     except Exception as e:
-                        warnings.append(f"{field_name}: Sanitization failed - {str(e)}")
+                        warnings.append(
+                            f"{field_name}: Sanitization failed - {str(e)}"
+                        )
 
             # Apply general sanitization
             if isinstance(value, str):
-                sanitized_value, general_warnings = self._general_string_sanitization(
-                    value
+                sanitized_value, general_warnings = (
+                    self._general_string_sanitization(value)
                 )
                 sanitized_data[field_name] = sanitized_value
-                warnings.extend([f"{field_name}: {w}" for w in general_warnings])
+                warnings.extend(
+                    [f"{field_name}: {w}" for w in general_warnings]
+                )
 
         return sanitized_data, warnings
 
@@ -208,7 +214,9 @@ class InputSanitizer:
                     .replace('"', "&quot;")
                     .replace("'", "&#x27;")
                 )
-                return escaped, "HTML characters escaped" if escaped != value else None
+                return escaped, (
+                    "HTML characters escaped" if escaped != value else None
+                )
 
         elif rule.sanitizer_type == "normalize":
             if isinstance(value, str):
@@ -222,7 +230,9 @@ class InputSanitizer:
                 pattern = rule.parameters.get("pattern", "")
                 replacement = rule.parameters.get("replacement", "")
                 filtered = re.sub(pattern, replacement, value)
-                return filtered, "Content filtered" if filtered != value else None
+                return filtered, (
+                    "Content filtered" if filtered != value else None
+                )
 
         elif rule.sanitizer_type == "custom":
             custom_func = rule.parameters.get("function")
@@ -231,7 +241,9 @@ class InputSanitizer:
 
         return value, None
 
-    def _general_string_sanitization(self, value: str) -> Tuple[str, List[str]]:
+    def _general_string_sanitization(
+        self, value: str
+    ) -> Tuple[str, List[str]]:
         """Apply general string sanitization."""
         warnings = []
         sanitized = value
@@ -286,7 +298,9 @@ class InputSanitizer:
     def _check_injection_patterns(self, value: str) -> bool:
         """Check for injection attack patterns."""
         patterns = self.sql_injection_patterns + self.xss_patterns
-        return any(re.search(pattern, value, re.IGNORECASE) for pattern in patterns)
+        return any(
+            re.search(pattern, value, re.IGNORECASE) for pattern in patterns
+        )
 
     def _check_encoding_attacks(self, value: str) -> bool:
         """Check for encoding-based attacks."""
@@ -358,7 +372,9 @@ class InputValidator:
 
         return len(errors) == 0, errors
 
-    def _validate_schema(self, data: Dict[str, Any], schema_name: str) -> List[str]:
+    def _validate_schema(
+        self, data: Dict[str, Any], schema_name: str
+    ) -> List[str]:
         """Validate against Pydantic schema."""
         errors = []
 
@@ -386,15 +402,21 @@ class InputValidator:
                     max_val = rule.parameters.get("max")
 
                     if min_val is not None and value < min_val:
-                        errors.append(f"{rule.field_name}: {rule.error_message}")
+                        errors.append(
+                            f"{rule.field_name}: {rule.error_message}"
+                        )
                     elif max_val is not None and value > max_val:
-                        errors.append(f"{rule.field_name}: {rule.error_message}")
+                        errors.append(
+                            f"{rule.field_name}: {rule.error_message}"
+                        )
 
             elif rule.rule_type == "pattern":
                 if isinstance(value, str):
                     pattern = rule.parameters.get("pattern", "")
                     if not re.match(pattern, value):
-                        errors.append(f"{rule.field_name}: {rule.error_message}")
+                        errors.append(
+                            f"{rule.field_name}: {rule.error_message}"
+                        )
 
             elif rule.rule_type == "length":
                 if hasattr(value, "__len__"):
@@ -402,7 +424,9 @@ class InputValidator:
                     max_len = rule.parameters.get("max", float("inf"))
 
                     if len(value) < min_len or len(value) > max_len:
-                        errors.append(f"{rule.field_name}: {rule.error_message}")
+                        errors.append(
+                            f"{rule.field_name}: {rule.error_message}"
+                        )
 
             elif rule.rule_type == "type":
                 expected_type = rule.parameters.get("type")
@@ -413,7 +437,9 @@ class InputValidator:
                 validator_func = rule.parameters.get("function")
                 if validator_func and callable(validator_func):
                     if not validator_func(value):
-                        errors.append(f"{rule.field_name}: {rule.error_message}")
+                        errors.append(
+                            f"{rule.field_name}: {rule.error_message}"
+                        )
 
         except Exception as e:
             errors.append(f"{rule.field_name}: Validation error - {str(e)}")
@@ -434,7 +460,9 @@ class AnomalyDetector:
         self.feature_stats: Dict[str, Dict[str, float]] = {}
         self.client_patterns: Dict[str, Dict[str, Any]] = defaultdict(dict)
 
-    def add_request(self, request_data: Dict[str, Any], client_id: str = "unknown"):
+    def add_request(
+        self, request_data: Dict[str, Any], client_id: str = "unknown"
+    ):
         """Add request to history for pattern analysis."""
         request_info = {
             "data": request_data,
@@ -458,7 +486,9 @@ class AnomalyDetector:
         anomalies.extend(stat_anomalies)
 
         # Pattern anomaly detection
-        pattern_anomalies = self._detect_pattern_anomalies(request_data, client_id)
+        pattern_anomalies = self._detect_pattern_anomalies(
+            request_data, client_id
+        )
         anomalies.extend(pattern_anomalies)
 
         # Frequency anomaly detection
@@ -496,10 +526,14 @@ class AnomalyDetector:
                         stats["std"] = np.std(values)
                     else:
                         mean = stats["mean"]
-                        variance = sum((x - mean) ** 2 for x in values) / len(values)
+                        variance = sum((x - mean) ** 2 for x in values) / len(
+                            values
+                        )
                         stats["std"] = variance**0.5
 
-    def _update_client_patterns(self, client_id: str, request_info: Dict[str, Any]):
+    def _update_client_patterns(
+        self, client_id: str, request_info: Dict[str, Any]
+    ):
         """Update client behavior patterns."""
         if client_id not in self.client_patterns:
             self.client_patterns[client_id] = {
@@ -528,7 +562,10 @@ class AnomalyDetector:
         anomalies = []
 
         for field_name, value in request_data.items():
-            if isinstance(value, (int, float)) and field_name in self.feature_stats:
+            if (
+                isinstance(value, (int, float))
+                and field_name in self.feature_stats
+            ):
                 stats = self.feature_stats[field_name]
 
                 if stats["std"] > 0:
@@ -665,7 +702,9 @@ class DeadLetterQueue:
 
         # Remove oldest messages if queue is full
         if len(self.queue) >= self.max_size:
-            oldest_id = min(self.queue.keys(), key=lambda k: self.queue[k].timestamp)
+            oldest_id = min(
+                self.queue.keys(), key=lambda k: self.queue[k].timestamp
+            )
             del self.queue[oldest_id]
 
         self.queue[message_id] = message
@@ -696,7 +735,9 @@ class DeadLetterQueue:
 
             if success:
                 del self.queue[message_id]
-                logger.info(f"Dead letter message {message_id} successfully processed")
+                logger.info(
+                    f"Dead letter message {message_id} successfully processed"
+                )
             else:
                 message.retry_count += 1
 
@@ -744,8 +785,8 @@ class ErrorLogger:
         self.max_history = max_history
         self.error_history: deque = deque(maxlen=max_history)
         self.error_counts: Dict[ErrorType, int] = defaultdict(int)
-        self.client_error_counts: Dict[str, Dict[ErrorType, int]] = defaultdict(
-            lambda: defaultdict(int)
+        self.client_error_counts: Dict[str, Dict[ErrorType, int]] = (
+            defaultdict(lambda: defaultdict(int))
         )
 
     def log_error(
@@ -760,9 +801,7 @@ class ErrorLogger:
     ) -> str:
         """Log an error event."""
 
-        error_id = (
-            f"err_{int(time.time())}_{hashlib.md5(message.encode()).hexdigest()[:8]}"
-        )
+        error_id = f"err_{int(time.time())}_{hashlib.md5(message.encode()).hexdigest()[:8]}"
 
         error_event = ErrorEvent(
             id=error_id,
@@ -815,11 +854,15 @@ class ErrorLogger:
 
         return error_id
 
-    def get_error_statistics(self, time_window_hours: int = 24) -> Dict[str, Any]:
+    def get_error_statistics(
+        self, time_window_hours: int = 24
+    ) -> Dict[str, Any]:
         """Get error statistics for the specified time window."""
         cutoff_time = datetime.now() - timedelta(hours=time_window_hours)
 
-        recent_errors = [e for e in self.error_history if e.timestamp >= cutoff_time]
+        recent_errors = [
+            e for e in self.error_history if e.timestamp >= cutoff_time
+        ]
 
         error_type_counts = defaultdict(int)
         severity_counts = defaultdict(int)
@@ -856,7 +899,9 @@ class ErrorLogger:
             if error.client_id:
                 client_counts[error.client_id] += 1
 
-        sorted_clients = sorted(client_counts.items(), key=lambda x: x[1], reverse=True)
+        sorted_clients = sorted(
+            client_counts.items(), key=lambda x: x[1], reverse=True
+        )
 
         return [
             {"client_id": client_id, "error_count": count}
@@ -942,8 +987,8 @@ class ErrorHandler:
 
         try:
             # 1. Input sanitization
-            sanitized_data, sanitization_warnings = self.sanitizer.sanitize_input(
-                request_data
+            sanitized_data, sanitization_warnings = (
+                self.sanitizer.sanitize_input(request_data)
             )
             warnings.extend(sanitization_warnings)
 
@@ -955,7 +1000,10 @@ class ErrorHandler:
                 error_id = self.error_logger.log_error(
                     ErrorType.ADVERSARIAL_INPUT,
                     f"Adversarial input detected: {'; '.join(adversarial_threats)}",
-                    {"threats": adversarial_threats, "original_data": request_data},
+                    {
+                        "threats": adversarial_threats,
+                        "original_data": request_data,
+                    },
                     client_id,
                     endpoint,
                     request_id,
@@ -977,7 +1025,9 @@ class ErrorHandler:
                 )
 
             # 3. Input validation
-            is_valid, validation_errors = self.validator.validate_input(sanitized_data)
+            is_valid, validation_errors = self.validator.validate_input(
+                sanitized_data
+            )
             if not is_valid:
                 error_id = self.error_logger.log_error(
                     ErrorType.VALIDATION_ERROR,
@@ -1021,7 +1071,11 @@ class ErrorHandler:
                         f"High-risk anomalies detected: {'; '.join(anomaly_descriptions)}",
                         {
                             "anomalies": [
-                                {"type": a[0].value, "description": a[1], "score": a[2]}
+                                {
+                                    "type": a[0].value,
+                                    "description": a[1],
+                                    "score": a[2],
+                                }
                                 for a in anomalies
                             ]
                         },
@@ -1034,7 +1088,9 @@ class ErrorHandler:
                     return (
                         False,
                         {},
-                        [f"Request blocked due to anomalies (Error ID: {error_id})"],
+                        [
+                            f"Request blocked due to anomalies (Error ID: {error_id})"
+                        ],
                     )
 
                 # Log low-risk anomalies as warnings
@@ -1074,7 +1130,9 @@ class ErrorHandler:
             "dead_letter_queue": self.dead_letter_queue.get_queue_stats(),
             "validation_rules": len(self.validator.validation_rules),
             "sanitization_rules": len(self.sanitizer.sanitization_rules),
-            "anomaly_detector_history": len(self.anomaly_detector.request_history),
+            "anomaly_detector_history": len(
+                self.anomaly_detector.request_history
+            ),
         }
 
     async def process_dead_letter_retries(self):
@@ -1127,7 +1185,9 @@ if __name__ == "__main__":
         success, data, warnings = await handler.process_request(
             normal_request, "test_client", "/predict"
         )
-        print(f"Normal request - Success: {success}, Warnings: {len(warnings)}")
+        print(
+            f"Normal request - Success: {success}, Warnings: {len(warnings)}"
+        )
 
         # Test malicious request
         malicious_request = {
@@ -1141,7 +1201,9 @@ if __name__ == "__main__":
         success, data, warnings = await handler.process_request(
             malicious_request, "malicious_client", "/predict"
         )
-        print(f"Malicious request - Success: {success}, Errors: {len(warnings)}")
+        print(
+            f"Malicious request - Success: {success}, Errors: {len(warnings)}"
+        )
 
         # Get system status
         status = handler.get_system_status()

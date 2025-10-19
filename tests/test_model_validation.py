@@ -3,7 +3,6 @@
 import os
 import sys
 
-import numpy as np
 import pytest
 
 # Add src to path for imports
@@ -18,6 +17,7 @@ class TestModelValidation:
         # Mock accuracy test
         mock_accuracy = 0.944
         assert mock_accuracy > 0.9
+        pytest.skip("Model validation test placeholder")
 
     def test_model_inference_speed(self):
         """Test model inference speed."""

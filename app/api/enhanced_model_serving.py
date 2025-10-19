@@ -50,7 +50,9 @@ except ImportError:
             self.config = config
             self.models = {}
 
-        async def predict(self, input_data, model_id=None, version=None, user_id=None):
+        async def predict(
+            self, input_data, model_id=None, version=None, user_id=None
+        ):
             return {
                 "prediction": 0.5,
                 "confidence": 0.8,
@@ -161,7 +163,10 @@ class EnhancedModelServingManager:
         self.deployment_configs: Dict[str, ModelDeploymentConfig] = {}
 
         # Health monitoring
-        self.health_status = {"status": "healthy", "last_check": datetime.now()}
+        self.health_status = {
+            "status": "healthy",
+            "last_check": datetime.now(),
+        }
         self.readiness_status = {"ready": True, "last_check": datetime.now()}
 
         # Update management
@@ -356,7 +361,9 @@ class EnhancedModelServingManager:
             models = self.base_manager.model_loader.list_models()
 
             for model_metadata in models:
-                model_key = f"{model_metadata.model_id}:{model_metadata.version}"
+                model_key = (
+                    f"{model_metadata.model_id}:{model_metadata.version}"
+                )
 
                 if model_key not in self.performance_metrics:
                     self.performance_metrics[model_key] = {
@@ -381,7 +388,9 @@ class EnhancedModelServingManager:
         except Exception as e:
             logger.error(f"Performance metrics update error: {e}")
 
-    async def _check_auto_promotion(self, model_key: str, metrics: Dict[str, Any]):
+    async def _check_auto_promotion(
+        self, model_key: str, metrics: Dict[str, Any]
+    ):
         """Check if model should be auto-promoted or demoted."""
         if model_key not in self.deployment_configs:
             return
@@ -397,7 +406,9 @@ class EnhancedModelServingManager:
                 error_rate = metrics["error_rate"]
 
                 if error_rate <= config.max_error_rate:
-                    logger.info(f"Auto-promoting challenger {model_key} to champion")
+                    logger.info(
+                        f"Auto-promoting challenger {model_key} to champion"
+                    )
                     await self._promote_challenger_to_champion(model_key)
                 elif error_rate > config.max_error_rate * 2:
                     logger.warning(
@@ -426,7 +437,9 @@ class EnhancedModelServingManager:
             except Exception as e:
                 logger.error(f"Update processing error for {update_id}: {e}")
 
-    async def _process_single_update(self, update_id: str, update_info: Dict[str, Any]):
+    async def _process_single_update(
+        self, update_id: str, update_info: Dict[str, Any]
+    ):
         """Process a single model update."""
         stage = update_info.get("stage", "unknown")
 
@@ -437,7 +450,9 @@ class EnhancedModelServingManager:
         elif stage == "complete":
             await self._complete_update(update_id, update_info)
 
-    async def _process_canary_stage(self, update_id: str, update_info: Dict[str, Any]):
+    async def _process_canary_stage(
+        self, update_id: str, update_info: Dict[str, Any]
+    ):
         """Process canary deployment stage."""
         start_time = update_info.get("canary_start_time")
         if not start_time:
@@ -464,7 +479,9 @@ class EnhancedModelServingManager:
                 )
                 await self._rollback_update(update_id, update_info)
 
-    async def _process_rollout_stage(self, update_id: str, update_info: Dict[str, Any]):
+    async def _process_rollout_stage(
+        self, update_id: str, update_info: Dict[str, Any]
+    ):
         """Process full rollout stage."""
         # Gradually increase traffic to new model
         model_key = update_info["model_key"]
@@ -477,17 +494,23 @@ class EnhancedModelServingManager:
             # Update model weights
             await self._update_model_traffic(model_key, new_percentage)
 
-            logger.info(f"Updated traffic for {model_key} to {new_percentage}%")
+            logger.info(
+                f"Updated traffic for {model_key} to {new_percentage}%"
+            )
 
             if new_percentage >= 100.0:
                 update_info["stage"] = "complete"
 
-    async def _complete_update(self, update_id: str, update_info: Dict[str, Any]):
+    async def _complete_update(
+        self, update_id: str, update_info: Dict[str, Any]
+    ):
         """Complete model update."""
         logger.info(f"Model update {update_id} completed successfully")
         del self.active_updates[update_id]
 
-    async def _rollback_update(self, update_id: str, update_info: Dict[str, Any]):
+    async def _rollback_update(
+        self, update_id: str, update_info: Dict[str, Any]
+    ):
         """Rollback failed update."""
         model_key = update_info["model_key"]
 
@@ -585,7 +608,9 @@ class EnhancedModelServingManager:
 
         try:
             # Store current state
-            current_weights = self.base_manager.model_router.model_weights.copy()
+            current_weights = (
+                self.base_manager.model_router.model_weights.copy()
+            )
 
             # Load new model
             success = self.base_manager.model_loader.load_model(
@@ -688,7 +713,9 @@ class EnhancedModelServingManager:
         user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Make prediction through enhanced serving infrastructure."""
-        return await self.base_manager.predict(input_data, model_id, version, user_id)
+        return await self.base_manager.predict(
+            input_data, model_id, version, user_id
+        )
 
 
 # Utility functions for integration

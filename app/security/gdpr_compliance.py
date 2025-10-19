@@ -190,13 +190,18 @@ class ConsentManager:
             },
         )
 
-        logger.info(f"Consent recorded: {consent_id} for subject {data_subject_id}")
+        logger.info(
+            f"Consent recorded: {consent_id} for subject {data_subject_id}"
+        )
         return consent_id
 
     def withdraw_consent(self, consent_id: str, data_subject_id: str) -> bool:
         """Withdraw consent."""
         consent_record = self.consent_records.get(consent_id)
-        if not consent_record or consent_record.data_subject_id != data_subject_id:
+        if (
+            not consent_record
+            or consent_record.data_subject_id != data_subject_id
+        ):
             return False
 
         consent_record.status = ConsentStatus.WITHDRAWN
@@ -208,7 +213,10 @@ class ConsentManager:
             event_type="consent_withdrawn",
             user_id=None,
             severity="INFO",
-            details={"consent_id": consent_id, "data_subject_id": data_subject_id},
+            details={
+                "consent_id": consent_id,
+                "data_subject_id": data_subject_id,
+            },
         )
 
         logger.info(f"Consent withdrawn: {consent_id}")
@@ -238,7 +246,9 @@ class ConsentManager:
 
         return False
 
-    def get_subject_consents(self, data_subject_id: str) -> List[ConsentRecord]:
+    def get_subject_consents(
+        self, data_subject_id: str
+    ) -> List[ConsentRecord]:
         """Get all consent records for a data subject."""
         return [
             record
@@ -300,14 +310,17 @@ class ConsentManager:
                         purpose=ProcessingPurpose(record_data["purpose"]),
                         legal_basis=LegalBasis(record_data["legal_basis"]),
                         data_categories={
-                            DataCategory(cat) for cat in record_data["data_categories"]
+                            DataCategory(cat)
+                            for cat in record_data["data_categories"]
                         },
                         version=record_data.get("version", "1.0"),
                         metadata=record_data.get("metadata", {}),
                     )
                     self.consent_records[consent_id] = consent_record
 
-                logger.info(f"Loaded {len(self.consent_records)} consent records")
+                logger.info(
+                    f"Loaded {len(self.consent_records)} consent records"
+                )
             except Exception as e:
                 logger.error(f"Failed to load consent records: {e}")
 
@@ -324,16 +337,24 @@ class ConsentManager:
                 "data_subject_id": record.data_subject_id,
                 "consent_type": record.consent_type.value,
                 "status": record.status.value,
-                "given_at": record.given_at.isoformat() if record.given_at else None,
+                "given_at": (
+                    record.given_at.isoformat() if record.given_at else None
+                ),
                 "withdrawn_at": (
-                    record.withdrawn_at.isoformat() if record.withdrawn_at else None
+                    record.withdrawn_at.isoformat()
+                    if record.withdrawn_at
+                    else None
                 ),
                 "expires_at": (
-                    record.expires_at.isoformat() if record.expires_at else None
+                    record.expires_at.isoformat()
+                    if record.expires_at
+                    else None
                 ),
                 "purpose": record.purpose.value,
                 "legal_basis": record.legal_basis.value,
-                "data_categories": [cat.value for cat in record.data_categories],
+                "data_categories": [
+                    cat.value for cat in record.data_categories
+                ],
                 "version": record.version,
                 "metadata": record.metadata,
             }
@@ -410,7 +431,10 @@ class DataRetentionManager:
     ) -> Optional[DataRetentionPolicy]:
         """Get applicable retention policy."""
         for policy in self.retention_policies.values():
-            if policy.data_category == data_category and policy.purpose == purpose:
+            if (
+                policy.data_category == data_category
+                and policy.purpose == purpose
+            ):
                 return policy
         return None
 
@@ -460,9 +484,13 @@ class DataRetentionManager:
                         policy = DataRetentionPolicy(
                             policy_id=policy_data["policy_id"],
                             name=policy_data["name"],
-                            data_category=DataCategory(policy_data["data_category"]),
+                            data_category=DataCategory(
+                                policy_data["data_category"]
+                            ),
                             purpose=ProcessingPurpose(policy_data["purpose"]),
-                            retention_period_days=policy_data["retention_period_days"],
+                            retention_period_days=policy_data[
+                                "retention_period_days"
+                            ],
                             legal_basis=LegalBasis(policy_data["legal_basis"]),
                             auto_delete=policy_data["auto_delete"],
                             review_required=policy_data["review_required"],
@@ -470,7 +498,9 @@ class DataRetentionManager:
                         )
                         self.retention_policies[policy_id] = policy
 
-                logger.info(f"Loaded {len(self.retention_policies)} retention policies")
+                logger.info(
+                    f"Loaded {len(self.retention_policies)} retention policies"
+                )
             except Exception as e:
                 logger.error(f"Failed to load retention policies: {e}")
 
@@ -553,7 +583,9 @@ class DataLineageTracker:
 
         return record_id
 
-    def get_subject_lineage(self, data_subject_id: str) -> List[DataLineageRecord]:
+    def get_subject_lineage(
+        self, data_subject_id: str
+    ) -> List[DataLineageRecord]:
         """Get complete data lineage for a subject."""
         return [
             record
@@ -609,7 +641,9 @@ class DataLineageTracker:
                     "purpose": record.processing_purpose.value,
                     "transformation": record.transformation_applied,
                 }
-                for record in sorted(subject_records, key=lambda x: x.timestamp)
+                for record in sorted(
+                    subject_records, key=lambda x: x.timestamp
+                )
             ],
         }
 
@@ -629,12 +663,15 @@ class DataLineageTracker:
                         source_system=record_data["source_system"],
                         destination_system=record_data["destination_system"],
                         data_categories={
-                            DataCategory(cat) for cat in record_data["data_categories"]
+                            DataCategory(cat)
+                            for cat in record_data["data_categories"]
                         },
                         processing_purpose=ProcessingPurpose(
                             record_data["processing_purpose"]
                         ),
-                        timestamp=datetime.fromisoformat(record_data["timestamp"]),
+                        timestamp=datetime.fromisoformat(
+                            record_data["timestamp"]
+                        ),
                         transformation_applied=record_data.get(
                             "transformation_applied"
                         ),
@@ -643,7 +680,9 @@ class DataLineageTracker:
                     )
                     self.lineage_records.append(lineage_record)
 
-                logger.info(f"Loaded {len(self.lineage_records)} lineage records")
+                logger.info(
+                    f"Loaded {len(self.lineage_records)} lineage records"
+                )
             except Exception as e:
                 logger.error(f"Failed to load lineage records: {e}")
 
@@ -661,7 +700,9 @@ class DataLineageTracker:
                     "data_subject_id": record.data_subject_id,
                     "source_system": record.source_system,
                     "destination_system": record.destination_system,
-                    "data_categories": [cat.value for cat in record.data_categories],
+                    "data_categories": [
+                        cat.value for cat in record.data_categories
+                    ],
                     "processing_purpose": record.processing_purpose.value,
                     "timestamp": record.timestamp.isoformat(),
                     "transformation_applied": record.transformation_applied,
@@ -684,7 +725,9 @@ class RightToBeForgottenManager:
         self._load_deletion_requests()
 
     def submit_deletion_request(
-        self, data_subject_id: str, verification_data: Optional[Dict[str, Any]] = None
+        self,
+        data_subject_id: str,
+        verification_data: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Submit a right to be forgotten request."""
         request_id = hashlib.sha256(
@@ -692,7 +735,9 @@ class RightToBeForgottenManager:
         ).hexdigest()[:16]
 
         # Get all systems that have processed this subject's data
-        lineage_records = self.lineage_tracker.get_subject_lineage(data_subject_id)
+        lineage_records = self.lineage_tracker.get_subject_lineage(
+            data_subject_id
+        )
         affected_systems = set()
         for record in lineage_records:
             affected_systems.add(record.source_system)
@@ -781,7 +826,9 @@ class RightToBeForgottenManager:
         self._save_deletion_requests()
         return True
 
-    def _execute_deletion(self, deletion_request: DeletionRequest) -> Dict[str, bool]:
+    def _execute_deletion(
+        self, deletion_request: DeletionRequest
+    ) -> Dict[str, bool]:
         """Execute deletion across all affected systems."""
         deletion_results = {}
 
@@ -815,7 +862,9 @@ class RightToBeForgottenManager:
         # For now, return True to simulate successful deletion
         return True
 
-    def get_deletion_status(self, request_id: str) -> Optional[DeletionRequest]:
+    def get_deletion_status(
+        self, request_id: str
+    ) -> Optional[DeletionRequest]:
         """Get the status of a deletion request."""
         return self.deletion_requests.get(request_id)
 
@@ -836,19 +885,27 @@ class RightToBeForgottenManager:
                             request_data["requested_at"]
                         ),
                         processed_at=(
-                            datetime.fromisoformat(request_data["processed_at"])
+                            datetime.fromisoformat(
+                                request_data["processed_at"]
+                            )
                             if request_data.get("processed_at")
                             else None
                         ),
                         status=request_data["status"],
                         reason=request_data.get("reason"),
                         affected_systems=request_data["affected_systems"],
-                        verification_required=request_data["verification_required"],
-                        legal_review_required=request_data["legal_review_required"],
+                        verification_required=request_data[
+                            "verification_required"
+                        ],
+                        legal_review_required=request_data[
+                            "legal_review_required"
+                        ],
                     )
                     self.deletion_requests[request_id] = deletion_request
 
-                logger.info(f"Loaded {len(self.deletion_requests)} deletion requests")
+                logger.info(
+                    f"Loaded {len(self.deletion_requests)} deletion requests"
+                )
             except Exception as e:
                 logger.error(f"Failed to load deletion requests: {e}")
 
@@ -865,7 +922,9 @@ class RightToBeForgottenManager:
                 "data_subject_id": request.data_subject_id,
                 "requested_at": request.requested_at.isoformat(),
                 "processed_at": (
-                    request.processed_at.isoformat() if request.processed_at else None
+                    request.processed_at.isoformat()
+                    if request.processed_at
+                    else None
                 ),
                 "status": request.status,
                 "reason": request.reason,
@@ -896,7 +955,9 @@ class GDPRComplianceManager:
         elif request_type == "portability":
             return self._handle_portability_request(data_subject_id)
         elif request_type == "rectification":
-            return self._handle_rectification_request(data_subject_id, **kwargs)
+            return self._handle_rectification_request(
+                data_subject_id, **kwargs
+            )
         elif request_type == "deletion":
             return self._handle_deletion_request(data_subject_id, **kwargs)
         else:
@@ -911,13 +972,17 @@ class GDPRComplianceManager:
             "request_type": "access",
             "data_subject_id": data_subject_id,
             "consents": [asdict(consent) for consent in consents],
-            "data_processing_activities": [asdict(record) for record in lineage],
+            "data_processing_activities": [
+                asdict(record) for record in lineage
+            ],
             "lineage_report": self.lineage_tracker.generate_lineage_report(
                 data_subject_id
             ),
         }
 
-    def _handle_portability_request(self, data_subject_id: str) -> Dict[str, Any]:
+    def _handle_portability_request(
+        self, data_subject_id: str
+    ) -> Dict[str, Any]:
         """Handle data portability request (Article 20)."""
         # This would extract and format data for portability
         return {
@@ -943,7 +1008,9 @@ class GDPRComplianceManager:
         self, data_subject_id: str, **kwargs
     ) -> Dict[str, Any]:
         """Handle right to be forgotten request (Article 17)."""
-        request_id = self.deletion_manager.submit_deletion_request(data_subject_id)
+        request_id = self.deletion_manager.submit_deletion_request(
+            data_subject_id
+        )
 
         return {
             "request_type": "deletion",
@@ -998,5 +1065,7 @@ class GDPRComplianceManager:
                     )
                 ),
             },
-            "retention_policies": len(self.retention_manager.retention_policies),
+            "retention_policies": len(
+                self.retention_manager.retention_policies
+            ),
         }

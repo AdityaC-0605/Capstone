@@ -39,7 +39,9 @@ class CarbonAwareLightGBM:
     ACTUALLY reduce carbon emissions through intelligent optimization.
     """
 
-    def __init__(self, carbon_config: Optional[CarbonAwareConfig] = None, **lgb_params):
+    def __init__(
+        self, carbon_config: Optional[CarbonAwareConfig] = None, **lgb_params
+    ):
         """
         Initialize carbon-aware LightGBM model.
 
@@ -100,12 +102,16 @@ class CarbonAwareLightGBM:
             )
 
             # Adjust parameters based on carbon intensity
-            optimized_params = self._optimize_params_for_carbon(current_intensity)
+            optimized_params = self._optimize_params_for_carbon(
+                current_intensity
+            )
         else:
             optimized_params = self.lgb_params.copy()
             current_intensity = 400.0  # Default assumption
 
-        print(f"🌍 Training with carbon intensity: {current_intensity:.0f} gCO2/kWh")
+        print(
+            f"🌍 Training with carbon intensity: {current_intensity:.0f} gCO2/kWh"
+        )
         print(f"🎯 Optimized parameters: {optimized_params}")
 
         # Create datasets
@@ -134,7 +140,9 @@ class CarbonAwareLightGBM:
 
         return model
 
-    def _optimize_params_for_carbon(self, carbon_intensity: float) -> Dict[str, Any]:
+    def _optimize_params_for_carbon(
+        self, carbon_intensity: float
+    ) -> Dict[str, Any]:
         """
         Optimize LightGBM parameters based on current carbon intensity.
 
@@ -177,7 +185,9 @@ class CarbonAwareLightGBM:
                     "max_depth": 6,  # Limit tree depth
                 }
             )
-            print("🔴 High carbon intensity: Using efficiency-optimized parameters")
+            print(
+                "🔴 High carbon intensity: Using efficiency-optimized parameters"
+            )
 
         return params
 
@@ -266,9 +276,7 @@ class CarbonAwareLightGBM:
 
             # Track energy for comparison
             energy_tracker = EnergyTracker()
-            experiment_id = (
-                f"lightgbm_traditional_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            )
+            experiment_id = f"lightgbm_traditional_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
             energy_tracker.start_tracking(experiment_id)
             self.model = self._carbon_aware_lgb_training(
@@ -289,7 +297,9 @@ class CarbonAwareLightGBM:
             }
 
             print(f"\n📊 TRADITIONAL TRAINING COMPLETED")
-            print(f"⚡ Energy Consumed: {energy_report.total_energy_kwh:.6f} kWh")
+            print(
+                f"⚡ Energy Consumed: {energy_report.total_energy_kwh:.6f} kWh"
+            )
             print(
                 f"🌍 Carbon Emissions: {carbon_footprint.total_emissions_kg:.6f} kg CO2e"
             )
@@ -343,7 +353,9 @@ class CarbonAwareLightGBM:
             "optimization_strategies": self.training_report.get(
                 "strategies_applied", []
             ),
-            "carbon_savings_kg": self.training_report.get("carbon_savings_kg", 0),
+            "carbon_savings_kg": self.training_report.get(
+                "carbon_savings_kg", 0
+            ),
             "environmental_equivalents": {},
         }
 
@@ -377,7 +389,9 @@ def demonstrate_carbon_reduction():
     n_samples, n_features = 1000, 20
 
     X = np.random.randn(n_samples, n_features)
-    y = (X[:, 0] + X[:, 1] * 0.5 + np.random.randn(n_samples) * 0.1 > 0).astype(int)
+    y = (
+        X[:, 0] + X[:, 1] * 0.5 + np.random.randn(n_samples) * 0.1 > 0
+    ).astype(int)
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
@@ -421,7 +435,9 @@ def demonstrate_carbon_reduction():
     trad_carbon = traditional_report.get("carbon_footprint_kg", 0)
     carbon_carbon = carbon_report.get("carbon_footprint_kg", 0)
     carbon_reduction = (
-        ((trad_carbon - carbon_carbon) / trad_carbon * 100) if trad_carbon > 0 else 0
+        ((trad_carbon - carbon_carbon) / trad_carbon * 100)
+        if trad_carbon > 0
+        else 0
     )
 
     print(f"Traditional Carbon: {trad_carbon:.6f} kg CO2e")
@@ -429,11 +445,18 @@ def demonstrate_carbon_reduction():
     print(f"Carbon Reduction: {carbon_reduction:.1f}%")
 
     if carbon_reduction > 0:
-        print(f"\n🎉 SUCCESS: Achieved {carbon_reduction:.1f}% carbon reduction!")
-        print("✅ Maintained model performance while reducing environmental impact")
+        print(
+            f"\n🎉 SUCCESS: Achieved {carbon_reduction:.1f}% carbon reduction!"
+        )
+        print(
+            "✅ Maintained model performance while reducing environmental impact"
+        )
 
     return {
-        "traditional": {"metrics": traditional_metrics, "carbon": traditional_report},
+        "traditional": {
+            "metrics": traditional_metrics,
+            "carbon": traditional_report,
+        },
         "carbon_aware": {"metrics": carbon_metrics, "carbon": carbon_report},
         "carbon_reduction_percent": carbon_reduction,
     }

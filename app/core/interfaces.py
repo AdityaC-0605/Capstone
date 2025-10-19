@@ -122,7 +122,9 @@ class FederatedLearningNode(ABC):
         pass
 
     @abstractmethod
-    def update_global_model(self, global_weights: Dict[str, torch.Tensor]) -> None:
+    def update_global_model(
+        self, global_weights: Dict[str, torch.Tensor]
+    ) -> None:
         """Update local model with global weights."""
         pass
 

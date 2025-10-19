@@ -16,6 +16,7 @@ class TestFairnessValidation:
         """Test fairness constraints are met."""
         # Mock fairness constraints test
         assert True
+        pytest.skip("Fairness test placeholder")
 
     def test_group_fairness(self):
         """Test group fairness metrics."""

@@ -268,7 +268,9 @@ class LoggingManager:
 
         # Error file handler
         error_handler = logging.handlers.RotatingFileHandler(
-            logs_path / "error.log", maxBytes=10 * 1024 * 1024, backupCount=10  # 10MB
+            logs_path / "error.log",
+            maxBytes=10 * 1024 * 1024,
+            backupCount=10,  # 10MB
         )
         error_handler.setLevel(logging.ERROR)
         error_handler.setFormatter(JSONFormatter())

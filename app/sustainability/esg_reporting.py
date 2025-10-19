@@ -65,7 +65,10 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from core.logging import get_audit_logger, get_logger
-    from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from sustainability.carbon_calculator import (
+        CarbonCalculator,
+        CarbonFootprint,
+    )
     from sustainability.esg_metrics import (
         ESGCategory,
         ESGMetric,
@@ -138,7 +141,9 @@ class CarbonOffset:
     offset_amount_kg: float
     offset_cost_usd: float
     offset_provider: str
-    offset_type: str  # "forestry", "renewable_energy", "direct_air_capture", etc.
+    offset_type: (
+        str  # "forestry", "renewable_energy", "direct_air_capture", etc.
+    )
     verification_standard: str  # "VCS", "Gold Standard", "CDM", etc.
     project_details: Dict[str, Any] = field(default_factory=dict)
 
@@ -196,13 +201,17 @@ class ESGReportingConfig:
     sasb_compliance: bool = True
 
     # Stakeholder settings
-    stakeholder_emails: Dict[StakeholderType, List[str]] = field(default_factory=dict)
+    stakeholder_emails: Dict[StakeholderType, List[str]] = field(
+        default_factory=dict
+    )
 
 
 class CarbonAwareScheduler:
     """Carbon-aware training scheduler for low-carbon grid times."""
 
-    def __init__(self, config: ESGReportingConfig, carbon_calculator: CarbonCalculator):
+    def __init__(
+        self, config: ESGReportingConfig, carbon_calculator: CarbonCalculator
+    ):
         self.config = config
         self.carbon_calculator = carbon_calculator
         self.scheduled_tasks = []
@@ -224,8 +233,8 @@ class CarbonAwareScheduler:
         """
 
         # Get current carbon intensity
-        current_intensity = self.carbon_calculator.energy_mix_db.get_carbon_intensity(
-            region
+        current_intensity = (
+            self.carbon_calculator.energy_mix_db.get_carbon_intensity(region)
         )
 
         # Simple heuristic: prefer configured low-carbon hours
@@ -263,7 +272,9 @@ class CarbonAwareScheduler:
 
         return best_time, best_intensity
 
-    def _estimate_carbon_intensity(self, target_time: datetime, region: str) -> float:
+    def _estimate_carbon_intensity(
+        self, target_time: datetime, region: str
+    ) -> float:
         """
         Estimate carbon intensity at target time.
 
@@ -271,8 +282,8 @@ class CarbonAwareScheduler:
         For now, we use simple heuristics based on time of day.
         """
 
-        base_intensity = self.carbon_calculator.energy_mix_db.get_carbon_intensity(
-            region
+        base_intensity = (
+            self.carbon_calculator.energy_mix_db.get_carbon_intensity(region)
         )
         hour = target_time.hour
 
@@ -288,7 +299,9 @@ class CarbonAwareScheduler:
         else:  # Night
             return base_intensity * 0.85  # 15% lower
 
-    def should_start_training_now(self, region: str = "US") -> Tuple[bool, str]:
+    def should_start_training_now(
+        self, region: str = "US"
+    ) -> Tuple[bool, str]:
         """
         Check if current time is optimal for training.
 
@@ -299,10 +312,15 @@ class CarbonAwareScheduler:
         if not self.config.enable_carbon_aware_scheduling:
             return True, "Carbon-aware scheduling disabled"
 
-        current_intensity = self._estimate_carbon_intensity(datetime.now(), region)
+        current_intensity = self._estimate_carbon_intensity(
+            datetime.now(), region
+        )
 
         if current_intensity <= self.config.carbon_intensity_threshold:
-            return True, f"Low carbon intensity: {current_intensity:.1f} gCO2/kWh"
+            return (
+                True,
+                f"Low carbon intensity: {current_intensity:.1f} gCO2/kWh",
+            )
         else:
             optimal_time, optimal_intensity = self.get_optimal_training_time(
                 region=region
@@ -320,7 +338,9 @@ class CarbonAwareScheduler:
 
         # In a real implementation, this would integrate with a job scheduler
         # For now, we just log the recommendation
-        logger.info(f"Training scheduled for optimal carbon time: {optimal_time}")
+        logger.info(
+            f"Training scheduled for optimal carbon time: {optimal_time}"
+        )
 
         return optimal_time
 
@@ -386,11 +406,15 @@ class CarbonOffsetTracker:
 
         cutoff_date = datetime.now() - timedelta(days=period_days)
         period_offsets = [
-            offset for offset in self.offsets if offset.timestamp >= cutoff_date
+            offset
+            for offset in self.offsets
+            if offset.timestamp >= cutoff_date
         ]
 
         total_emissions = sum(offset.emissions_kg for offset in period_offsets)
-        total_offsets = sum(offset.offset_amount_kg for offset in period_offsets)
+        total_offsets = sum(
+            offset.offset_amount_kg for offset in period_offsets
+        )
         total_cost = sum(offset.offset_cost_usd for offset in period_offsets)
 
         return {
@@ -446,7 +470,12 @@ class ESGReportGenerator:
             name="Executive ESG Summary",
             stakeholder_type=StakeholderType.EXECUTIVE,
             format=ReportFormat.HTML,
-            sections=["executive_summary", "key_metrics", "trends", "recommendations"],
+            sections=[
+                "executive_summary",
+                "key_metrics",
+                "trends",
+                "recommendations",
+            ],
             metrics_included=[
                 "overall_esg_score",
                 "carbon_emissions",
@@ -467,7 +496,11 @@ class ESGReportGenerator:
                 "audit_trail",
                 "certifications",
             ],
-            metrics_included=["all_metrics", "compliance_scores", "audit_logs"],
+            metrics_included=[
+                "all_metrics",
+                "compliance_scores",
+                "audit_logs",
+            ],
             visualization_types=["compliance_tables", "audit_charts"],
         )
 
@@ -483,7 +516,11 @@ class ESGReportGenerator:
                 "risk_analysis",
                 "future_outlook",
             ],
-            metrics_included=["esg_scores", "carbon_metrics", "financial_impact"],
+            metrics_included=[
+                "esg_scores",
+                "carbon_metrics",
+                "financial_impact",
+            ],
             visualization_types=["performance_charts", "risk_matrices"],
         )
 
@@ -493,7 +530,12 @@ class ESGReportGenerator:
             name="TCFD Climate Disclosure",
             stakeholder_type=StakeholderType.REGULATORY,
             format=ReportFormat.TCFD,
-            sections=["governance", "strategy", "risk_management", "metrics_targets"],
+            sections=[
+                "governance",
+                "strategy",
+                "risk_management",
+                "metrics_targets",
+            ],
             metrics_included=[
                 "climate_metrics",
                 "carbon_emissions",
@@ -508,7 +550,11 @@ class ESGReportGenerator:
             name="SASB Sustainability Report",
             stakeholder_type=StakeholderType.REGULATORY,
             format=ReportFormat.SASB,
-            sections=["material_topics", "performance_metrics", "management_approach"],
+            sections=[
+                "material_topics",
+                "performance_metrics",
+                "management_approach",
+            ],
             metrics_included=["sasb_metrics", "industry_specific"],
             visualization_types=["sasb_tables", "materiality_matrix"],
         )
@@ -585,9 +631,9 @@ class ESGReportGenerator:
             )
 
         # Get carbon footprint data
-        carbon_footprints = self.esg_collector.carbon_calculator.carbon_history[
-            -50:
-        ]  # Last 50
+        carbon_footprints = (
+            self.esg_collector.carbon_calculator.carbon_history[-50:]
+        )  # Last 50
 
         # Get offset data
         offset_summary = self.offset_tracker.get_total_offsets(period_days)
@@ -595,7 +641,9 @@ class ESGReportGenerator:
         # Get sustainability monitor data if available
         sustainability_data = {}
         if self.sustainability_monitor:
-            sustainability_data = self.sustainability_monitor.get_current_status()
+            sustainability_data = (
+                self.sustainability_monitor.get_current_status()
+            )
 
         # Compile report data
         report_data = {
@@ -612,7 +660,9 @@ class ESGReportGenerator:
             "carbon_footprints": [fp.to_dict() for fp in carbon_footprints],
             "carbon_offsets": offset_summary,
             "sustainability_status": sustainability_data,
-            "recommendations": self.esg_collector.generate_recommendations(esg_metrics),
+            "recommendations": self.esg_collector.generate_recommendations(
+                esg_metrics
+            ),
             "alerts": self.esg_collector.generate_alerts(esg_metrics),
         }
 
@@ -672,10 +722,12 @@ class ESGReportGenerator:
                 "climate_metrics": {
                     "scope1_emissions_kg": 0,  # No direct emissions for AI system
                     "scope2_emissions_kg": sum(
-                        fp["total_emissions_kg"] for fp in data["carbon_footprints"]
+                        fp["total_emissions_kg"]
+                        for fp in data["carbon_footprints"]
                     ),
                     "scope3_emissions_kg": sum(
-                        fp["embodied_emissions_kg"] for fp in data["carbon_footprints"]
+                        fp["embodied_emissions_kg"]
+                        for fp in data["carbon_footprints"]
                     ),
                     "energy_consumption_kwh": sum(
                         fp["energy_kwh"] for fp in data["carbon_footprints"]
@@ -734,9 +786,9 @@ class ESGReportGenerator:
             "data_privacy_security": {
                 "topic_code": "TC-SI-220a.1",
                 "metrics": {
-                    "data_privacy_score": data["esg_score"]["social_metrics"].get(
-                        "data_privacy_score", 0
-                    )
+                    "data_privacy_score": data["esg_score"][
+                        "social_metrics"
+                    ].get("data_privacy_score", 0)
                     * 100,
                     "privacy_incidents": 0,
                     "users_affected": 0,
@@ -761,7 +813,11 @@ class ESGReportGenerator:
                     )
                     * 100,
                     "bias_testing_frequency": "continuous",
-                    "protected_attributes_monitored": ["race", "gender", "age"],
+                    "protected_attributes_monitored": [
+                        "race",
+                        "gender",
+                        "age",
+                    ],
                     "bias_mitigation_techniques": [
                         "reweighting",
                         "adversarial_debiasing",
@@ -809,7 +865,9 @@ class ESGReportGenerator:
             },
             "executive_summary": {
                 "overall_esg_score": data["esg_score"]["overall_score"],
-                "environmental_score": data["esg_score"]["environmental_score"],
+                "environmental_score": data["esg_score"][
+                    "environmental_score"
+                ],
                 "social_score": data["esg_score"]["social_score"],
                 "governance_score": data["esg_score"]["governance_score"],
                 "key_achievements": [
@@ -824,30 +882,32 @@ class ESGReportGenerator:
             "environmental_performance": {
                 "carbon_emissions": {
                     "total_kg": sum(
-                        fp["total_emissions_kg"] for fp in data["carbon_footprints"]
+                        fp["total_emissions_kg"]
+                        for fp in data["carbon_footprints"]
                     ),
                     "operational_kg": sum(
                         fp["operational_emissions_kg"]
                         for fp in data["carbon_footprints"]
                     ),
                     "embodied_kg": sum(
-                        fp["embodied_emissions_kg"] for fp in data["carbon_footprints"]
+                        fp["embodied_emissions_kg"]
+                        for fp in data["carbon_footprints"]
                     ),
                 },
                 "energy_consumption": {
                     "total_kwh": sum(
                         fp["energy_kwh"] for fp in data["carbon_footprints"]
                     ),
-                    "efficiency_score": data["esg_score"]["environmental_metrics"].get(
-                        "energy_efficiency", 0
-                    ),
+                    "efficiency_score": data["esg_score"][
+                        "environmental_metrics"
+                    ].get("energy_efficiency", 0),
                 },
                 "carbon_offsets": data["carbon_offsets"],
             },
             "social_performance": {
-                "algorithmic_fairness": data["esg_score"]["social_metrics"].get(
-                    "algorithmic_fairness", 0
-                ),
+                "algorithmic_fairness": data["esg_score"][
+                    "social_metrics"
+                ].get("algorithmic_fairness", 0),
                 "data_privacy": data["esg_score"]["social_metrics"].get(
                     "data_privacy_score", 0
                 ),
@@ -859,9 +919,9 @@ class ESGReportGenerator:
                 ),
             },
             "governance_performance": {
-                "model_governance": data["esg_score"]["governance_metrics"].get(
-                    "model_governance", 0
-                ),
+                "model_governance": data["esg_score"][
+                    "governance_metrics"
+                ].get("model_governance", 0),
                 "data_governance": data["esg_score"]["governance_metrics"].get(
                     "data_governance", 0
                 ),
@@ -883,7 +943,9 @@ class ESGReportGenerator:
 
         return report
 
-    def _save_report(self, report: Dict[str, Any], template: ReportTemplate) -> str:
+    def _save_report(
+        self, report: Dict[str, Any], template: ReportTemplate
+    ) -> str:
         """Save report to file."""
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1017,7 +1079,8 @@ class ESGReportGenerator:
         else:
             # Simple string replacement fallback
             html = html_template.replace(
-                "{{ report.report_type }}", str(report.get("report_type", "ESG Report"))
+                "{{ report.report_type }}",
+                str(report.get("report_type", "ESG Report")),
             )
             html = html.replace(
                 "{{ report.generated_at }}",
@@ -1032,7 +1095,9 @@ class ESGReportGenerator:
 
         # Add metadata
         metadata = ET.SubElement(root, "Metadata")
-        ET.SubElement(metadata, "ReportType").text = str(report.get("report_type", ""))
+        ET.SubElement(metadata, "ReportType").text = str(
+            report.get("report_type", "")
+        )
         ET.SubElement(metadata, "GeneratedAt").text = str(
             report.get("generated_at", "")
         )
@@ -1047,7 +1112,9 @@ class ESGReportGenerator:
             ET.SubElement(scores, "Environmental").text = str(
                 summary.get("environmental_score", 0)
             )
-            ET.SubElement(scores, "Social").text = str(summary.get("social_score", 0))
+            ET.SubElement(scores, "Social").text = str(
+                summary.get("social_score", 0)
+            )
             ET.SubElement(scores, "Governance").text = str(
                 summary.get("governance_score", 0)
             )
@@ -1120,7 +1187,9 @@ class ESGReportGenerator:
 
         try:
             # Determine period based on frequency
-            period_days = {"daily": 1, "weekly": 7, "monthly": 30}.get(frequency, 7)
+            period_days = {"daily": 1, "weekly": 7, "monthly": 30}.get(
+                frequency, 7
+            )
 
             # Generate report
             report = self.generate_report(template_id, period_days)
@@ -1129,7 +1198,9 @@ class ESGReportGenerator:
             if self.config.enable_email_distribution:
                 self._send_report_email(report, template_id)
 
-            logger.info(f"Scheduled {frequency} report generated: {template_id}")
+            logger.info(
+                f"Scheduled {frequency} report generated: {template_id}"
+            )
 
         except Exception as e:
             logger.error(f"Error generating scheduled report: {e}")
@@ -1187,13 +1258,17 @@ class ESGReportGenerator:
             msg.attach(MIMEText(body, "plain"))
 
             # Send email
-            server = smtplib.SMTP(self.config.smtp_server, self.config.smtp_port)
+            server = smtplib.SMTP(
+                self.config.smtp_server, self.config.smtp_port
+            )
             server.starttls()
             server.login(self.config.smtp_username, self.config.smtp_password)
             server.send_message(msg)
             server.quit()
 
-            logger.info(f"Report emailed to {len(stakeholder_emails)} stakeholders")
+            logger.info(
+                f"Report emailed to {len(stakeholder_emails)} stakeholders"
+            )
 
         except Exception as e:
             logger.error(f"Error sending report email: {e}")

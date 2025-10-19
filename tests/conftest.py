@@ -2,12 +2,10 @@
 Pytest configuration and shared fixtures for end-to-end testing.
 """
 
-import os
 import shutil
 import sys
 import tempfile
 import warnings
-from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -41,9 +39,12 @@ def sample_banking_data():
         "credit_score": np.random.randint(300, 850, n_samples),
         "debt_to_income_ratio": np.random.uniform(0.1, 0.8, n_samples),
         "employment_length": np.random.randint(0, 30, n_samples),
-        "home_ownership": np.random.choice(["RENT", "OWN", "MORTGAGE"], n_samples),
+        "home_ownership": np.random.choice(
+            ["RENT", "OWN", "MORTGAGE"], n_samples
+        ),
         "loan_purpose": np.random.choice(
-            ["debt_consolidation", "home_improvement", "major_purchase"], n_samples
+            ["debt_consolidation", "home_improvement", "major_purchase"],
+            n_samples,
         ),
         "default": np.random.choice([0, 1], n_samples, p=[0.8, 0.2]),
     }

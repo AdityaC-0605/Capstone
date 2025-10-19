@@ -227,7 +227,9 @@ class EnvironmentTracker:
         """Get dependency information."""
         try:
             # Get installed packages
-            result = subprocess.run(["pip", "freeze"], capture_output=True, text=True)
+            result = subprocess.run(
+                ["pip", "freeze"], capture_output=True, text=True
+            )
             if result.returncode == 0:
                 packages = {}
                 for line in result.stdout.strip().split("\n"):
@@ -274,10 +276,14 @@ class EnvironmentTracker:
 
             # Check for uncommitted changes
             result = subprocess.run(
-                ["git", "status", "--porcelain"], capture_output=True, text=True
+                ["git", "status", "--porcelain"],
+                capture_output=True,
+                text=True,
             )
             if result.returncode == 0:
-                git_info["has_uncommitted_changes"] = bool(result.stdout.strip())
+                git_info["has_uncommitted_changes"] = bool(
+                    result.stdout.strip()
+                )
 
             return {"git": git_info}
 
@@ -309,7 +315,9 @@ class MLflowTracker:
 
             # Create or get experiment
             try:
-                experiment = mlflow.get_experiment_by_name(self.config.experiment_name)
+                experiment = mlflow.get_experiment_by_name(
+                    self.config.experiment_name
+                )
                 if experiment is None:
                     self.experiment_id = mlflow.create_experiment(
                         self.config.experiment_name,
@@ -331,7 +339,9 @@ class MLflowTracker:
             self.client = None
 
     def start_run(
-        self, run_name: Optional[str] = None, tags: Optional[Dict[str, str]] = None
+        self,
+        run_name: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
     ) -> str:
         """Start a new MLflow run."""
         if not MLFLOW_AVAILABLE or not self.client:
@@ -375,7 +385,9 @@ class MLflowTracker:
         except Exception as e:
             logger.warning(f"Failed to log parameters: {e}")
 
-    def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None):
+    def log_metrics(
+        self, metrics: Dict[str, float], step: Optional[int] = None
+    ):
         """Log metrics to MLflow."""
         if not MLFLOW_AVAILABLE or not self.current_run:
             return
@@ -388,7 +400,9 @@ class MLflowTracker:
         except Exception as e:
             logger.warning(f"Failed to log metrics: {e}")
 
-    def log_artifact(self, artifact_path: str, artifact_name: Optional[str] = None):
+    def log_artifact(
+        self, artifact_path: str, artifact_name: Optional[str] = None
+    ):
         """Log artifact to MLflow."""
         if not MLFLOW_AVAILABLE or not self.current_run:
             return
@@ -416,7 +430,9 @@ class MLflowTracker:
                 # Generic model - save as pickle
                 import tempfile
 
-                with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as f:
+                with tempfile.NamedTemporaryFile(
+                    suffix=".pkl", delete=False
+                ) as f:
                     pickle.dump(model, f)
                     temp_path = f.name
 
@@ -471,7 +487,9 @@ class ModelRegistry:
         """Register a model in the registry."""
         try:
             # Generate model version
-            existing_versions = [m["version"] for m in self.models.get(model_name, [])]
+            existing_versions = [
+                m["version"] for m in self.models.get(model_name, [])
+            ]
 
             if existing_versions:
                 latest_version = max(int(v) for v in existing_versions)
@@ -529,16 +547,21 @@ class ModelRegistry:
 
             # Filter by stage if specified
             if stage:
-                model_versions = [m for m in model_versions if m["stage"] == stage]
+                model_versions = [
+                    m for m in model_versions if m["stage"] == stage
+                ]
 
             # Get specific version or latest
             if version:
                 model_info = next(
-                    (m for m in model_versions if m["version"] == version), None
+                    (m for m in model_versions if m["version"] == version),
+                    None,
                 )
             else:
                 # Get latest version
-                model_info = max(model_versions, key=lambda x: int(x["version"]))
+                model_info = max(
+                    model_versions, key=lambda x: int(x["version"])
+                )
 
             if not model_info:
                 return None
@@ -557,7 +580,9 @@ class ModelRegistry:
         """List all registered models."""
         return self.models.copy()
 
-    def transition_model_stage(self, model_name: str, version: str, stage: str) -> bool:
+    def transition_model_stage(
+        self, model_name: str, version: str, stage: str
+    ) -> bool:
         """Transition model to different stage."""
         try:
             if model_name not in self.models:
@@ -566,10 +591,14 @@ class ModelRegistry:
             for model_info in self.models[model_name]:
                 if model_info["version"] == version:
                     model_info["stage"] = stage
-                    model_info["stage_transition_time"] = datetime.now().isoformat()
+                    model_info["stage_transition_time"] = (
+                        datetime.now().isoformat()
+                    )
                     self._save_registry()
 
-                    logger.info(f"Transitioned {model_name} v{version} to {stage}")
+                    logger.info(
+                        f"Transitioned {model_name} v{version} to {stage}"
+                    )
                     return True
 
             return False
@@ -655,7 +684,10 @@ class ExperimentTracker(DataProcessor):
                 resource="experiment_tracker",
                 action="experiment_start",
                 success=True,
-                details={"run_id": self.current_run_id, "experiment_name": run_name},
+                details={
+                    "run_id": self.current_run_id,
+                    "experiment_name": run_name,
+                },
             )
 
             return self.current_run_id
@@ -673,12 +705,16 @@ class ExperimentTracker(DataProcessor):
 
         try:
             self.mlflow_tracker.log_params(params)
-            self.experiment_metadata.setdefault("parameters", {}).update(params)
+            self.experiment_metadata.setdefault("parameters", {}).update(
+                params
+            )
 
         except Exception as e:
             logger.warning(f"Failed to log parameters: {e}")
 
-    def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None):
+    def log_metrics(
+        self, metrics: Dict[str, float], step: Optional[int] = None
+    ):
         """Log experiment metrics."""
         if not self.current_run_id:
             logger.warning("No active experiment. Start experiment first.")
@@ -714,14 +750,16 @@ class ExperimentTracker(DataProcessor):
                 )
 
                 if version:
-                    self.experiment_metadata.setdefault("registered_models", []).append(
-                        {"name": model_name, "version": version}
-                    )
+                    self.experiment_metadata.setdefault(
+                        "registered_models", []
+                    ).append({"name": model_name, "version": version})
 
         except Exception as e:
             logger.warning(f"Failed to log model: {e}")
 
-    def log_artifact(self, artifact_path: str, artifact_name: Optional[str] = None):
+    def log_artifact(
+        self, artifact_path: str, artifact_name: Optional[str] = None
+    ):
         """Log artifact."""
         if not self.current_run_id:
             logger.warning("No active experiment. Start experiment first.")
@@ -835,10 +873,14 @@ class ExperimentComparator:
                 comparison["metrics_comparison"][metric] = {
                     "values": dict(zip(run_ids, metric_values)),
                     "best_run_id": (
-                        run_ids[np.argmax(metric_values)] if metric_values else None
+                        run_ids[np.argmax(metric_values)]
+                        if metric_values
+                        else None
                     ),
                     "worst_run_id": (
-                        run_ids[np.argmin(metric_values)] if metric_values else None
+                        run_ids[np.argmin(metric_values)]
+                        if metric_values
+                        else None
                     ),
                     "mean": np.mean(metric_values) if metric_values else 0.0,
                     "std": np.std(metric_values) if metric_values else 0.0,
@@ -878,7 +920,9 @@ class ExperimentComparator:
                 comparison["best_run"] = best_run_id
 
             # Generate recommendations
-            recommendations = self._generate_comparison_recommendations(comparison)
+            recommendations = self._generate_comparison_recommendations(
+                comparison
+            )
             comparison["recommendations"] = recommendations
 
             return comparison
@@ -970,7 +1014,9 @@ class ExperimentComparator:
         # Check parameter consistency
         params_comp = comparison.get("parameters_comparison", {})
         inconsistent_params = [
-            param for param, data in params_comp.items() if data["unique_values"] > 1
+            param
+            for param, data in params_comp.items()
+            if data["unique_values"] > 1
         ]
 
         if inconsistent_params:
@@ -980,7 +1026,9 @@ class ExperimentComparator:
 
         # Best run recommendation
         if comparison.get("best_run"):
-            recommendations.append(f"Best performing run: {comparison['best_run']}")
+            recommendations.append(
+                f"Best performing run: {comparison['best_run']}"
+            )
 
         return recommendations
 
@@ -998,7 +1046,9 @@ def get_default_experiment_config() -> ExperimentConfig:
     return ExperimentConfig()
 
 
-def get_mlflow_config(tracking_uri: str, experiment_name: str) -> ExperimentConfig:
+def get_mlflow_config(
+    tracking_uri: str, experiment_name: str
+) -> ExperimentConfig:
     """Get MLflow-specific configuration."""
     return ExperimentConfig(
         tracking_uri=tracking_uri,
@@ -1010,7 +1060,9 @@ def get_mlflow_config(tracking_uri: str, experiment_name: str) -> ExperimentConf
     )
 
 
-def get_local_config(experiment_name: str = "local_experiments") -> ExperimentConfig:
+def get_local_config(
+    experiment_name: str = "local_experiments",
+) -> ExperimentConfig:
     """Get configuration for local experiment tracking."""
     return ExperimentConfig(
         tracking_uri="file:./mlruns",
@@ -1091,7 +1143,9 @@ def track_model_training(
         return ""
 
 
-def export_experiment_comparison(comparison: Dict[str, Any], file_path: str) -> bool:
+def export_experiment_comparison(
+    comparison: Dict[str, Any], file_path: str
+) -> bool:
     """Export experiment comparison to file."""
     try:
         with open(file_path, "w") as f:
@@ -1114,7 +1168,9 @@ def create_model_lineage(
 ) -> ModelLineage:
     """Create model lineage record."""
     return ModelLineage(
-        model_id=hashlib.md5(f"{model_info['name']}_{run_id}".encode()).hexdigest(),
+        model_id=hashlib.md5(
+            f"{model_info['name']}_{run_id}".encode()
+        ).hexdigest(),
         model_name=model_info["name"],
         model_version=model_info.get("version", "1"),
         parent_run_id=run_id,
@@ -1211,7 +1267,9 @@ def generate_experiment_report(
             "tags": dict(run.data.tags),
             "artifacts": [
                 artifact.path
-                for artifact in tracker.mlflow_tracker.client.list_artifacts(run_id)
+                for artifact in tracker.mlflow_tracker.client.list_artifacts(
+                    run_id
+                )
             ],
             "generated_at": datetime.now().isoformat(),
         }

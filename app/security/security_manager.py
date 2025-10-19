@@ -31,7 +31,9 @@ class SecurityManager:
             k_value=self.config.security.differential_privacy_epsilon or 5,
             epsilon=self.config.security.differential_privacy_epsilon or 1.0,
         )
-        self.anonymization_pipeline = AnonymizationPipeline(anonymization_config)
+        self.anonymization_pipeline = AnonymizationPipeline(
+            anonymization_config
+        )
 
         # Initialize authentication and authorization
         self.auth_manager = AuthenticationManager()
@@ -59,13 +61,17 @@ class SecurityManager:
         self, username: str, password: str, mfa_token: Optional[str] = None
     ):
         """Authenticate a user."""
-        return self.auth_manager.authenticate_user(username, password, mfa_token)
+        return self.auth_manager.authenticate_user(
+            username, password, mfa_token
+        )
 
     def check_user_permission(self, user, permission: Permission) -> bool:
         """Check if a user has a specific permission."""
         return self.auth_manager.check_permission(user, permission)
 
-    def process_gdpr_request(self, request_type: str, data_subject_id: str, **kwargs):
+    def process_gdpr_request(
+        self, request_type: str, data_subject_id: str, **kwargs
+    ):
         """Process GDPR data subject requests."""
         return self.gdpr_manager.process_data_subject_request(
             request_type, data_subject_id, **kwargs
@@ -73,7 +79,9 @@ class SecurityManager:
 
     def create_encrypted_backup(self, source_path: str, backup_path: str):
         """Create an encrypted backup."""
-        return self.backup_encryption.create_encrypted_backup(source_path, backup_path)
+        return self.backup_encryption.create_encrypted_backup(
+            source_path, backup_path
+        )
 
     def rotate_encryption_keys(self):
         """Rotate encryption keys as part of security maintenance."""

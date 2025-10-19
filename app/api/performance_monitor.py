@@ -160,7 +160,10 @@ class MetricsCollector:
         self.lock = threading.Lock()
 
     def record_metric(
-        self, metric_type: MetricType, value: float, metadata: Dict[str, Any] = None
+        self,
+        metric_type: MetricType,
+        value: float,
+        metadata: Dict[str, Any] = None,
     ):
         """Record a performance metric."""
         metric = PerformanceMetric(
@@ -239,7 +242,9 @@ class DriftDetector:
     """Detects model drift in input data and predictions."""
 
     def __init__(
-        self, reference_window_size: int = 1000, detection_window_size: int = 100
+        self,
+        reference_window_size: int = 1000,
+        detection_window_size: int = 100,
     ):
         self.reference_window_size = reference_window_size
         self.detection_window_size = detection_window_size
@@ -289,7 +294,9 @@ class DriftDetector:
             elif method == DriftDetectionMethod.WASSERSTEIN:
                 return self._wasserstein_drift(reference, current, threshold)
             elif method == DriftDetectionMethod.JENSEN_SHANNON:
-                return self._jensen_shannon_drift(reference, current, threshold)
+                return self._jensen_shannon_drift(
+                    reference, current, threshold
+                )
             else:
                 raise ValueError(f"Unknown drift detection method: {method}")
 
@@ -516,7 +523,9 @@ class AlertManager:
 
         with self.lock:
             return [
-                alert for alert in self.alert_history if alert.timestamp >= cutoff_time
+                alert
+                for alert in self.alert_history
+                if alert.timestamp >= cutoff_time
             ]
 
 
@@ -525,7 +534,11 @@ class RequestThrottler:
 
     def __init__(self, config: ThrottleConfig):
         self.config = config
-        self.request_counts = {"second": deque(), "minute": deque(), "hour": deque()}
+        self.request_counts = {
+            "second": deque(),
+            "minute": deque(),
+            "hour": deque(),
+        }
         self.request_queue = asyncio.Queue(maxsize=config.queue_size_limit)
         self.lock = threading.Lock()
 
@@ -546,7 +559,8 @@ class RequestThrottler:
                 >= self.config.max_requests_per_second
                 or len(self.request_counts["minute"])
                 >= self.config.max_requests_per_minute
-                or len(self.request_counts["hour"]) >= self.config.max_requests_per_hour
+                or len(self.request_counts["hour"])
+                >= self.config.max_requests_per_hour
             ):
                 return False
 
@@ -583,7 +597,9 @@ class RequestThrottler:
     async def enqueue_request(self, request_data: Any) -> bool:
         """Add request to processing queue."""
         try:
-            await asyncio.wait_for(self.request_queue.put(request_data), timeout=1.0)
+            await asyncio.wait_for(
+                self.request_queue.put(request_data), timeout=1.0
+            )
             return True
         except asyncio.TimeoutError:
             return False
@@ -662,7 +678,9 @@ class RetryManager:
                 await asyncio.sleep(delay / 1000)
 
         # All retries exhausted
-        logger.error(f"All retry attempts exhausted. Last error: {last_exception}")
+        logger.error(
+            f"All retry attempts exhausted. Last error: {last_exception}"
+        )
         raise last_exception
 
 
@@ -834,12 +852,16 @@ class PerformanceMonitor:
     def record_error(self, error_type: str = "", endpoint: str = ""):
         """Record error occurrence."""
         self.metrics_collector.record_metric(
-            MetricType.ERROR_RATE, 1.0, {"error_type": error_type, "endpoint": endpoint}
+            MetricType.ERROR_RATE,
+            1.0,
+            {"error_type": error_type, "endpoint": endpoint},
         )
 
     def record_throughput(self, requests_per_second: float):
         """Record throughput metric."""
-        self.metrics_collector.record_metric(MetricType.THROUGHPUT, requests_per_second)
+        self.metrics_collector.record_metric(
+            MetricType.THROUGHPUT, requests_per_second
+        )
 
     def add_reference_data(self, feature_name: str, value: float):
         """Add reference data for drift detection."""
@@ -873,7 +895,9 @@ class PerformanceMonitor:
 
     async def execute_with_retry(self, func: Callable, *args, **kwargs) -> Any:
         """Execute function with retry logic."""
-        return await self.retry_manager.execute_with_retry(func, *args, **kwargs)
+        return await self.retry_manager.execute_with_retry(
+            func, *args, **kwargs
+        )
 
     def get_performance_dashboard_data(self) -> Dict[str, Any]:
         """Get data for performance dashboard."""
@@ -923,7 +947,9 @@ def create_performance_monitor(
 ) -> PerformanceMonitor:
     """Create performance monitor with common configuration."""
 
-    sla_config = SLAConfig(max_latency_ms=max_latency_ms, max_error_rate=max_error_rate)
+    sla_config = SLAConfig(
+        max_latency_ms=max_latency_ms, max_error_rate=max_error_rate
+    )
 
     alert_config = AlertConfig(enabled=enable_alerts)
     throttle_config = ThrottleConfig(enabled=enable_throttling)
@@ -957,7 +983,9 @@ if __name__ == "__main__":
 
         # Get dashboard data
         dashboard = monitor.get_performance_dashboard_data()
-        print(f"Dashboard data: {json.dumps(dashboard, indent=2, default=str)}")
+        print(
+            f"Dashboard data: {json.dumps(dashboard, indent=2, default=str)}"
+        )
 
         # Wait a bit for background monitoring
         await asyncio.sleep(2)
