@@ -596,7 +596,6 @@ class ModelLoader:
                 and metadata.last_used < threshold_time
                 and not metadata.is_champion
             ):
-
                 model_id, version = full_model_id.split(":", 1)
                 if self.unload_model(model_id, version):
                     unloaded_models.append(full_model_id)
