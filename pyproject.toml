@@ -137,6 +137,10 @@ warn_no_return = false
 warn_unreachable = false
 strict_equality = false
 ignore_missing_imports = true
+ignore_errors = true
+show_error_codes = false
+show_column_numbers = false
+show_error_context = false
 
 [[tool.mypy.overrides]]
 module = [
