@@ -5,25 +5,25 @@ This module implements a REST API service for real-time credit risk prediction
 with request validation, authentication, rate limiting, and explainability.
 """
 
-import json
-import time
 import hashlib
+import json
 import secrets
-from typing import Dict, List, Optional, Any, Union
-from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from enum import Enum
+import time
 import warnings
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, List, Optional, Union
 
 # FastAPI dependencies
 try:
-    from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
-    from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+    import uvicorn
+    from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.middleware.trustedhost import TrustedHostMiddleware
     from fastapi.responses import JSONResponse
+    from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
     from pydantic import BaseModel, Field, validator
-    import uvicorn
 
     FASTAPI_AVAILABLE = True
 except ImportError:
@@ -33,8 +33,8 @@ except ImportError:
 # Rate limiting
 try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
-    from slowapi.util import get_remote_address
     from slowapi.errors import RateLimitExceeded
+    from slowapi.util import get_remote_address
 
     SLOWAPI_AVAILABLE = True
 except ImportError:
@@ -42,9 +42,9 @@ except ImportError:
     warnings.warn("SlowAPI not available. Install with: pip install slowapi")
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
-    from ..models.ensemble_model import EnsembleModel
+    from ..core.logging import get_audit_logger, get_logger
     from ..explainability.explainer_service import ExplainerService
+    from ..models.ensemble_model import EnsembleModel
     from ..sustainability.sustainability_monitor import (
         SustainabilityMonitor,
         track_sustainability,
@@ -56,7 +56,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
     # Create minimal implementations for testing
     class MockAuditLogger:

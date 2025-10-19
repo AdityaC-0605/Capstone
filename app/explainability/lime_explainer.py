@@ -6,19 +6,20 @@ local linear approximation generation, explanation simplification for customer-f
 and LIME visualization and reporting for credit risk models.
 """
 
-import torch
-import torch.nn as nn
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from typing import Dict, List, Optional, Any, Tuple, Union, Callable
+import json
+import logging
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
-import warnings
-import json
 from pathlib import Path
-import logging
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import torch
+import torch.nn as nn
 
 # LIME imports
 try:
@@ -32,8 +33,8 @@ except ImportError:
 
 # Plotting imports
 try:
-    import plotly.graph_objects as go
     import plotly.express as px
+    import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
     PLOTLY_AVAILABLE = True
@@ -43,10 +44,10 @@ except ImportError:
 
 try:
     from ..core.interfaces import BaseModel
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
     from ..models.dnn_model import DNNModel
-    from ..models.lstm_model import LSTMModel
     from ..models.gnn_model import GNNModel
+    from ..models.lstm_model import LSTMModel
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -54,7 +55,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
     # Create minimal implementations for testing
     class MockAuditLogger:

@@ -9,23 +9,24 @@ minimize the environmental impact of AI training and inference through:
 - Real-time carbon budget enforcement
 """
 
-import time
+import json
 import threading
-import requests
-import numpy as np
-from typing import Dict, List, Optional, Any, Tuple, Callable
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import numpy as np
+import requests
 import torch
 import torch.nn as nn
-from pathlib import Path
-import json
 
 try:
-    from .energy_tracker import EnergyTracker, EnergyConfig
-    from .carbon_calculator import CarbonCalculator, CarbonFootprintConfig
     from ..core.logging import get_logger
+    from .carbon_calculator import CarbonCalculator, CarbonFootprintConfig
+    from .energy_tracker import EnergyConfig, EnergyTracker
 except ImportError:
     import sys
 

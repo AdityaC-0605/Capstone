@@ -3,32 +3,32 @@ Feature selection and importance analysis for credit risk modeling.
 Implements statistical methods, correlation analysis, and recursive feature elimination.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple, Union
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
+from scipy.stats import pearsonr, spearmanr
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import (
-    SelectKBest,
-    SelectPercentile,
-    chi2,
-    f_classif,
-    mutual_info_classif,
     RFE,
     RFECV,
     SelectFromModel,
+    SelectKBest,
+    SelectPercentile,
     VarianceThreshold,
+    chi2,
+    f_classif,
+    mutual_info_classif,
 )
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
-from scipy.stats import pearsonr, spearmanr
-import warnings
 
-from ..core.interfaces import DataProcessor
 from ..core.config import get_config
-from ..core.logging import get_logger, get_audit_logger
-
+from ..core.interfaces import DataProcessor
+from ..core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

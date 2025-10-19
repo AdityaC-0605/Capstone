@@ -8,32 +8,33 @@ This module implements automatic model optimization techniques including:
 - Lifecycle-aware model deployment
 """
 
+import json
+import logging
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.utils.prune as prune
-import numpy as np
-import json
-import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Union, Callable
-from dataclasses import dataclass, field
-from enum import Enum
-from pathlib import Path
 
 try:
     from ..core.logging import get_logger
-    from ..sustainability.energy_tracker import EnergyTracker, EnergyReport
     from ..sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
     from ..sustainability.carbon_intensity_api import CarbonIntensityAPI
+    from ..sustainability.energy_tracker import EnergyReport, EnergyTracker
 except ImportError:
     import sys
     from pathlib import Path
 
     sys.path.append(str(Path(__file__).parent.parent.parent))
     from src.core.logging import get_logger
-    from src.sustainability.energy_tracker import EnergyTracker, EnergyReport
     from src.sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
     from src.sustainability.carbon_intensity_api import CarbonIntensityAPI
+    from src.sustainability.energy_tracker import EnergyReport, EnergyTracker
 
 logger = get_logger(__name__)
 

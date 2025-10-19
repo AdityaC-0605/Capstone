@@ -3,18 +3,18 @@ GDPR compliance framework with data retention policies, right-to-be-forgotten,
 consent management, and data lineage tracking.
 """
 
-import json
 import hashlib
-from typing import Dict, List, Any, Optional, Set, Tuple
-from dataclasses import dataclass, field, asdict
+import json
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 import pandas as pd
 
 from ..core.config import get_config
-from ..core.logging import get_logger, get_audit_logger
-
+from ..core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

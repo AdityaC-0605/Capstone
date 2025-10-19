@@ -6,29 +6,29 @@ including message serialization, encryption, and network communication utilities
 """
 
 import asyncio
-import aiohttp
-import json
-import torch
-import io
-import gzip
 import base64
+import gzip
 import hashlib
 import hmac
-from typing import Dict, List, Optional, Any, Tuple, Union, Callable
-from dataclasses import dataclass, asdict
-from datetime import datetime
+import io
+import json
 import logging
-from enum import Enum
-
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
 import secrets
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import aiohttp
+import torch
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 try:
-    from .federated_server import ModelUpdate, ClientInfo, FederatedConfig
     from ..core.logging import get_logger
+    from .federated_server import ClientInfo, FederatedConfig, ModelUpdate
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -36,8 +36,8 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from federated.federated_server import ModelUpdate, ClientInfo, FederatedConfig
     from core.logging import get_logger
+    from federated.federated_server import ClientInfo, FederatedConfig, ModelUpdate
 
 logger = get_logger(__name__)
 

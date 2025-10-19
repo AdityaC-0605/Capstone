@@ -6,18 +6,18 @@ model loading, caching, version management, A/B testing, health checks,
 circuit breakers, and multi-model routing.
 """
 
-import json
-import time
+import asyncio
 import hashlib
+import json
 import threading
-from typing import Dict, List, Optional, Any, Callable, Union, Tuple
+import time
+import warnings
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from pathlib import Path
 from enum import Enum
-import warnings
-import asyncio
-from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 # Circuit breaker and caching dependencies
 try:
@@ -29,7 +29,7 @@ except ImportError:
     warnings.warn("Redis not available. Install with: pip install redis")
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
     from ..models.ensemble_model import EnsembleModel
     from .inference_service import CreditApplication, PredictionResponse
 except ImportError:
@@ -39,7 +39,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
     # Mock classes for testing
     class MockEnsembleModel:

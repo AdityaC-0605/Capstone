@@ -6,15 +6,16 @@ for credit risk models, including demographic parity, equal opportunity,
 and other fairness metrics across protected attributes.
 """
 
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Optional, Any, Tuple, Union
+import json
+import warnings
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from collections import defaultdict
 from enum import Enum
-import warnings
-import json
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 
 try:
     from scipy import stats
@@ -27,9 +28,9 @@ except ImportError:
 try:
     from sklearn.metrics import (
         confusion_matrix,
-        roc_auc_score,
         precision_score,
         recall_score,
+        roc_auc_score,
     )
 
     SKLEARN_AVAILABLE = True
@@ -38,7 +39,7 @@ except ImportError:
     warnings.warn("Scikit-learn not available. Install with: pip install scikit-learn")
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -46,7 +47,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

@@ -8,29 +8,29 @@ and real-time monitoring with alerting and optimization recommendations.
 import json
 import threading
 import time
-from typing import Dict, List, Optional, Any, Callable
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from pathlib import Path
 from enum import Enum
-import warnings
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
-    from .energy_tracker import EnergyTracker, EnergyReport, EnergyConfig
+    from ..core.logging import get_audit_logger, get_logger
     from .carbon_calculator import (
         CarbonCalculator,
         CarbonFootprint,
         CarbonFootprintConfig,
     )
-    from .esg_metrics import (
-        ESGMetricsCollector,
-        ESGMetric,
-        ESGScore,
-        ESGReport,
-        ESGCategory,
-    )
+    from .energy_tracker import EnergyConfig, EnergyReport, EnergyTracker
     from .esg_dashboard import ESGDashboard, create_esg_dashboard
+    from .esg_metrics import (
+        ESGCategory,
+        ESGMetric,
+        ESGMetricsCollector,
+        ESGReport,
+        ESGScore,
+    )
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -38,21 +38,21 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
-    from sustainability.energy_tracker import EnergyTracker, EnergyReport, EnergyConfig
+    from core.logging import get_audit_logger, get_logger
     from sustainability.carbon_calculator import (
         CarbonCalculator,
         CarbonFootprint,
         CarbonFootprintConfig,
     )
-    from sustainability.esg_metrics import (
-        ESGMetricsCollector,
-        ESGMetric,
-        ESGScore,
-        ESGReport,
-        ESGCategory,
-    )
+    from sustainability.energy_tracker import EnergyConfig, EnergyReport, EnergyTracker
     from sustainability.esg_dashboard import ESGDashboard, create_esg_dashboard
+    from sustainability.esg_metrics import (
+        ESGCategory,
+        ESGMetric,
+        ESGMetricsCollector,
+        ESGReport,
+        ESGScore,
+    )
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

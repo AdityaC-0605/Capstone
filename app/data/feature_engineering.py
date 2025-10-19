@@ -3,24 +3,24 @@ Feature engineering pipeline for credit risk modeling.
 Includes behavioral, financial, temporal, and relational feature extraction.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple, Union
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
-from sklearn.impute import SimpleImputer, KNNImputer
-from sklearn.ensemble import IsolationForest
-from sklearn.neighbors import LocalOutlierFactor
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
+from imblearn.combine import SMOTEENN
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import RandomUnderSampler
-from imblearn.combine import SMOTEENN
-import warnings
+from sklearn.ensemble import IsolationForest
+from sklearn.impute import KNNImputer, SimpleImputer
+from sklearn.neighbors import LocalOutlierFactor
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 
-from ..core.interfaces import DataProcessor
 from ..core.config import get_config
-from ..core.logging import get_logger, get_audit_logger
-
+from ..core.interfaces import DataProcessor
+from ..core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()
@@ -781,8 +781,8 @@ class FeatureEngineeringPipeline(DataProcessor):
         feature_importance = []
 
         try:
-            from sklearn.feature_selection import mutual_info_classif
             from scipy.stats import pearsonr
+            from sklearn.feature_selection import mutual_info_classif
 
             # Calculate mutual information
             mi_scores = mutual_info_classif(X, y, random_state=42)

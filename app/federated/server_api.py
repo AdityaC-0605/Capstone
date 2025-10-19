@@ -7,31 +7,32 @@ providing HTTP interfaces for client registration, model updates, and coordinati
 
 import asyncio
 import json
+import logging
 import secrets
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-from fastapi import FastAPI, HTTPException, Request, BackgroundTasks, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
+
 import uvicorn
-import logging
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, Field
 
 try:
-    from .federated_server import (
-        FederatedServer,
-        FederatedConfig,
-        ModelUpdate,
-        ClientInfo,
-    )
+    from ..core.logging import get_audit_logger, get_logger
     from .communication import (
         FederatedCommunicationManager,
-        MessageType,
         FederatedMessage,
         MessageSerializer,
+        MessageType,
         create_registration_message,
     )
-    from ..core.logging import get_logger, get_audit_logger
+    from .federated_server import (
+        ClientInfo,
+        FederatedConfig,
+        FederatedServer,
+        ModelUpdate,
+    )
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -39,20 +40,20 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from federated.federated_server import (
-        FederatedServer,
-        FederatedConfig,
-        ModelUpdate,
-        ClientInfo,
-    )
+    from core.logging import get_audit_logger, get_logger
     from federated.communication import (
         FederatedCommunicationManager,
-        MessageType,
         FederatedMessage,
         MessageSerializer,
+        MessageType,
         create_registration_message,
     )
-    from core.logging import get_logger, get_audit_logger
+    from federated.federated_server import (
+        ClientInfo,
+        FederatedConfig,
+        FederatedServer,
+        ModelUpdate,
+    )
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

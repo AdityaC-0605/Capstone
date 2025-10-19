@@ -3,14 +3,15 @@ LightGBM baseline model for credit risk prediction.
 Includes hyperparameter optimization, feature importance analysis, and benchmarking.
 """
 
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple, Union
+import json
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
-import warnings
-import json
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 
 # LightGBM imports
 try:
@@ -21,28 +22,29 @@ except ImportError:
     LIGHTGBM_AVAILABLE = False
     lgb = None
 
-# ML imports
-from sklearn.model_selection import train_test_split, StratifiedKFold
+import optuna
+from sklearn.base import BaseEstimator
 from sklearn.metrics import (
     accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
     classification_report,
     confusion_matrix,
-    roc_curve,
+    f1_score,
     precision_recall_curve,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
 )
+
+# ML imports
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.base import BaseEstimator
-import optuna
 
 try:
-    from ..core.interfaces import BaseModel
     from ..core.config import get_config
-    from ..core.logging import get_logger, get_audit_logger
-    from ..data.cross_validation import validate_model_cv, get_imbalanced_cv_config
+    from ..core.interfaces import BaseModel
+    from ..core.logging import get_audit_logger, get_logger
+    from ..data.cross_validation import get_imbalanced_cv_config, validate_model_cv
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -51,7 +53,7 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from core.interfaces import BaseModel
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
     # Create minimal implementations for testing
     class MockAuditLogger:

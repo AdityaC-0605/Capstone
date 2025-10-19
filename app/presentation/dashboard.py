@@ -4,14 +4,15 @@ Sustainable Credit Risk AI - Interactive Streamlit Dashboard
 Capstone Project Presentation
 """
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
 
 st.set_page_config(
     page_title="Sustainable Credit Risk AI",

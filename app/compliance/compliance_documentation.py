@@ -8,19 +8,19 @@ templates for FCRA, ECOA, and GDPR requirements.
 
 import json
 import os
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 try:
+    from ..core.logging import get_logger
     from .regulatory_compliance import (
-        RegulatoryComplianceValidator,
+        AuditTrailEntry,
         ComplianceFramework,
         ComplianceViolation,
-        AuditTrailEntry,
+        RegulatoryComplianceValidator,
     )
-    from ..core.logging import get_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -28,10 +28,10 @@ except ImportError:
     sys.path.append(str(Path(__file__).parent.parent))
 
     from compliance.regulatory_compliance import (
-        RegulatoryComplianceValidator,
+        AuditTrailEntry,
         ComplianceFramework,
         ComplianceViolation,
-        AuditTrailEntry,
+        RegulatoryComplianceValidator,
     )
     from core.logging import get_logger
 

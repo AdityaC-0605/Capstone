@@ -6,19 +6,20 @@ collection, calculation, and scoring for sustainable AI operations.
 """
 
 import json
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Optional, Any, Tuple, Union
+import warnings
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from pathlib import Path
 from enum import Enum
-import warnings
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
     from .carbon_calculator import CarbonCalculator, CarbonFootprint
-    from .energy_tracker import EnergyTracker, EnergyReport
+    from .energy_tracker import EnergyReport, EnergyTracker
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -26,9 +27,9 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
     from sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
-    from sustainability.energy_tracker import EnergyTracker, EnergyReport
+    from sustainability.energy_tracker import EnergyReport, EnergyTracker
 
     # Create minimal implementations for testing
     class MockAuditLogger:

@@ -3,28 +3,29 @@ Neural Architecture Search (NAS) framework for automated architecture discovery.
 Implements multi-objective NAS optimizing for accuracy, latency, and energy efficiency.
 """
 
-import torch
-import torch.nn as nn
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple, Union, Callable
+import copy
+import json
+import random
+import time
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-import json
 from pathlib import Path
-import time
-import random
-from abc import ABC, abstractmethod
-import copy
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+from sklearn.metrics import f1_score, roc_auc_score
 
 # ML imports
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, f1_score
 
 try:
-    from ..models.dnn_model import DNNModel, DNNTrainer, DNNConfig
     from ..core.interfaces import BaseModel, TrainingMetrics
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
+    from ..models.dnn_model import DNNConfig, DNNModel, DNNTrainer
     from ..optimization.hyperparameter_tuning import EnergyTracker
 except ImportError:
     # Fallback for direct execution
@@ -33,9 +34,9 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from models.dnn_model import DNNModel, DNNTrainer, DNNConfig
     from core.interfaces import BaseModel, TrainingMetrics
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
+    from models.dnn_model import DNNConfig, DNNModel, DNNTrainer
     from optimization.hyperparameter_tuning import EnergyTracker
 
     # Create minimal implementations for testing

@@ -2,14 +2,14 @@
 Main security manager that orchestrates all security components.
 """
 
-from typing import Dict, Any, Optional
-from ..core.config import get_config
-from ..core.logging import get_logger, get_audit_logger
-from .encryption import DataEncryption, KeyManager, BackupEncryption
-from .anonymization import AnonymizationPipeline, AnonymizationConfig
-from .auth import AuthenticationManager, Role, Permission
-from .gdpr_compliance import GDPRComplianceManager
+from typing import Any, Dict, Optional
 
+from ..core.config import get_config
+from ..core.logging import get_audit_logger, get_logger
+from .anonymization import AnonymizationConfig, AnonymizationPipeline
+from .auth import AuthenticationManager, Permission, Role
+from .encryption import BackupEncryption, DataEncryption, KeyManager
+from .gdpr_compliance import GDPRComplianceManager
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

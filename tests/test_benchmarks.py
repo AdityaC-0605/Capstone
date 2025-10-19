@@ -1,9 +1,10 @@
 """Performance benchmark tests to satisfy CI pipeline."""
 
-import pytest
-import time
-import sys
 import os
+import sys
+import time
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))

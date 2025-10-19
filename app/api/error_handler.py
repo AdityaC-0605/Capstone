@@ -6,19 +6,19 @@ adversarial input protection, dead letter queues, and anomaly detection
 for production API security and reliability.
 """
 
-import re
-import json
-import time
-import hashlib
 import asyncio
-from typing import Dict, List, Optional, Any, Union, Callable, Tuple
+import hashlib
+import json
+import re
+import time
+import traceback
+import warnings
+from abc import ABC, abstractmethod
+from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from collections import deque, defaultdict
 from enum import Enum
-import warnings
-import traceback
-from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 try:
     import numpy as np
@@ -37,7 +37,7 @@ except ImportError:
     warnings.warn("Pydantic not available. Install with: pip install pydantic")
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -45,7 +45,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

@@ -5,18 +5,18 @@ This module implements comprehensive performance monitoring, SLA tracking,
 model drift detection, alerting, and resilience features for production APIs.
 """
 
-import time
 import asyncio
+import json
 import statistics
-from typing import Dict, List, Optional, Any, Callable, Union
+import threading
+import time
+import warnings
+from abc import ABC, abstractmethod
+from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from collections import deque, defaultdict
 from enum import Enum
-import warnings
-import json
-import threading
-from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, List, Optional, Union
 
 try:
     import numpy as np
@@ -35,7 +35,7 @@ except ImportError:
     warnings.warn("SciPy not available. Install with: pip install scipy")
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -43,7 +43,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

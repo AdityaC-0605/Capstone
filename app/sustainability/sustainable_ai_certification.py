@@ -5,22 +5,23 @@ This module implements a comprehensive certification system for sustainable AI m
 including validation criteria, scoring algorithms, and automated certification processes.
 """
 
+import hashlib
 import json
 import logging
-import numpy as np
-import pandas as pd
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Union, Callable
+import uuid
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-import hashlib
-import uuid
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 
 try:
     from ..core.logging import get_logger
-    from ..sustainability.energy_tracker import EnergyTracker, EnergyReport
     from ..sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from ..sustainability.energy_tracker import EnergyReport, EnergyTracker
     from ..sustainability.sustainability_monitor import SustainabilityMonitor
     from ..sustainability.sustainable_model_lifecycle import (
         SustainableModelLifecycleManager,
@@ -31,8 +32,8 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent.parent))
     from src.core.logging import get_logger
-    from src.sustainability.energy_tracker import EnergyTracker, EnergyReport
     from src.sustainability.carbon_calculator import CarbonCalculator, CarbonFootprint
+    from src.sustainability.energy_tracker import EnergyReport, EnergyTracker
     from src.sustainability.sustainability_monitor import SustainabilityMonitor
     from src.sustainability.sustainable_model_lifecycle import (
         SustainableModelLifecycleManager,

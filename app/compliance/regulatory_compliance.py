@@ -6,18 +6,18 @@ including FCRA, ECOA, GDPR compliance checks, audit trail generation,
 and compliance reporting for credit risk AI systems.
 """
 
-import json
 import hashlib
-from typing import Dict, List, Optional, Any, Tuple, Union
+import json
+import re
+import warnings
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-import warnings
-import re
-from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 try:
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -25,7 +25,7 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

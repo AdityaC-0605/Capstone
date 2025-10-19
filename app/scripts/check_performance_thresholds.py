@@ -6,10 +6,10 @@ Validates that performance metrics meet acceptable thresholds
 
 import argparse
 import json
-import sys
 import re
+import sys
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 
 class PerformanceThresholdChecker:

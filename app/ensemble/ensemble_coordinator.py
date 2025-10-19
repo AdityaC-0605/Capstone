@@ -3,41 +3,42 @@ Ensemble model coordinator for combining multiple models with weighted averaging
 stacking, and blending methods. Includes model contribution tracking for explainability.
 """
 
+import json
+import pickle
+import warnings
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple, Union, Callable
-from dataclasses import dataclass, field
-from datetime import datetime
-import json
-from pathlib import Path
-import warnings
-from abc import ABC, abstractmethod
-import pickle
-
-# ML imports
-from sklearn.model_selection import cross_val_score, StratifiedKFold, train_test_split
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
-    roc_auc_score,
-    f1_score,
     accuracy_score,
+    f1_score,
     precision_score,
     recall_score,
+    roc_auc_score,
 )
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.base import BaseEstimator, ClassifierMixin
+
+# ML imports
+from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 
 try:
-    from ..models.dnn_model import DNNModel, DNNTrainer, DNNConfig
-    from ..models.lstm_model import LSTMModel, LSTMTrainer, LSTMConfig
-    from ..models.gnn_model import GNNModel, GNNTrainer, GNNConfig
-    from ..models.tcn_model import TCNModel, TCNTrainer, TCNConfig
-    from ..models.lightgbm_model import LightGBMModel, LightGBMTrainer, LightGBMConfig
     from ..core.interfaces import BaseModel, TrainingMetrics
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
+    from ..models.dnn_model import DNNConfig, DNNModel, DNNTrainer
+    from ..models.gnn_model import GNNConfig, GNNModel, GNNTrainer
+    from ..models.lightgbm_model import LightGBMConfig, LightGBMModel, LightGBMTrainer
+    from ..models.lstm_model import LSTMConfig, LSTMModel, LSTMTrainer
+    from ..models.tcn_model import TCNConfig, TCNModel, TCNTrainer
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -45,13 +46,13 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from models.dnn_model import DNNModel, DNNTrainer, DNNConfig
-    from models.lstm_model import LSTMModel, LSTMTrainer, LSTMConfig
-    from models.gnn_model import GNNModel, GNNTrainer, GNNConfig
-    from models.tcn_model import TCNModel, TCNTrainer, TCNConfig
-    from models.lightgbm_model import LightGBMModel, LightGBMTrainer, LightGBMConfig
     from core.interfaces import BaseModel, TrainingMetrics
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
+    from models.dnn_model import DNNConfig, DNNModel, DNNTrainer
+    from models.gnn_model import GNNConfig, GNNModel, GNNTrainer
+    from models.lightgbm_model import LightGBMConfig, LightGBMModel, LightGBMTrainer
+    from models.lstm_model import LSTMConfig, LSTMModel, LSTMTrainer
+    from models.tcn_model import TCNConfig, TCNModel, TCNTrainer
 
     # Create minimal implementations for testing
     class MockAuditLogger:

@@ -6,22 +6,23 @@ reweighting algorithms, adversarial debiasing, post-processing fairness
 adjustments, and bias mitigation impact measurement.
 """
 
+import warnings
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from typing import Dict, List, Optional, Any, Tuple, Union
-from dataclasses import dataclass
-from datetime import datetime
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-import warnings
 
 try:
-    from .bias_detector import BiasDetector, FairnessMetricsCalculator
     from ..core.logging import get_logger
+    from .bias_detector import BiasDetector, FairnessMetricsCalculator
 except ImportError:
     # Fallback for direct execution
     import sys

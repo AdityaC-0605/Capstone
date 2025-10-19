@@ -3,25 +3,24 @@ Data encryption system with AES-256 encryption at rest and TLS 1.3 for transit.
 Implements key management with rotation policies and encrypted backup/recovery.
 """
 
+import base64
+import hashlib
+import json
 import os
 import secrets
-import hashlib
-from typing import Dict, Any, Optional, Tuple
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-import json
-import base64
-from dataclasses import dataclass, asdict
+from typing import Any, Dict, Optional, Tuple
 
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from ..core.config import get_config
-from ..core.logging import get_logger, get_audit_logger
-
+from ..core.logging import get_audit_logger, get_logger
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

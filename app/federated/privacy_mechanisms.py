@@ -6,35 +6,36 @@ differential privacy, secure aggregation protocols, gradient encryption,
 privacy budget tracking, and convergence monitoring for federated learning.
 """
 
-import torch
-import torch.nn as nn
-import numpy as np
+import asyncio
+import base64
+import copy
 import hashlib
 import hmac
-import secrets
 import json
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Union, Callable
-from dataclasses import dataclass, field
-from enum import Enum
 import logging
-from pathlib import Path
-import asyncio
+import secrets
 import threading
 from concurrent.futures import ThreadPoolExecutor
-import copy
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import torch
+import torch.nn as nn
+from cryptography.hazmat.backends import default_backend
 
 # Cryptographic imports
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-import base64
 
 try:
-    from .federated_server import ModelUpdate, FederatedConfig
-    from ..core.logging import get_logger, get_audit_logger
+    from ..core.logging import get_audit_logger, get_logger
+    from .federated_server import FederatedConfig, ModelUpdate
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -42,8 +43,8 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
-    from federated.federated_server import ModelUpdate, FederatedConfig
-    from core.logging import get_logger, get_audit_logger
+    from core.logging import get_audit_logger, get_logger
+    from federated.federated_server import FederatedConfig, ModelUpdate
 
 logger = get_logger(__name__)
 audit_logger = get_audit_logger()

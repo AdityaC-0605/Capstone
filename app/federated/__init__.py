@@ -9,64 +9,59 @@ This module provides a comprehensive federated learning framework including:
 - Simulation utilities for testing and development
 """
 
-from .federated_server import (
-    FederatedServer,
-    FederatedConfig,
-    ModelUpdate,
-    ClientInfo,
-    FederatedRound,
-    AggregationMethod,
-    ClientStatus,
-    FederatedAggregator,
-    ClientSelector,
-    SecureAggregator,
-)
-
 from .communication import (
     FederatedCommunicationManager,
-    MessageType,
     FederatedMessage,
     MessageSerializer,
+    MessageType,
     SecureCommunicator,
-    create_registration_message,
     create_heartbeat_message,
+    create_registration_message,
 )
-
+from .federated_client import (
+    ClientConfig,
+    ClientStatus,
+    DifferentialPrivacyManager,
+    FederatedClient,
+    GradientCompressor,
+    LocalTrainer,
+    TrainingResult,
+    create_federated_client,
+    simulate_federated_client,
+)
+from .federated_server import (
+    AggregationMethod,
+    ClientInfo,
+    ClientSelector,
+    ClientStatus,
+    FederatedAggregator,
+    FederatedConfig,
+    FederatedRound,
+    FederatedServer,
+    ModelUpdate,
+    SecureAggregator,
+)
+from .privacy_mechanisms import (
+    AdvancedDifferentialPrivacy,
+    AsynchronousFederatedLearning,
+    ConvergenceMonitor,
+    PrivacyBudget,
+    PrivacyConfig,
+    PrivacyMechanism,
+    PrivacyPreservationManager,
+    SecureAggregationProtocol,
+)
 from .server_api import (
     FederatedServerAPI,
     create_federated_server_api,
     run_federated_server_async,
 )
-
-from .federated_client import (
-    FederatedClient,
-    ClientConfig,
-    LocalTrainer,
-    DifferentialPrivacyManager,
-    GradientCompressor,
-    TrainingResult,
-    ClientStatus,
-    create_federated_client,
-    simulate_federated_client,
-)
-
-from .privacy_mechanisms import (
-    PrivacyPreservationManager,
-    PrivacyConfig,
-    AdvancedDifferentialPrivacy,
-    SecureAggregationProtocol,
-    ConvergenceMonitor,
-    AsynchronousFederatedLearning,
-    PrivacyMechanism,
-    PrivacyBudget,
-)
-
 from .utils import (
     FederatedClientSimulator,
     FederatedLearningSimulator,
-    create_federated_simulation,
-    compare_aggregation_methods,
     analyze_privacy_impact,
+    compare_aggregation_methods,
+    create_federated_simulation,
 )
 
 __all__ = [
