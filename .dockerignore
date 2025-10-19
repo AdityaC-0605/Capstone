@@ -81,11 +81,13 @@ temp/
 models/*.bin
 models/*.safetensors
 
-# Data files
-*.csv
-*.json
-*.parquet
+# Data files (exclude large datasets but keep essential ones)
+data/*.csv
+data/*.json
+data/*.parquet
 data/
+# Keep Bank_data.csv for the application
+!Bank_data.csv
 
 # Jupyter
 .ipynb_checkpoints/
