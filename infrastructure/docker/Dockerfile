@@ -51,6 +51,8 @@ FROM base AS production
 COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser config/ ./config/
 COPY --chown=appuser:appuser model_registry/ ./model_registry/
+
+# Copy data file if it exists (optional for production builds)
 COPY --chown=appuser:appuser Bank_data.csv ./Bank_data.csv
 
 # Create necessary directories
@@ -84,7 +86,7 @@ RUN pip install --no-cache-dir \
 COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser config/ ./config/
 COPY --chown=appuser:appuser Bank_data.csv ./Bank_data.csv
-COPY --chown=appuser:appuser app/scripts/ ./scripts/
+COPY --chown=appuser:appuser scripts/ ./scripts/
 
 # Create directories for training outputs
 RUN mkdir -p models experiments logs && \

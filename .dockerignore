@@ -173,7 +173,8 @@ notebooks/
 
 # Data files (exclude from production builds)
 data/
-*.csv
+# Allow specific data files needed for the application
+!Bank_data.csv
 *.json
 *.pkl
 *.joblib

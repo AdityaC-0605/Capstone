@@ -19,7 +19,13 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t sustainable-credit-risk-ai:test --target production .
+        # Ensure data file exists or create sample
+        if [ ! -f "Bank_data.csv" ]; then
+          echo "Creating sample data file..."
+          echo "customer_id,age,gender,marital_status,employment_type,annual_income_inr,loan_amount_inr,loan_purpose,loan_term_months,credit_score,num_open_credit_accounts,num_delinquent_accounts,debt_to_income_ratio,past_default,default" > Bank_data.csv
+          echo "SAMPLE001,35,Male,Married,Salaried,500000,100000,Personal Loan,24,750,3,0,0.3,0,0" >> Bank_data.csv
+        fi
+        docker build -t sustainable-credit-risk-ai:test --target production -f infrastructure/docker/Dockerfile .
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
