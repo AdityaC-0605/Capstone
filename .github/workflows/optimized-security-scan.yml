@@ -1,0 +1,82 @@
+name: Optimized Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # Lightweight image scan for faster execution
+  lightweight-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build lightweight inference image
+      run: |
+        docker build -t sustainable-credit-risk-ai:inference --target inference .
+
+    - name: Run Trivy on lightweight image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'sustainable-credit-risk-ai:inference'
+        format: 'table'
+        output: 'trivy-inference-results.txt'
+        scanners: 'vuln'
+        severity: 'CRITICAL,HIGH'
+        skip-version-check: true
+        ignore-unfixed: true
+
+    - name: Display results
+      run: cat trivy-inference-results.txt
+
+    - name: Clean up
+      if: always()
+      run: docker system prune -af
+
+  # Full production image scan with optimizations
+  production-scan:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build production image
+      run: |
+        docker build -t sustainable-credit-risk-ai:production --target production .
+
+    - name: Run Trivy with optimizations
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'sustainable-credit-risk-ai:production'
+        format: 'sarif'
+        output: 'trivy-production-results.sarif'
+        scanners: 'vuln,secret'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        skip-version-check: true
+        ignore-unfixed: true
+        # Use external cache to reduce space usage
+        cache-dir: '.trivycache'
+
+    - name: Upload SARIF results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-production-results.sarif'
+
+    - name: Clean up Docker resources
+      if: always()
+      run: |
+        docker system prune -af --volumes
+        docker builder prune -af
