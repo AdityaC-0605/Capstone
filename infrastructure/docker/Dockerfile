@@ -101,7 +101,9 @@ FROM python:3.10-slim AS inference
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Create non-root user
 RUN groupadd --gid 1000 appuser && \
@@ -111,7 +113,8 @@ RUN groupadd --gid 1000 appuser && \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && apt-get autoremove -y
 
 # Install minimal Python dependencies for inference
 RUN pip install --no-cache-dir --no-deps \
@@ -122,7 +125,9 @@ RUN pip install --no-cache-dir --no-deps \
     pandas \
     scikit-learn \
     pydantic \
-    && pip cache purge
+    && pip cache purge \
+    && find /usr/local -name "*.pyc" -delete \
+    && find /usr/local -name "__pycache__" -type d -exec rm -rf {} + || true
 
 WORKDIR /app
 

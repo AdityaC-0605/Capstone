@@ -1,0 +1,52 @@
+name: Security Scan with Trivy
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: |
+        docker build -t sustainable-credit-risk-ai:test --target production .
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'sustainable-credit-risk-ai:test'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        # Optimize for disk space and performance
+        scanners: 'vuln,secret'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        # Skip version check to avoid warnings
+        skip-version-check: true
+        # Use cache to reduce download time
+        cache-dir: '.trivycache'
+        # Limit scan scope to reduce resource usage
+        ignore-unfixed: true
+        # Use lighter scanning mode
+        security-checks: 'vuln,secret'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Clean up Docker images to free space
+      if: always()
+      run: |
+        docker system prune -af
+        docker volume prune -f
