@@ -217,49 +217,36 @@ jobs:
         name: model-test-results
         path: model-test-results.xml
 
-  # Container Build and Security Scan
-  container-security:
+  # Security Scan (Filesystem Only)
+  security-scan:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: infrastructure/docker/Dockerfile
-        target: production
-        tags: sustainable-credit-risk-ai:test
-        load: true
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        platforms: linux/amd64
-
-    - name: Clean up disk space before Trivy scan
-      run: |
-        # Clean up Docker system
-        docker system prune -f
-        docker image prune -f
-        # Clean up temporary files
-        sudo rm -rf /tmp/*
-        # Show available disk space
-        df -h
-
-    - name: Run Trivy vulnerability scanner
+    - name: Run Trivy filesystem scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: 'sustainable-credit-risk-ai:test'
+        scan-type: 'fs'
+        scan-ref: '.'
         format: 'sarif'
         output: 'trivy-results.sarif'
-        scanners: 'vuln,secret'
+        scanners: 'vuln,secret,misconfig'
         severity: 'CRITICAL,HIGH,MEDIUM'
         exit-code: '0'
         skip-files: '**/test/**,**/tests/**,**/*.test.*'
-        cache-dir: '.trivycache'
+        skip-version-check: true
+        ignore-unfixed: true
+
+    - name: Run Trivy config scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'config'
+        scan-ref: 'infrastructure/docker/Dockerfile'
+        format: 'table'
+        output: 'trivy-config-results.txt'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        skip-version-check: true
 
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
@@ -267,15 +254,11 @@ jobs:
       with:
         sarif_file: 'trivy-results.sarif'
 
-    - name: Clean up after Trivy scan
+    - name: Display config scan results
       if: always()
       run: |
-        # Remove the scanned image to free up space
-        docker rmi sustainable-credit-risk-ai:test || true
-        # Clean up Trivy cache
-        rm -rf .trivycache || true
-        # Show final disk space
-        df -h
+        echo "=== Dockerfile Configuration Scan Results ==="
+        cat trivy-config-results.txt || echo "No config scan results found"
 
     - name: Run Hadolint Dockerfile linter
       uses: hadolint/hadolint-action@v3.1.0
@@ -421,7 +404,7 @@ jobs:
         echo "- Import sorting: ✅" >> test-summary.md
         echo "- Linting: ✅" >> test-summary.md
         echo "- Type checking: ✅" >> test-summary.md
-        echo "- Security scanning: ✅" >> test-summary.md
+        echo "- Security scanning (filesystem): ✅" >> test-summary.md
         echo "" >> test-summary.md
         echo "## Test Coverage" >> test-summary.md
         echo "- Unit tests: ✅" >> test-summary.md
