@@ -67,19 +67,25 @@ jobs:
 
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
-      if: always() && github.event_name != 'pull_request' && hashFiles('trivy-fs-results.sarif') != ''
+      if: always() && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && hashFiles('trivy-fs-results.sarif') != ''
       with:
         sarif_file: 'trivy-fs-results.sarif'
 
-    - name: Display filesystem scan results (for PRs)
-      if: always() && github.event_name == 'pull_request'
+    - name: Display scan results summary
+      if: always()
       run: |
-        echo "=== Filesystem Security Scan Results ==="
-        echo "Note: SARIF upload skipped for pull requests due to GitHub security restrictions"
+        echo "=== Security Scan Summary ==="
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+          echo "📋 SARIF upload skipped (external fork PR - GitHub security restriction)"
+        elif [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "📋 SARIF upload allowed (same repository PR)"
+        else
+          echo "📋 SARIF upload allowed (push event)"
+        fi
+        
         if [ -f "trivy-fs-results.sarif" ]; then
           echo "✅ Filesystem scan completed successfully"
-          # Extract and display summary from SARIF if needed
-          echo "Scan file generated: trivy-fs-results.sarif"
+          echo "📄 Scan file generated: trivy-fs-results.sarif"
         else
           echo "❌ No filesystem scan results found"
         fi
