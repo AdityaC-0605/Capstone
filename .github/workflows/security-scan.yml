@@ -67,7 +67,7 @@ jobs:
 
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
-      if: always() && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && hashFiles('trivy-fs-results.sarif') != ''
+      if: always() && github.event_name == 'push' && hashFiles('trivy-fs-results.sarif') != ''
       with:
         sarif_file: 'trivy-fs-results.sarif'
 
@@ -75,12 +75,10 @@ jobs:
       if: always()
       run: |
         echo "=== Security Scan Summary ==="
-        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
-          echo "📋 SARIF upload skipped (external fork PR - GitHub security restriction)"
-        elif [ "${{ github.event_name }}" = "pull_request" ]; then
-          echo "📋 SARIF upload allowed (same repository PR)"
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "📋 SARIF upload skipped (pull request - results visible in logs only)"
         else
-          echo "📋 SARIF upload allowed (push event)"
+          echo "📋 SARIF upload enabled (push to main/develop branch)"
         fi
         
         if [ -f "trivy-fs-results.sarif" ]; then
