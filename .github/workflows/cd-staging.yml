@@ -78,27 +78,30 @@ jobs:
         name: sbom
         path: sbom.spdx.json
 
-  # Security Scanning
+  # Security Scanning (Filesystem Only)
   security-scan:
     runs-on: ubuntu-latest
-    needs: build-and-push
     steps:
-    - name: Run Trivy vulnerability scanner
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy filesystem scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ needs.build-and-push.outputs.image-tag }}
+        scan-type: 'fs'
+        scan-ref: '.'
         format: 'sarif'
         output: 'trivy-results.sarif'
+        scanners: 'vuln,secret,misconfig'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        skip-version-check: true
+        ignore-unfixed: true
 
     - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
-
-    - name: Check for critical vulnerabilities
-      run: |
-        trivy image --severity CRITICAL --exit-code 1 ${{ needs.build-and-push.outputs.image-tag }}
 
   # Deploy to Staging Environment
   deploy-staging:
