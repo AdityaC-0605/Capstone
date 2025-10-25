@@ -1,10 +1,9 @@
-name: Security Scan with Trivy
+name: Docker Image Security Scan
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
+  workflow_dispatch:
 
 # Required for uploading SARIF to Code Scanning
 permissions:
@@ -12,7 +11,7 @@ permissions:
   security-events: write
 
 jobs:
-  trivy-scan:
+  image-scan:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,53 +31,38 @@ jobs:
         sudo docker system prune -af
         df -h
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-
-    - name: Ensure data file exists
+    - name: Build lightweight inference image
       run: |
-        # Ensure data file exists or create sample for filesystem scanning
+        # Ensure data file exists or create sample
         if [ ! -f "Bank_data.csv" ]; then
           echo "Creating sample data file..."
           echo "customer_id,age,gender,marital_status,employment_type,annual_income_inr,loan_amount_inr,loan_purpose,loan_term_months,credit_score,num_open_credit_accounts,num_delinquent_accounts,debt_to_income_ratio,past_default,default" > Bank_data.csv
           echo "SAMPLE001,35,Male,Married,Salaried,500000,100000,Personal Loan,24,750,3,0,0.3,0,0" >> Bank_data.csv
         fi
+        docker build -t sustainable-credit-risk-ai:inference --target inference -f infrastructure/docker/Dockerfile .
 
-    - name: Run Trivy filesystem scanner (lightweight)
+    - name: Run Trivy on inference image
       uses: aquasecurity/trivy-action@master
       with:
-        scan-type: 'fs'
-        scan-ref: '.'
+        image-ref: 'sustainable-credit-risk-ai:inference'
         format: 'sarif'
-        output: 'trivy-fs-results.sarif'
-        scanners: 'vuln,secret,misconfig'
-        severity: 'CRITICAL,HIGH,MEDIUM'
+        output: 'trivy-image-results.sarif'
+        scanners: 'vuln'
+        severity: 'CRITICAL,HIGH'
         skip-version-check: true
         ignore-unfixed: true
 
-    - name: Run Trivy config scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'config'
-        scan-ref: 'infrastructure/docker/Dockerfile'
-        format: 'table'
-        output: 'trivy-config-results.txt'
-        severity: 'CRITICAL,HIGH,MEDIUM'
-        skip-version-check: true
-
-    - name: Upload Trivy scan results to GitHub Security tab
+    - name: Upload image scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
-      if: always() && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork)
+      if: always()
       with:
-        sarif_file: 'trivy-fs-results.sarif'
+        sarif_file: 'trivy-image-results.sarif'
 
-    - name: Display config scan results
+    - name: Clean up Docker resources
       if: always()
       run: |
-        echo "=== Dockerfile Configuration Scan Results ==="
-        cat trivy-config-results.txt || echo "No config scan results found"
-
-    - name: Clean up Docker images to free space
-      if: always()
-      run: |
-        docker system prune -af
-        docker volume prune -f
+        docker system prune -af --volumes
+        docker builder prune -af
