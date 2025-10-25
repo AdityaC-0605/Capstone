@@ -250,7 +250,7 @@ jobs:
 
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
-      if: always() && github.event_name != 'pull_request' && hashFiles('trivy-results.sarif') != ''
+      if: always() && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && hashFiles('trivy-results.sarif') != ''
       with:
         sarif_file: 'trivy-results.sarif'
 
@@ -259,6 +259,22 @@ jobs:
       run: |
         echo "=== Dockerfile Configuration Scan Results ==="
         cat trivy-config-results.txt || echo "No config scan results found"
+
+    - name: Display security scan summary
+      if: always()
+      run: |
+        echo "=== Security Scan Upload Status ==="
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+          echo "📋 SARIF upload skipped (external fork PR - GitHub security restriction)"
+        elif [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "📋 SARIF upload allowed (same repository PR)"
+        else
+          echo "📋 SARIF upload allowed (push event)"
+        fi
+        
+        echo "✅ Security scans completed:"
+        [ -f "trivy-results.sarif" ] && echo "  - Trivy filesystem scan: ✅" || echo "  - Trivy filesystem scan: ❌"
+        [ -f "hadolint-results.sarif" ] && echo "  - Hadolint Dockerfile scan: ✅" || echo "  - Hadolint Dockerfile scan: ❌"
 
     - name: Run Hadolint Dockerfile linter
       uses: hadolint/hadolint-action@v3.1.0
@@ -269,7 +285,7 @@ jobs:
 
     - name: Upload Hadolint results
       uses: github/codeql-action/upload-sarif@v3
-      if: always() && github.event_name != 'pull_request' && hashFiles('hadolint-results.sarif') != ''
+      if: always() && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)) && hashFiles('hadolint-results.sarif') != ''
       with:
         sarif_file: hadolint-results.sarif
 
