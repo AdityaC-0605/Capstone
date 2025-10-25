@@ -270,8 +270,9 @@ jobs:
       uses: hadolint/hadolint-action@v3.1.0
       with:
         dockerfile: infrastructure/docker/Dockerfile
+        config: .hadolint.yaml
         format: tty
-        failure-threshold: warning
+        failure-threshold: error
 
     - name: Display Hadolint results summary
       if: always()

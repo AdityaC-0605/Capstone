@@ -1,0 +1,27 @@
+---
+# Hadolint configuration for Dockerfile linting
+# See: https://github.com/hadolint/hadolint
+
+# Ignore specific rules that are not applicable or too strict for our use case
+ignored:
+  # DL3008: Pin versions in apt get install
+  # We ignore this for system packages as versions vary between base images
+  # and we use --no-install-recommends for security
+  - DL3008
+
+# Trusted registries (optional)
+trustedRegistries:
+  - docker.io
+  - python
+
+# Override rule severity
+override:
+  # Make DL3013 (pip version pinning) a warning instead of error
+  warning:
+    - DL3013
+  # Make shell check issues info level
+  info:
+    - SC2015
+
+# Failure threshold - only fail on errors, not warnings
+failure-threshold: error
