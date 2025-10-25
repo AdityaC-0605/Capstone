@@ -77,10 +77,10 @@ FROM base AS training
 
 # Install additional ML dependencies for training
 RUN pip install --no-cache-dir \
-    tensorboard \
-    wandb \
-    optuna \
-    ray[tune]
+    tensorboard==2.15.1 \
+    wandb==0.16.1 \
+    optuna==3.5.0 \
+    ray[tune]==2.8.1
 
 # Copy training-specific files
 COPY --chown=appuser:appuser app/ ./app/
@@ -120,16 +120,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install minimal Python dependencies for inference
 RUN pip install --no-cache-dir --no-deps \
-    fastapi \
-    uvicorn \
-    torch \
-    numpy \
-    pandas \
-    scikit-learn \
-    pydantic \
+    fastapi==0.104.1 \
+    uvicorn==0.24.0 \
+    torch==2.1.1 \
+    numpy==1.24.4 \
+    pandas==2.1.4 \
+    scikit-learn==1.3.2 \
+    pydantic==2.5.2 \
     && pip cache purge \
     && find /usr/local -name "*.pyc" -delete \
-    && find /usr/local -name "__pycache__" -type d -exec rm -rf {} + || true
+    && (find /usr/local -name "__pycache__" -type d -exec rm -rf {} + || true)
 
 WORKDIR /app
 
