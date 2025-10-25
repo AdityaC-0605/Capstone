@@ -248,11 +248,7 @@ jobs:
         severity: 'CRITICAL,HIGH,MEDIUM'
         skip-version-check: true
 
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
-      if: always() && github.event_name == 'push' && hashFiles('trivy-results.sarif') != ''
-      with:
-        sarif_file: 'trivy-results.sarif'
+
 
     - name: Display config scan results
       if: always()
@@ -263,12 +259,8 @@ jobs:
     - name: Display security scan summary
       if: always()
       run: |
-        echo "=== Security Scan Upload Status ==="
-        if [ "${{ github.event_name }}" = "pull_request" ]; then
-          echo "📋 SARIF upload skipped (pull request - results visible in logs only)"
-        else
-          echo "📋 SARIF upload enabled (push to main/develop branch)"
-        fi
+        echo "=== Security Scan Status ==="
+        echo "📋 SARIF upload disabled (results visible in workflow logs)"
         
         echo "✅ Security scans completed:"
         [ -f "trivy-results.sarif" ] && echo "  - Trivy filesystem scan: ✅" || echo "  - Trivy filesystem scan: ❌"
@@ -281,11 +273,7 @@ jobs:
         format: sarif
         output-file: hadolint-results.sarif
 
-    - name: Upload Hadolint results
-      uses: github/codeql-action/upload-sarif@v3
-      if: always() && github.event_name == 'push' && hashFiles('hadolint-results.sarif') != ''
-      with:
-        sarif_file: hadolint-results.sarif
+
 
   # Dependency Check
   dependency-check:
