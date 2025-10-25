@@ -250,7 +250,7 @@ jobs:
 
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
-      if: always() && hashFiles('trivy-results.sarif') != ''
+      if: always() && github.event_name != 'pull_request' && hashFiles('trivy-results.sarif') != ''
       with:
         sarif_file: 'trivy-results.sarif'
 
@@ -269,7 +269,7 @@ jobs:
 
     - name: Upload Hadolint results
       uses: github/codeql-action/upload-sarif@v3
-      if: always() && hashFiles('hadolint-results.sarif') != ''
+      if: always() && github.event_name != 'pull_request' && hashFiles('hadolint-results.sarif') != ''
       with:
         sarif_file: hadolint-results.sarif
 
