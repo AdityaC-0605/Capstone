@@ -12,10 +12,11 @@ pandas>=2.1.0,<2.3.0
 numpy>=1.24.0,<1.27.0
 
 # Federated Learning
-flwr>=2.0.0,<3.0.0
+flwr>=1.20.0,<2.0.0
 
 # Security and Authentication
-cryptography>=40.0.0,<42.0.0
+cryptography>=44.0.1,<45.0.0
+pyotp>=2.9.0,<3.0.0
 
 # Configuration and Environment
 python-dotenv>=1.0.0,<2.0.0

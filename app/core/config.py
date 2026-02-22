@@ -184,6 +184,15 @@ class ConfigManager:
                         if hasattr(nested_config, nested_key):
                             setattr(nested_config, nested_key, nested_value)
                 else:
+                    if field_name == "environment" and isinstance(
+                        field_value, str
+                    ):
+                        try:
+                            field_value = Environment(field_value)
+                        except ValueError:
+                            normalized = field_value.upper()
+                            if normalized in Environment.__members__:
+                                field_value = Environment[normalized]
                     setattr(config, field_name, field_value)
 
         return config

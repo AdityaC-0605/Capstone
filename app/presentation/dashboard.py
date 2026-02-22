@@ -255,7 +255,7 @@ def show_prediction_demo():
                 height=400,
             )
 
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
 
 def show_performance_dashboard():
@@ -274,7 +274,7 @@ def show_performance_dashboard():
 
     # Display table
     st.subheader("Model Comparison")
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width='stretch')
 
     # ROC Curve visualization
     st.subheader("ROC-AUC Curves")
@@ -325,7 +325,7 @@ def show_performance_dashboard():
         height=500,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 
 def show_sustainability_dashboard():
@@ -429,7 +429,7 @@ def show_sustainability_dashboard():
         ],
     }
 
-    st.dataframe(pd.DataFrame(strategies_data), use_container_width=True)
+    st.dataframe(pd.DataFrame(strategies_data), width='stretch')
 
     # Live carbon reduction demo with advanced features
     st.subheader("🔬 Live Carbon-Aware AI Demos")
@@ -528,7 +528,7 @@ def show_sustainability_dashboard():
         "Improvement": ["+134%", "+137%", "-67%", "-10%", "-44%", "+41%"],
     }
 
-    st.dataframe(pd.DataFrame(comparison_data), use_container_width=True)
+    st.dataframe(pd.DataFrame(comparison_data), width='stretch')
 
     # Environmental impact visualization
     st.subheader("🌍 Environmental Impact Visualization")
@@ -561,7 +561,7 @@ def show_sustainability_dashboard():
         height=400,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     # Carbon intensity forecast
     st.subheader("📈 24-Hour Carbon Intensity Forecast")
@@ -615,7 +615,7 @@ def show_sustainability_dashboard():
         height=400,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     # Optimal training windows
     optimal_hours = [
@@ -676,7 +676,7 @@ def show_sustainability_dashboard():
         height=400,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     # Carbon footprint equivalent
     st.subheader("🌍 Environmental Impact Equivalent")
@@ -726,7 +726,7 @@ def show_explainability_hub():
         height=400,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     # Explanation text
     st.subheader("📝 Prediction Explanation")

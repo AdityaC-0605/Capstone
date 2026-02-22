@@ -1,0 +1,54 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Logs / runtime output
+logs/
+*.log
+
+# Local secrets / keys
+.env
+.env.*
+keys/*.key
+keys/*.pem
+keys/*.crt
+keys/*.p12
+keys/*.jks
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+
+# Frontend artifacts
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# ML / generated artifacts
+models/**/*.pkl
+models/**/*.joblib
+models/**/*.pt
+models/**/*.onnx
+batch_results/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
