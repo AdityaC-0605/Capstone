@@ -20,7 +20,7 @@ transformers>=4.36.0,<4.50.0
 datasets>=2.15.0,<2.20.0
 
 # Federated Learning
-flower==2.0.1
+flwr==2.0.1
 
 # Explainability
 shap>=0.43.0,<0.50.0
