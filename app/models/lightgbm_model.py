@@ -4,6 +4,7 @@ Includes hyperparameter optimization, feature importance analysis, and benchmark
 """
 
 import json
+import importlib
 import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -13,14 +14,19 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 
-# LightGBM imports
-try:
-    import lightgbm as lgb
+# LightGBM imports are loaded lazily to avoid hard crashes on module import
+# in environments where native OpenMP initialization is unavailable.
+lgb = None
+LIGHTGBM_AVAILABLE = False
 
-    LIGHTGBM_AVAILABLE = True
-except ImportError:
-    LIGHTGBM_AVAILABLE = False
-    lgb = None
+
+def _get_lightgbm():
+    """Load LightGBM on first use."""
+    global lgb, LIGHTGBM_AVAILABLE
+    if lgb is None:
+        lgb = importlib.import_module("lightgbm")
+        LIGHTGBM_AVAILABLE = True
+    return lgb
 
 import optuna
 from sklearn.base import BaseEstimator
@@ -160,6 +166,7 @@ class LightGBMOptimizer:
         y_val: pd.Series,
     ) -> Dict[str, Any]:
         """Optimize hyperparameters using Optuna."""
+        lgbm = _get_lightgbm()
         if not self.config.enable_hyperopt:
             return self._get_default_params()
 
@@ -177,20 +184,20 @@ class LightGBMOptimizer:
                 params = self._suggest_params(trial)
 
                 # Create datasets
-                train_data = lgb.Dataset(X_train, label=y_train)
-                val_data = lgb.Dataset(
+                train_data = lgbm.Dataset(X_train, label=y_train)
+                val_data = lgbm.Dataset(
                     X_val, label=y_val, reference=train_data
                 )
 
                 # Train model
-                model = lgb.train(
+                model = lgbm.train(
                     params,
                     train_data,
                     valid_sets=[val_data],
                     num_boost_round=self.config.num_boost_round,
                     callbacks=[
-                        lgb.early_stopping(self.config.early_stopping_rounds),
-                        lgb.log_evaluation(0),  # Suppress output
+                        lgbm.early_stopping(self.config.early_stopping_rounds),
+                        lgbm.log_evaluation(0),  # Suppress output
                     ],
                 )
 
@@ -295,10 +302,12 @@ class LightGBMModel(BaseEstimator):
         self.label_encoder = None
         self.is_trained = False
 
-        if not LIGHTGBM_AVAILABLE:
+        try:
+            _get_lightgbm()
+        except Exception as exc:
             raise ImportError(
                 "LightGBM is not available. Please install it with: pip install lightgbm"
-            )
+            ) from exc
 
     def get_params(self, deep=True):
         """Get parameters for scikit-learn compatibility."""
@@ -318,6 +327,7 @@ class LightGBMModel(BaseEstimator):
         y_val: Optional[pd.Series] = None,
     ) -> "LightGBMModel":
         """Train the LightGBM model."""
+        lgbm = _get_lightgbm()
         try:
             logger.info("Starting LightGBM training")
 
@@ -355,22 +365,22 @@ class LightGBMModel(BaseEstimator):
             )
 
             # Create datasets
-            train_data = lgb.Dataset(X_train, label=y_train)
-            val_data = lgb.Dataset(X_val, label=y_val, reference=train_data)
+            train_data = lgbm.Dataset(X_train, label=y_train)
+            val_data = lgbm.Dataset(X_val, label=y_val, reference=train_data)
 
             # Train final model
             logger.info("Training final model with optimized parameters")
-            self.model = lgb.train(
+            self.model = lgbm.train(
                 best_params,
                 train_data,
                 valid_sets=[val_data],
                 num_boost_round=self.config.num_boost_round,
                 callbacks=[
-                    lgb.early_stopping(self.config.early_stopping_rounds),
+                    lgbm.early_stopping(self.config.early_stopping_rounds),
                     (
-                        lgb.log_evaluation(100)
+                        lgbm.log_evaluation(100)
                         if self.config.verbose > 0
-                        else lgb.log_evaluation(0)
+                        else lgbm.log_evaluation(0)
                     ),
                 ],
             )
@@ -493,6 +503,7 @@ class LightGBMModel(BaseEstimator):
 
     def load_model(self, path: str) -> "LightGBMModel":
         """Load a trained model."""
+        lgbm = _get_lightgbm()
         model_path = Path(path)
 
         if model_path.is_file():
@@ -505,7 +516,7 @@ class LightGBMModel(BaseEstimator):
             metadata_file = model_path / "metadata.json"
 
         # Load model
-        self.model = lgb.Booster(model_file=str(model_file))
+        self.model = lgbm.Booster(model_file=str(model_file))
 
         # Load metadata if available
         if metadata_file.exists():

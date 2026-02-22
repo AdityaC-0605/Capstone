@@ -5,11 +5,11 @@ This module demonstrates how to integrate carbon-aware optimization
 into existing ML models to achieve real emission reductions.
 """
 
+import importlib
 import warnings
 from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
-import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
@@ -29,6 +29,16 @@ except ImportError:
 
 from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.model_selection import train_test_split
+
+lgb = None
+
+
+def _get_lightgbm():
+    """Load LightGBM lazily to avoid import-time native runtime failures."""
+    global lgb
+    if lgb is None:
+        lgb = importlib.import_module("lightgbm")
+    return lgb
 
 
 class CarbonAwareLightGBM:
@@ -114,10 +124,12 @@ class CarbonAwareLightGBM:
         )
         print(f"🎯 Optimized parameters: {optimized_params}")
 
+        lgbm = _get_lightgbm()
+
         # Create datasets
-        train_data = lgb.Dataset(X_train, label=y_train)
+        train_data = lgbm.Dataset(X_train, label=y_train)
         valid_data = (
-            lgb.Dataset(X_val, label=y_val, reference=train_data)
+            lgbm.Dataset(X_val, label=y_val, reference=train_data)
             if X_val is not None
             else None
         )
@@ -126,11 +138,11 @@ class CarbonAwareLightGBM:
         carbon_early_stopping = self._create_carbon_early_stopping()
 
         # Train model with carbon optimization
-        callbacks = [lgb.log_evaluation(period=0)]  # Suppress verbose output
+        callbacks = [lgbm.log_evaluation(period=0)]  # Suppress verbose output
         if carbon_early_stopping:
             callbacks.append(carbon_early_stopping)
 
-        model = lgb.train(
+        model = lgbm.train(
             optimized_params,
             train_data,
             num_boost_round=num_boost_round,
@@ -196,6 +208,8 @@ class CarbonAwareLightGBM:
         if not self.carbon_optimizer:
             return None
 
+        lgbm = _get_lightgbm()
+
         def carbon_early_stopping_callback(env):
             """Early stopping based on carbon budget."""
             # Check carbon budget every 10 iterations
@@ -206,7 +220,7 @@ class CarbonAwareLightGBM:
 
                 if not can_continue:
                     print(f"🛑 Early stopping due to carbon budget: {status}")
-                    raise lgb.early_stopping(env.iteration)
+                    raise lgbm.early_stopping(env.iteration)
 
                 if remaining_budget < 0.01:  # Less than 10g remaining
                     print(f"⚠️  Carbon budget warning: {status}")
