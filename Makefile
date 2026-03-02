@@ -20,7 +20,7 @@ install:
 
 # Testing
 test:
-	pytest tests/ --cov=src --cov-report=html --cov-report=term-missing -v
+	pytest tests/ --cov=app --cov-report=html --cov-report=term-missing -v
 
 test-unit:
 	pytest tests/unit/ -v
@@ -36,21 +36,21 @@ test-compliance:
 
 # Code quality
 lint:
-	black --check src/ tests/
-	isort --check-only src/ tests/
-	flake8 src/ tests/
-	mypy src/
-	bandit -r src/
+	black --check app/ tests/
+	isort --check-only app/ tests/
+	flake8 app/ tests/
+	mypy app/
+	bandit -r app/
 
 format:
-	black src/ tests/
-	isort src/ tests/
+	black app/ tests/
+	isort app/ tests/
 
 # Security
 security-scan:
 	safety check
-	bandit -r src/
-	semgrep --config=auto src/
+	bandit -r app/
+	semgrep --config=auto app/
 
 # Docker operations
 build:

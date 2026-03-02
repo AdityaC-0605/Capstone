@@ -31,32 +31,26 @@ def test_basic_imports():
         raise
 
 
-def test_flower_import():
-    """Test that Flower can be imported (supports both package names)."""
-    flower = None
+def test_sustainability_metrics_import():
+    """Test that the shared sustainability metrics can be imported."""
     try:
-        import flwr as flower
-    except ImportError:
-        try:
-            # Older environments may still ship the "flower" package name.
-            import flower
-        except ImportError:
-            pytest.skip("Flower dependency not installed in this environment")
+        from app.sustainability.metrics import ks_statistic
+        import numpy as np
 
-    try:
-        print(
-            f"✅ Flower imported successfully, version: {flower.__version__}"
-        )
-        assert flower.__version__ is not None
+        # Sanity check with trivially separable data
+        y_true = np.array([0, 0, 1, 1])
+        y_prob = np.array([0.1, 0.2, 0.8, 0.9])
+        ks = ks_statistic(y_true, y_prob)
+        assert 0.0 <= ks <= 1.0, f"KS out of range: {ks}"
+        print("✅ Sustainability metrics imported and validated")
+
     except ImportError as e:
-        print(f"❌ Flower import error: {e}")
-        raise
-    except Exception as e:
-        print(f"❌ Unexpected error with flower: {e}")
+        print(f"❌ Import error: {e}")
         raise
 
 
 if __name__ == "__main__":
     test_basic_imports()
-    test_flower_import()
+    test_sustainability_metrics_import()
     print("All import tests passed!")
+
