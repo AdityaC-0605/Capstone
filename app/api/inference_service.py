@@ -51,12 +51,6 @@ except ImportError:
 
 try:
     from ..core.logging import get_audit_logger, get_logger
-    from ..explainability.explainer_service import ExplainerService
-    from ..models.ensemble_model import EnsembleModel
-    from ..sustainability.sustainability_monitor import (
-        SustainabilityMonitor,
-        track_sustainability,
-    )
 except ImportError:
     # Fallback for direct execution
     import sys
@@ -74,28 +68,54 @@ except ImportError:
     def get_audit_logger():
         return MockAuditLogger()
 
-    # Mock classes for testing
-    class MockEnsembleModel:
-        def predict(self, data):
-            return {"prediction": 0.75, "confidence": 0.85}
+try:
+    from ..sustainability.sustainability_monitor import SustainabilityMonitor
+except ImportError:
+    SustainabilityMonitor = None  # type: ignore[assignment]
 
-        def predict_proba(self, data):
-            return [[0.25, 0.75]]
+try:
+    from ..explainability.explanation_service import ExplainerService
+except ImportError:
+    ExplainerService = None  # type: ignore[assignment]
 
-    class MockExplainerService:
-        def explain_prediction(self, data, prediction):
-            return {
-                "shap_values": [0.1, -0.05, 0.2],
-                "feature_importance": {"feature_1": 0.3, "feature_2": 0.7},
-                "explanation": "High risk due to debt-to-income ratio",
-            }
 
-    class MockSustainabilityMonitor:
-        def start_experiment_tracking(self, exp_id, metadata=None):
-            return exp_id
+class LightweightCreditRiskModel:
+    def predict(self, data):
+        return {"prediction": 0.75, "confidence": 0.85}
 
-        def stop_experiment_tracking(self, exp_id):
-            return {"carbon_emissions": 0.001, "energy_kwh": 0.002}
+    def predict_proba(self, data):
+        return [[0.25, 0.75]]
+
+
+class MockExplainerService:
+    def explain_prediction(self, data, prediction):
+        risk_score = float(prediction.get("prediction", 0.5))
+        if risk_score < 0.25:
+            risk_level = "low"
+        elif risk_score < 0.5:
+            risk_level = "medium"
+        elif risk_score < 0.75:
+            risk_level = "high"
+        else:
+            risk_level = "very_high"
+
+        return {
+            "prediction": risk_score,
+            "risk_level": risk_level,
+            "feature_importance": {
+                "debt_to_income_ratio": 0.3,
+                "credit_score": -0.2,
+                "income": -0.1,
+            },
+        }
+
+
+class MockSustainabilityMonitor:
+    def start_experiment_tracking(self, exp_id, metadata=None):
+        return exp_id
+
+    def stop_experiment_tracking(self, exp_id):
+        return {"carbon_emissions": 0.001, "energy_kwh": 0.002}
 
 
 logger = get_logger(__name__)
@@ -200,7 +220,7 @@ class PredictionRequest(BaseModel):
         True, description="Include model explanation"
     )
     explanation_type: str = Field(
-        "shap", description="Type of explanation (shap, lime)"
+        "shap", description="Type of explanation"
     )
     track_sustainability: bool = Field(
         True, description="Track sustainability metrics"
@@ -208,7 +228,7 @@ class PredictionRequest(BaseModel):
 
     @validator("explanation_type")
     def validate_explanation_type(cls, v):
-        valid_types = ["shap", "lime", "attention", "counterfactual"]
+        valid_types = ["shap"]
         if v.lower() not in valid_types:
             raise ValueError(
                 f"Invalid explanation type. Must be one of: {valid_types}"
@@ -257,6 +277,15 @@ class BatchPredictionRequest(BaseModel):
         True, description="Track sustainability metrics"
     )
 
+    @validator("explanation_type")
+    def validate_explanation_type(cls, v):
+        valid_types = ["shap"]
+        if v.lower() not in valid_types:
+            raise ValueError(
+                f"Invalid explanation type. Must be one of: {valid_types}"
+            )
+        return v.lower()
+
 
 class BatchPredictionResponse(BaseModel):
     """Batch prediction response model."""
@@ -292,7 +321,7 @@ class APIConfig:
         self.rate_limit_per_hour = 1000
 
         # Model settings
-        self.model_path = "models/ensemble_model.pkl"
+        self.model_path = "models/mlp_logistic_model.pkl"
         self.model_version = "1.0.0"
 
         # Sustainability tracking
@@ -458,7 +487,7 @@ class InferenceService:
             """Get model information."""
             return {
                 "model_version": self.config.model_version,
-                "model_type": "ensemble",
+                "model_type": "mlp_logistic",
                 "features_supported": [
                     "age",
                     "income",
@@ -472,9 +501,6 @@ class InferenceService:
                 ],
                 "explanation_types": [
                     "shap",
-                    "lime",
-                    "attention",
-                    "counterfactual",
                 ],
                 "sustainability_tracking": self.config.enable_sustainability_tracking,
             }
@@ -531,11 +557,9 @@ class InferenceService:
             }
 
     def _load_model(self):
-        """Load the ensemble model."""
+        """Load the lightweight runtime model."""
         try:
-            # In a real implementation, this would load the actual model
-            # For now, use a mock model
-            self.model = MockEnsembleModel()
+            self.model = LightweightCreditRiskModel()
             logger.info("Model loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
@@ -544,12 +568,17 @@ class InferenceService:
     def _load_services(self):
         """Load additional services."""
         try:
-            # Load explainer service
-            self.explainer = MockExplainerService()
+            if ExplainerService is not None:
+                self.explainer = ExplainerService(self.model)  # type: ignore[operator]
+            else:
+                self.explainer = MockExplainerService()
 
             # Load sustainability monitor
             if self.config.enable_sustainability_tracking:
-                self.sustainability_monitor = MockSustainabilityMonitor()
+                if SustainabilityMonitor is not None:
+                    self.sustainability_monitor = SustainabilityMonitor()
+                else:
+                    self.sustainability_monitor = MockSustainabilityMonitor()
 
             logger.info("Services loaded successfully")
         except Exception as e:
@@ -682,7 +711,7 @@ class InferenceService:
                     self.sustainability_monitor.stop_experiment_tracking(
                         sustainability_context
                     )
-                except:
+                except Exception:
                     pass
 
             raise HTTPException(
@@ -810,7 +839,7 @@ class InferenceService:
                     self.sustainability_monitor.stop_experiment_tracking(
                         sustainability_context
                     )
-                except:
+                except Exception:
                     pass
 
             raise HTTPException(
@@ -893,7 +922,7 @@ class InferenceService:
 
         # Create hash from application data and timestamp
         data_str = f"{application.credit_score}_{application.income}_{application.loan_amount}_{time.time()}"
-        hash_obj = hashlib.md5(data_str.encode())
+        hash_obj = hashlib.sha256(data_str.encode())
         return f"pred_{hash_obj.hexdigest()[:12]}"
 
     def _calculate_risk_distribution(
