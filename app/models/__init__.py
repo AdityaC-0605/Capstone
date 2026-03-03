@@ -1,35 +1,7 @@
-"""Neural network models package."""
+"""Model package intentionally minimal.
 
-from .dnn_model import DNNConfig, DNNModel, DNNResult, DNNTrainer
-from .gnn_model import GNNConfig, GNNModel, GNNResult, GNNTrainer
-from .lightgbm_model import (
-    LightGBMConfig,
-    LightGBMModel,
-    LightGBMResult,
-    LightGBMTrainer,
-)
-from .lstm_model import LSTMConfig, LSTMModel, LSTMResult, LSTMTrainer
-from .tcn_model import TCNConfig, TCNModel, TCNResult, TCNTrainer
+Current active sustainability model implementations live under
+`app.sustainability` (`mlp.py`, `logistic_regression.py`, `scalable_mlp.py`).
+"""
 
-__all__ = [
-    "DNNModel",
-    "DNNTrainer",
-    "DNNConfig",
-    "DNNResult",
-    "LSTMModel",
-    "LSTMTrainer",
-    "LSTMConfig",
-    "LSTMResult",
-    "GNNModel",
-    "GNNTrainer",
-    "GNNConfig",
-    "GNNResult",
-    "TCNModel",
-    "TCNTrainer",
-    "TCNConfig",
-    "TCNResult",
-    "LightGBMModel",
-    "LightGBMTrainer",
-    "LightGBMConfig",
-    "LightGBMResult",
-]
+__all__ = []

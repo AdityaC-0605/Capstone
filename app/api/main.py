@@ -6,8 +6,9 @@ import sys
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 # Add app to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -37,16 +38,39 @@ app.add_middleware(
 logger = get_logger(__name__)
 
 
+def _ok(payload):
+    return {"status": "ok", "data": payload}
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(_: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"status": "error", "error": exc.detail},
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(_: Request, exc: Exception):
+    logger.error(f"Unhandled API error: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"status": "error", "error": "internal_server_error"},
+    )
+
+
 @app.get("/")
 async def root():
     """Root endpoint."""
-    return {"message": "Sustainable Credit Risk AI System", "version": "1.0.0"}
+    return _ok(
+        {"message": "Sustainable Credit Risk AI System", "version": "1.0.0"}
+    )
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "service": "credit-risk-ai"}
+    return _ok({"service_status": "healthy", "service": "credit-risk-ai"})
 
 
 @app.get("/ready")
@@ -54,7 +78,7 @@ async def readiness_check():
     """Readiness check endpoint."""
     try:
         # Add any readiness checks here (database, model loading, etc.)
-        return {"status": "ready", "service": "credit-risk-ai"}
+        return _ok({"service_status": "ready", "service": "credit-risk-ai"})
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
         raise HTTPException(status_code=503, detail="Service not ready")
@@ -63,16 +87,18 @@ async def readiness_check():
 @app.get("/api/v1/status")
 async def api_status():
     """API status endpoint."""
-    return {
-        "status": "operational",
-        "version": "1.0.0",
-        "features": [
-            "credit-risk-assessment",
-            "sustainability-monitoring",
-            "federated-learning",
-            "explainable-ai",
-        ],
-    }
+    return _ok(
+        {
+            "service_status": "operational",
+            "version": "1.0.0",
+            "features": [
+                "credit-risk-assessment",
+                "sustainability-monitoring",
+                "federated-learning",
+                "explainable-ai",
+            ],
+        }
+    )
 
 
 if __name__ == "__main__":
