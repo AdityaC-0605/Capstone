@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent / "app"))
 
 from app.core.config import load_config
 from app.core.logging import get_logger
-from app.security.security_manager import get_security_manager
+from app.core.security_manager import get_security_manager
 
 
 def main():
