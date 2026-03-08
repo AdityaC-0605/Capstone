@@ -5,10 +5,10 @@ This compatibility module provides the API expected by inference and batch
 services after the sustainability package refactor.
 """
 
+import inspect
 from dataclasses import dataclass
 from datetime import datetime
 from functools import wraps
-import inspect
 from typing import Any, Callable, Dict, Optional
 
 
@@ -35,9 +35,7 @@ class SustainabilityMonitor:
 
     def stop_experiment_tracking(self, experiment_id: str) -> Dict[str, Any]:
         start = self._active.pop(experiment_id, datetime.now())
-        duration_seconds = max(
-            0.0, (datetime.now() - start).total_seconds()
-        )
+        duration_seconds = max(0.0, (datetime.now() - start).total_seconds())
 
         # Conservative synthetic estimates for compatibility.
         total_energy_kwh = max(0.0002, duration_seconds * 0.00003)

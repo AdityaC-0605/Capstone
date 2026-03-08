@@ -1,27 +1,27 @@
-import torch
-import numpy as np
 from pathlib import Path
 
-from sklearn.metrics import roc_auc_score, brier_score_loss
+import numpy as np
+import torch
+from sklearn.metrics import brier_score_loss, roc_auc_score
 from torch.utils.data import DataLoader, TensorDataset
 
 try:
-    from .preprocessing_german import load_and_preprocess_german
     from .carbon_aware_nas import carbon_aware_nas
-    from .reference_model import REFERENCE_MODELS
-    from .plot_pareto import plot_pareto
-    from .sustainability_report import sustainability_summary
-    from .research_table import generate_research_table
     from .metrics import ks_statistic
+    from .plot_pareto import plot_pareto
+    from .preprocessing_german import load_and_preprocess_german
+    from .reference_model import REFERENCE_MODELS
+    from .research_table import generate_research_table
+    from .sustainability_report import sustainability_summary
 except ImportError:
     # Allow running as a standalone script from this directory.
-    from preprocessing_german import load_and_preprocess_german
     from carbon_aware_nas import carbon_aware_nas
-    from reference_model import REFERENCE_MODELS
-    from plot_pareto import plot_pareto
-    from sustainability_report import sustainability_summary
-    from research_table import generate_research_table
     from metrics import ks_statistic
+    from plot_pareto import plot_pareto
+    from preprocessing_german import load_and_preprocess_german
+    from reference_model import REFERENCE_MODELS
+    from research_table import generate_research_table
+    from sustainability_report import sustainability_summary
 
 
 # -----------------------------
@@ -35,6 +35,7 @@ DATA_PATH = Path(__file__).resolve().parent / "german_data.csv"
 # MODEL EVALUATION FACTORY
 # -----------------------------
 
+
 def make_evaluate_fn(X_train_t, y_train_t, y_test_series):
     """
     Return an evaluate_model_fn that trains on the captured training data
@@ -46,7 +47,9 @@ def make_evaluate_fn(X_train_t, y_train_t, y_test_series):
         model.train()
 
         # Lower learning rate and stronger weight decay for the small dataset
-        optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-3)
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=5e-4, weight_decay=1e-3
+        )
 
         # Class-weighted loss to handle the 70/30 class imbalance
         n_pos = y_train_t.sum().item()
@@ -57,7 +60,7 @@ def make_evaluate_fn(X_train_t, y_train_t, y_test_series):
         train_dataset = TensorDataset(X_train_t, y_train_t)
         train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 
-        best_loss = float('inf')
+        best_loss = float("inf")
         patience_counter = 0
         patience = 10
 
@@ -93,7 +96,7 @@ def make_evaluate_fn(X_train_t, y_train_t, y_test_series):
         metrics = {
             "auc": roc_auc_score(y_test_series, probs),
             "ks": ks_statistic(y_test_series.values, probs),
-            "brier": brier_score_loss(y_test_series, probs)
+            "brier": brier_score_loss(y_test_series, probs),
         }
 
         return probs, metrics
@@ -105,11 +108,14 @@ def make_evaluate_fn(X_train_t, y_train_t, y_test_series):
 # MAIN
 # -----------------------------
 
+
 def main():
 
     print("\nLoading German Credit dataset...")
 
-    X_train_scaled, X_test_scaled, y_train, y_test, scaler = load_and_preprocess_german(str(DATA_PATH))
+    X_train_scaled, X_test_scaled, y_train, y_test, scaler = (
+        load_and_preprocess_german(str(DATA_PATH))
+    )
 
     X_train_tensor = torch.tensor(X_train_scaled, dtype=torch.float32)
     y_train_tensor = torch.tensor(y_train.values, dtype=torch.float32)
@@ -123,11 +129,7 @@ def main():
 
     preprocessing_latency_ms = 12.0
 
-    exit_latencies_ms = {
-        1: 0.10,
-        2: 0.20,
-        3: 0.25
-    }
+    exit_latencies_ms = {1: 0.10, 2: 0.20, 3: 0.25}
 
     results = carbon_aware_nas(
         X_tensor,
@@ -147,7 +149,9 @@ def main():
         return
 
     if results[0].get("constraint_violation"):
-        print("No configurations met stability constraints; showing lowest-carbon fallback candidates.")
+        print(
+            "No configurations met stability constraints; showing lowest-carbon fallback candidates."
+        )
 
     for r in results[:10]:
         print(r)

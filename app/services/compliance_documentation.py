@@ -27,13 +27,13 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
+    from core.logging import get_logger
     from services.regulatory_compliance import (
         AuditTrailEntry,
         ComplianceFramework,
         ComplianceViolation,
         RegulatoryComplianceValidator,
     )
-    from core.logging import get_logger
 
 logger = get_logger(__name__)
 

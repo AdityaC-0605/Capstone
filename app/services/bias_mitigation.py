@@ -35,11 +35,11 @@ except ImportError:
 
     sys.path.append(str(Path(__file__).parent.parent))
 
+    from core.logging import get_logger
     from services.bias_detector import (
         BiasDetector,
         FairnessMetricsCalculator,
     )
-    from core.logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -5,7 +5,7 @@ def carbon_cost(
     precision_multiplier=1.0,
     alpha=1.0,
     beta=0.5,
-    gamma=0.1
+    gamma=0.1,
 ):
     """
     Carbon-aware cost proxy.

@@ -59,14 +59,18 @@ def fedavg(
         # Float tensors: weighted mean in float32 for numerical stability.
         if tensors[0].is_floating_point():
             device = tensors[0].device
-            acc = torch.zeros_like(tensors[0], dtype=torch.float32, device=device)
+            acc = torch.zeros_like(
+                tensors[0], dtype=torch.float32, device=device
+            )
             for w, t in zip(weights, tensors):
                 acc += t.to(device=device, dtype=torch.float32) * w.to(device)
             aggregated[key] = acc.to(dtype=tensors[0].dtype)
             continue
 
         # Non-floating tensors (e.g. counters): use largest-client value.
-        largest_idx = max(range(len(client_sizes)), key=lambda i: client_sizes[i])
+        largest_idx = max(
+            range(len(client_sizes)), key=lambda i: client_sizes[i]
+        )
         aggregated[key] = tensors[largest_idx].clone()
 
     if not aggregated:

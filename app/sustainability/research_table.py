@@ -10,34 +10,60 @@ def generate_research_table(results):
     # Identify baseline (full fp32 largest model, deepest exit)
     # -----------------------------
 
-    fp32_full = [r for r in results if r["precision"] == "fp32" and r["architecture"]["hidden_scale"] == 1.0 and r["exit_level"] == 3]
-    baseline = fp32_full[0] if fp32_full else max(results, key=lambda x: x["carbon_cost"])
+    fp32_full = [
+        r
+        for r in results
+        if r["precision"] == "fp32"
+        and r["architecture"]["hidden_scale"] == 1.0
+        and r["exit_level"] == 3
+    ]
+    baseline = (
+        fp32_full[0]
+        if fp32_full
+        else max(results, key=lambda x: x["carbon_cost"])
+    )
 
     # -----------------------------
     # Combined best (ours) — best efficiency
     # -----------------------------
 
-    combined = max(results, key=lambda x: x["metrics"]["auc"] / x["carbon_cost"])
+    combined = max(
+        results, key=lambda x: x["metrics"]["auc"] / x["carbon_cost"]
+    )
 
     # -----------------------------
     # INT8 only baseline (same architecture as baseline but int8)
     # -----------------------------
 
     int8_candidates = [r for r in results if r["precision"] == "int8"]
-    int8_best_auc = max(int8_candidates, key=lambda x: x["metrics"]["auc"]) if int8_candidates else baseline
+    int8_best_auc = (
+        max(int8_candidates, key=lambda x: x["metrics"]["auc"])
+        if int8_candidates
+        else baseline
+    )
 
     # -----------------------------
     # Scaling only baseline (fp32, smallest architecture)
     # -----------------------------
 
     fp32_candidates = [r for r in results if r["precision"] == "fp32"]
-    scaling_only = min(fp32_candidates, key=lambda x: x["carbon_cost"]) if fp32_candidates else baseline
+    scaling_only = (
+        min(fp32_candidates, key=lambda x: x["carbon_cost"])
+        if fp32_candidates
+        else baseline
+    )
 
     # -----------------------------
     # Early exit only (full model but exit_level=1, fp32)
     # -----------------------------
 
-    exit_only = [r for r in results if r["precision"] == "fp32" and r["architecture"]["hidden_scale"] == 1.0 and r["exit_level"] == 1]
+    exit_only = [
+        r
+        for r in results
+        if r["precision"] == "fp32"
+        and r["architecture"]["hidden_scale"] == 1.0
+        and r["exit_level"] == 1
+    ]
     early_exit = exit_only[0] if exit_only else baseline
 
     # -----------------------------
@@ -90,9 +116,17 @@ def generate_research_table(results):
 
     # Highlight the key finding
     print(f"\n--- Key Finding ---")
-    print(f"Our combined approach achieves {combined['metrics']['auc']:.4f} AUC")
+    print(
+        f"Our combined approach achieves {combined['metrics']['auc']:.4f} AUC"
+    )
     print(f"at {combined['carbon_cost']:.1f} carbon cost")
-    ours_reduction = (baseline["carbon_cost"] - combined["carbon_cost"]) / baseline["carbon_cost"] * 100
-    ours_retention = combined["metrics"]["auc"] / baseline["metrics"]["auc"] * 100
+    ours_reduction = (
+        (baseline["carbon_cost"] - combined["carbon_cost"])
+        / baseline["carbon_cost"]
+        * 100
+    )
+    ours_retention = (
+        combined["metrics"]["auc"] / baseline["metrics"]["auc"] * 100
+    )
     print(f"Carbon Reduction: {ours_reduction:.1f}%")
     print(f"Performance Retention: {ours_retention:.1f}%")

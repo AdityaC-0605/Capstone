@@ -3,7 +3,7 @@ def satisfies_constraints(
     reference_metrics,
     auc_drop_max=0.08,
     ks_drop_max=0.12,
-    brier_increase_max=0.06
+    brier_increase_max=0.06,
 ):
     """
     Enforces decision stability relative to a reference model.

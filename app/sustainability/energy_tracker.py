@@ -24,7 +24,9 @@ class EnergyTracker:
         self._active[experiment_id] = datetime.now()
         return experiment_id
 
-    def stop_tracking(self, experiment_id: Optional[str] = None) -> EnergyReport:
+    def stop_tracking(
+        self, experiment_id: Optional[str] = None
+    ) -> EnergyReport:
         if experiment_id is None and self._active:
             experiment_id = next(iter(self._active.keys()))
         experiment_id = experiment_id or "unknown"

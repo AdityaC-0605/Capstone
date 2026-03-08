@@ -6,9 +6,11 @@ def sustainability_summary(results):
     # best carbon-aware model: best AUC among lowest-cost models
     # Select optimized as lowest carbon that still has decent AUC
     sorted_by_cost = sorted(results, key=lambda x: x["carbon_cost"])
-    
+
     # Pick the model with best efficiency (AUC / carbon_cost)
-    optimized = max(results, key=lambda x: x["metrics"]["auc"] / x["carbon_cost"])
+    optimized = max(
+        results, key=lambda x: x["metrics"]["auc"] / x["carbon_cost"]
+    )
 
     baseline_cost = baseline["carbon_cost"]
     optimized_cost = optimized["carbon_cost"]
@@ -16,7 +18,9 @@ def sustainability_summary(results):
     baseline_auc = baseline["metrics"]["auc"]
     optimized_auc = optimized["metrics"]["auc"]
 
-    carbon_reduction = (baseline_cost - optimized_cost) / max(baseline_cost, 1e-12) * 100
+    carbon_reduction = (
+        (baseline_cost - optimized_cost) / max(baseline_cost, 1e-12) * 100
+    )
     performance_retention = optimized_auc / max(baseline_auc, 1e-12) * 100
 
     baseline_eff = baseline_auc / baseline_cost

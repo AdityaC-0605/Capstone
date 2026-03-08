@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
+
 class MLP(nn.Module):
     def __init__(self, input_dim):
         super().__init__()
@@ -10,11 +11,12 @@ class MLP(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(64, 1)
+            nn.Linear(64, 1),
         )
 
     def forward(self, x):
         return self.net(x).squeeze(1)
+
 
 def train_mlp(X_train, y_train, X_test, epochs=30):
     X_train = torch.tensor(X_train, dtype=torch.float32)

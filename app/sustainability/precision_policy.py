@@ -1,7 +1,5 @@
 def choose_precision(
-    carbon_budget_ms,
-    estimated_latency_ms,
-    risk_tolerance="medium"
+    carbon_budget_ms, estimated_latency_ms, risk_tolerance="medium"
 ):
     """
     Selects numerical precision based on budget and risk tolerance.

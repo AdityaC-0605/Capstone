@@ -1,27 +1,27 @@
-import torch
-import numpy as np
 from pathlib import Path
 
-from sklearn.metrics import roc_auc_score, brier_score_loss
+import numpy as np
+import torch
+from sklearn.metrics import brier_score_loss, roc_auc_score
 from torch.utils.data import DataLoader, TensorDataset
 
 try:
-    from .preprocessing import load_and_preprocess
     from .carbon_aware_nas import carbon_aware_nas
-    from .reference_model import REFERENCE_MODELS
-    from .plot_pareto import plot_pareto
-    from .sustainability_report import sustainability_summary
-    from .research_table import generate_research_table
     from .metrics import ks_statistic
+    from .plot_pareto import plot_pareto
+    from .preprocessing import load_and_preprocess
+    from .reference_model import REFERENCE_MODELS
+    from .research_table import generate_research_table
+    from .sustainability_report import sustainability_summary
 except ImportError:
     # Allow running as a standalone script from this directory.
-    from preprocessing import load_and_preprocess
     from carbon_aware_nas import carbon_aware_nas
-    from reference_model import REFERENCE_MODELS
-    from plot_pareto import plot_pareto
-    from sustainability_report import sustainability_summary
-    from research_table import generate_research_table
     from metrics import ks_statistic
+    from plot_pareto import plot_pareto
+    from preprocessing import load_and_preprocess
+    from reference_model import REFERENCE_MODELS
+    from research_table import generate_research_table
+    from sustainability_report import sustainability_summary
 
 # -----------------------------
 # DATA PATH
@@ -34,6 +34,7 @@ DATA_PATH = Path(__file__).resolve().parent / "Bank_data.csv"
 # MODEL EVALUATION FACTORY
 # -----------------------------
 
+
 def make_evaluate_fn(X_train_t, y_train_t, y_test_series):
     """
     Return an evaluate_model_fn that trains on the captured training data
@@ -43,13 +44,15 @@ def make_evaluate_fn(X_train_t, y_train_t, y_test_series):
     def evaluate_model_fn(model, X_tensor, exit_level, precision):
         model.train()
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=1e-3, weight_decay=1e-4
+        )
         loss_fn = torch.nn.BCEWithLogitsLoss()
 
         train_dataset = TensorDataset(X_train_t, y_train_t)
         train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
 
-        best_loss = float('inf')
+        best_loss = float("inf")
         patience_counter = 0
         patience = 5
 
@@ -85,7 +88,7 @@ def make_evaluate_fn(X_train_t, y_train_t, y_test_series):
         metrics = {
             "auc": roc_auc_score(y_test_series, probs),
             "ks": ks_statistic(y_test_series.values, probs),
-            "brier": brier_score_loss(y_test_series, probs)
+            "brier": brier_score_loss(y_test_series, probs),
         }
 
         return probs, metrics
@@ -97,11 +100,14 @@ def make_evaluate_fn(X_train_t, y_train_t, y_test_series):
 # MAIN NAS RUNNER
 # -----------------------------
 
+
 def main(return_results=False):
 
     print("\nLoading dataset...")
 
-    X_train, X_test, y_train, y_test, preprocessor = load_and_preprocess(str(DATA_PATH))
+    X_train, X_test, y_train, y_test, preprocessor = load_and_preprocess(
+        str(DATA_PATH)
+    )
 
     print("Preprocessing data...")
 
@@ -127,11 +133,7 @@ def main(return_results=False):
     # measured preprocessing latency (proxy)
     preprocessing_latency_ms = 12.27
 
-    exit_latencies_ms = {
-        1: 0.10,
-        2: 0.20,
-        3: 0.25
-    }
+    exit_latencies_ms = {1: 0.10, 2: 0.20, 3: 0.25}
 
     results = carbon_aware_nas(
         X_tensor,
@@ -150,7 +152,9 @@ def main(return_results=False):
         return
 
     if results[0].get("constraint_violation"):
-        print("No configurations met stability constraints; showing lowest-carbon fallback candidates.")
+        print(
+            "No configurations met stability constraints; showing lowest-carbon fallback candidates."
+        )
 
     for r in results[:10]:
         print(r)
@@ -164,10 +168,9 @@ def main(return_results=False):
 
     if return_results:
         return results
-    
+
     print("\n==RESEARCH COMPARISON TABLE==\n")
     generate_research_table(results)
-    
 
 
 # -----------------------------

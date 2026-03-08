@@ -14,7 +14,7 @@ class ScalableMLP(nn.Module):
             nn.Linear(input_dim, h1),
             nn.BatchNorm1d(h1),
             nn.ReLU(),
-            nn.Dropout(dropout)
+            nn.Dropout(dropout),
         )
 
         self.exit1 = nn.Linear(h1, 1)
@@ -23,7 +23,7 @@ class ScalableMLP(nn.Module):
             nn.Linear(h1, h2),
             nn.BatchNorm1d(h2),
             nn.ReLU(),
-            nn.Dropout(dropout)
+            nn.Dropout(dropout),
         )
 
         self.exit2 = nn.Linear(h2, 1)
@@ -32,7 +32,7 @@ class ScalableMLP(nn.Module):
             nn.Linear(h2, h3),
             nn.BatchNorm1d(h3),
             nn.ReLU(),
-            nn.Dropout(dropout)
+            nn.Dropout(dropout),
         )
 
         self.exit3 = nn.Linear(h3, 1)
@@ -43,7 +43,7 @@ class ScalableMLP(nn.Module):
     def _init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Linear):
-                nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, nonlinearity="relu")
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
             elif isinstance(m, nn.BatchNorm1d):

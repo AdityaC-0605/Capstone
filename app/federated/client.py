@@ -38,7 +38,9 @@ class FederatedClient:
         self.config = config
         self.model = model_builder()
 
-    def load_global_weights(self, global_state: Dict[str, torch.Tensor]) -> None:
+    def load_global_weights(
+        self, global_state: Dict[str, torch.Tensor]
+    ) -> None:
         self.model.load_state_dict(global_state, strict=False)
 
     def train_local(

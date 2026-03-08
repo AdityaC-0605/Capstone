@@ -38,7 +38,8 @@ CATEGORY_MAPS: Dict[str, Dict[str, float]] = {
 }
 
 REVERSE_CATEGORY_MAPS: Dict[str, Dict[int, str]] = {
-    key: {int(v): k for k, v in values.items()} for key, values in CATEGORY_MAPS.items()
+    key: {int(v): k for k, v in values.items()}
+    for key, values in CATEGORY_MAPS.items()
 }
 
 
@@ -101,9 +102,13 @@ def _encode_value(feature: str, value: Any) -> float:
 
 def encode_feature_dict(data: Mapping[str, Any]) -> np.ndarray:
     """Encode request payload into numeric vector with safe defaults."""
-    return np.array([
-        _encode_value(feature, data.get(feature)) for feature in FEATURE_ORDER
-    ], dtype=np.float32)
+    return np.array(
+        [
+            _encode_value(feature, data.get(feature))
+            for feature in FEATURE_ORDER
+        ],
+        dtype=np.float32,
+    )
 
 
 def decode_feature_vector(vector: Sequence[float]) -> Dict[str, Any]:
@@ -112,7 +117,9 @@ def decode_feature_vector(vector: Sequence[float]) -> Dict[str, Any]:
     for idx, feature in enumerate(FEATURE_ORDER):
         val = float(vector[idx])
         if feature in REVERSE_CATEGORY_MAPS:
-            out[feature] = REVERSE_CATEGORY_MAPS[feature].get(int(round(val)), DEFAULT_INPUT[feature])
+            out[feature] = REVERSE_CATEGORY_MAPS[feature].get(
+                int(round(val)), DEFAULT_INPUT[feature]
+            )
         else:
             out[feature] = val
     return out
@@ -156,7 +163,9 @@ def predict_score(model: Any, input_data: Mapping[str, Any]) -> float:
         for w, submodel in zip(raw_weights, model_list):
             if hasattr(submodel, "predict"):
                 try:
-                    score += (w / denom) * prediction_to_float(submodel.predict(dict(input_data)))
+                    score += (w / denom) * prediction_to_float(
+                        submodel.predict(dict(input_data))
+                    )
                 except Exception:
                     continue
         return float(score) if score else 0.5

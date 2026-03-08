@@ -1,5 +1,7 @@
 import time
+
 import numpy as np
+
 
 def measure_block_latency(fn, X, runs=50, warmup=5):
     times = []
@@ -15,5 +17,5 @@ def measure_block_latency(fn, X, runs=50, warmup=5):
 
     return {
         "mean_ms": float(np.mean(times) * 1000),
-        "p95_ms": float(np.percentile(times, 95) * 1000)
+        "p95_ms": float(np.percentile(times, 95) * 1000),
     }

@@ -33,7 +33,8 @@ class FederatedServer:
 
     def global_state(self) -> Dict[str, torch.Tensor]:
         return {
-            k: v.detach().clone() for k, v in self.global_model.state_dict().items()
+            k: v.detach().clone()
+            for k, v in self.global_model.state_dict().items()
         }
 
     def aggregate_round(

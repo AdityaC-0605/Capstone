@@ -45,4 +45,6 @@ class ExplainerService:
                 "feature_importance": {},
             }
 
-        return self._shap_explainer.explain(input_data=input_data, prediction=prediction)
+        return self._shap_explainer.explain(
+            input_data=input_data, prediction=prediction
+        )

@@ -68,6 +68,7 @@ except ImportError:
     def get_audit_logger():
         return MockAuditLogger()
 
+
 try:
     from ..sustainability.sustainability_monitor import SustainabilityMonitor
 except ImportError:
@@ -219,9 +220,7 @@ class PredictionRequest(BaseModel):
     include_explanation: bool = Field(
         True, description="Include model explanation"
     )
-    explanation_type: str = Field(
-        "shap", description="Type of explanation"
-    )
+    explanation_type: str = Field("shap", description="Type of explanation")
     track_sustainability: bool = Field(
         True, description="Track sustainability metrics"
     )

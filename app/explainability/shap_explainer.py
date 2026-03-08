@@ -27,7 +27,9 @@ except Exception:
 class SHAPExplainer:
     """SHAP-first explainer with safe lightweight fallback."""
 
-    def __init__(self, model: Any, config: Optional[ExplainabilityConfig] = None):
+    def __init__(
+        self, model: Any, config: Optional[ExplainabilityConfig] = None
+    ):
         self.model = model
         self.config = config or ExplainabilityConfig()
         self.feature_names = list(FEATURE_ORDER)
@@ -73,7 +75,9 @@ class SHAPExplainer:
         for idx in range(encoded_input.shape[0]):
             perturbed = encoded_input.copy()
             perturbed[idx] = ref[idx]
-            perturbed_pred = float(self._predict_matrix(perturbed.reshape(1, -1))[0])
+            perturbed_pred = float(
+                self._predict_matrix(perturbed.reshape(1, -1))[0]
+            )
             contrib[idx] = float(prediction - perturbed_pred)
 
         return contrib
@@ -105,7 +109,9 @@ class SHAPExplainer:
                     )
                 if isinstance(shap_values, list):
                     shap_values = shap_values[0]
-                contributions = np.asarray(shap_values).reshape(-1).astype(np.float32)
+                contributions = (
+                    np.asarray(shap_values).reshape(-1).astype(np.float32)
+                )
             except Exception:
                 contributions = self._fallback_contributions(encoded, pred)
         else:

@@ -1,5 +1,6 @@
 import torch
 
+
 def cast_tensor(x, precision):
     if precision == "fp32":
         return x.float()

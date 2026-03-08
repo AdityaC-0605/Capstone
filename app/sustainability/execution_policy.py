@@ -1,7 +1,5 @@
 def choose_exit_level(
-    carbon_budget_ms,
-    estimated_preprocessing_ms,
-    exit_latencies_ms
+    carbon_budget_ms, estimated_preprocessing_ms, exit_latencies_ms
 ):
     """
     Selects the deepest exit that fits within the carbon budget.

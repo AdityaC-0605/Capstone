@@ -48,9 +48,9 @@ def create_client_loaders(
     for _ in range(config.number_of_clients):
         samples = config.batch_size * 4
         client_shift = rng.normal(0.0, 0.5, config.input_size)
-        x = rng.normal(client_shift, 1.0, size=(samples, config.input_size)).astype(
-            np.float32
-        )
+        x = rng.normal(
+            client_shift, 1.0, size=(samples, config.input_size)
+        ).astype(np.float32)
         w = rng.normal(0.0, 1.0, size=(config.input_size,))
         logits = x @ w + rng.normal(0.0, 0.3, size=(samples,))
         y = (1.0 / (1.0 + np.exp(-logits)) > 0.5).astype(np.float32)

@@ -20,4 +20,3 @@ __all__ = [
     "sustainability_monitor",
     "sustainability_report",
 ]
-

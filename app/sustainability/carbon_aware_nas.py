@@ -1,8 +1,8 @@
 try:
-    from .scalable_mlp import ScalableMLP
     from .carbon_objective import carbon_cost
     from .performance_constraints import satisfies_constraints
     from .precision_modes import PRECISION_CONFIG
+    from .scalable_mlp import ScalableMLP
 except ImportError:
     # Allow running as a standalone script from this directory.
     from scalable_mlp import ScalableMLP
@@ -11,7 +11,6 @@ except ImportError:
     from precision_modes import PRECISION_CONFIG
 
 import logging
-
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +35,7 @@ PRECISION_MODES = ["fp32", "fp16", "int8"]
 # Utility
 # -----------------------------
 
+
 def estimate_operation_count(hidden_scale):
     """
     Rough FLOP proxy.
@@ -47,6 +47,7 @@ def estimate_operation_count(hidden_scale):
 # -----------------------------
 # NAS Algorithm
 # -----------------------------
+
 
 def carbon_aware_nas(
     X_tensor,
@@ -86,16 +87,18 @@ def carbon_aware_nas(
                 model = ScalableMLP(
                     input_dim=X_tensor.shape[1],
                     hidden_scale=hidden_scale,
-                    dropout=dropout
+                    dropout=dropout,
                 )
 
-                precision_multiplier = PRECISION_CONFIG[precision]["multiplier"]
+                precision_multiplier = PRECISION_CONFIG[precision][
+                    "multiplier"
+                ]
 
                 probs, metrics = evaluate_model_fn(
                     model=model,
                     X_tensor=X_tensor,
                     exit_level=exit_level,
-                    precision=precision
+                    precision=precision,
                 )
 
                 # --------------------
@@ -107,7 +110,7 @@ def carbon_aware_nas(
                     preprocessing_latency_ms,
                     exit_latencies_ms[exit_level],
                     operation_count,
-                    precision_multiplier
+                    precision_multiplier,
                 )
 
                 candidate = {

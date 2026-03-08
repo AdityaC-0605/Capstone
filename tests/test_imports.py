@@ -34,8 +34,9 @@ def test_basic_imports():
 def test_sustainability_metrics_import():
     """Test that the shared sustainability metrics can be imported."""
     try:
-        from app.sustainability.metrics import ks_statistic
         import numpy as np
+
+        from app.sustainability.metrics import ks_statistic
 
         # Sanity check with trivially separable data
         y_true = np.array([0, 0, 1, 1])
@@ -53,4 +54,3 @@ if __name__ == "__main__":
     test_basic_imports()
     test_sustainability_metrics_import()
     print("All import tests passed!")
-

@@ -5,8 +5,8 @@ Minimal carbon-aware optimizer compatibility layer.
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from .energy_tracker import EnergyTracker
 from .carbon_calculator import CarbonCalculator
+from .energy_tracker import EnergyTracker
 
 
 @dataclass
@@ -84,9 +84,11 @@ def carbon_aware_training(
         "final_carbon_footprint_kg": carbon_report.total_emissions_kg,
         "strategies_applied": [
             "carbon_scheduling" if cfg.enable_carbon_scheduling else "none",
-            "budget_enforcement"
-            if cfg.enable_budget_enforcement
-            else "no_budget",
+            (
+                "budget_enforcement"
+                if cfg.enable_budget_enforcement
+                else "no_budget"
+            ),
         ],
         "carbon_savings_kg": 0.0,
     }
