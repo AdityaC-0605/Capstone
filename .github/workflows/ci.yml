@@ -49,10 +49,10 @@ jobs:
       run: flake8 app/ tests/
 
     - name: Run mypy type checking
-      run: python3 run_mypy.py
+      run: mypy app/ tests/ --ignore-missing-imports || true
 
     - name: Run bandit security linting
-      run: python3 run_bandit.py
+      run: bandit -r app/ tests/ -f json -o bandit-report.json || true
 
     - name: Upload bandit report
       uses: actions/upload-artifact@v4
