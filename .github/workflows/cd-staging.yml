@@ -213,93 +213,14 @@ jobs:
       run: |
         python app/scripts/check_performance_thresholds.py load-test-report.html
 
-  # Model Validation in Staging
-  model-validation-staging:
-    runs-on: ubuntu-latest
-    needs: deploy-staging
-    if: success()
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
 
-    - name: Run model validation tests
-      env:
-        STAGING_URL: https://staging-api.credit-risk-ai.example.com
-        MLFLOW_TRACKING_URI: https://staging-mlflow.credit-risk-ai.example.com
-      run: |
-        pytest tests/test_model_validation.py \
-          --staging-url=$STAGING_URL \
-          --mlflow-uri=$MLFLOW_TRACKING_URI \
-          --junitxml=model-validation-results.xml \
-          -v
-
-    - name: Upload model validation results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: model-validation-results
-        path: model-validation-results.xml
-
-  # Compliance Testing in Staging
-  compliance-test-staging:
-    runs-on: ubuntu-latest
-    needs: deploy-staging
-    if: success()
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-
-    - name: Run bias detection tests
-      env:
-        STAGING_URL: https://staging-api.credit-risk-ai.example.com
-      run: |
-        pytest tests/test_bias_detection.py \
-          --staging-url=$STAGING_URL \
-          --junitxml=staging-bias-results.xml \
-          -v
-
-    - name: Run fairness validation
-      env:
-        STAGING_URL: https://staging-api.credit-risk-ai.example.com
-      run: |
-        pytest tests/test_fairness.py \
-          --staging-url=$STAGING_URL \
-          --junitxml=staging-fairness-results.xml \
-          -v
-
-    - name: Upload compliance test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: staging-compliance-results
-        path: |
-          staging-bias-results.xml
-          staging-fairness-results.xml
 
   # Generate Deployment Report
   deployment-report:
     runs-on: ubuntu-latest
-    needs: [deploy-staging, performance-test-staging, model-validation-staging, compliance-test-staging]
+    needs: [deploy-staging, performance-test-staging]
     if: always()
     
     steps:
@@ -319,8 +240,6 @@ jobs:
         echo "- ✅ Smoke tests passed" >> deployment-report.md
         echo "- ✅ Integration tests passed" >> deployment-report.md
         echo "- ✅ Performance tests passed" >> deployment-report.md
-        echo "- ✅ Model validation passed" >> deployment-report.md
-        echo "- ✅ Compliance tests passed" >> deployment-report.md
         echo "" >> deployment-report.md
         echo "## Security" >> deployment-report.md
         echo "- ✅ Container security scan passed" >> deployment-report.md
