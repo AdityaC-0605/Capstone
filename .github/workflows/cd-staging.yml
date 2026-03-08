@@ -94,7 +94,6 @@ jobs:
         output: 'trivy-results.sarif'
         scanners: 'vuln,secret,misconfig'
         severity: 'CRITICAL,HIGH,MEDIUM'
-        skip-version-check: true
         ignore-unfixed: true
 
 

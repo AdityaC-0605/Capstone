@@ -36,7 +36,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements-minimal.txt
+        pip install -r requirements.txt
 
     - name: Run Black code formatter check
       run: black --check --diff app/ tests/
@@ -85,7 +85,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements-minimal.txt
+        pip install -r requirements.txt
 
     - name: Run unit tests with coverage
       run: |
@@ -152,7 +152,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements-minimal.txt
+        pip install -r requirements.txt
 
     - name: Install system dependencies for integration tests
       run: |
@@ -197,7 +197,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements-minimal.txt
+        pip install -r requirements.txt
 
     - name: Download test data
       run: |
@@ -235,7 +235,6 @@ jobs:
         severity: 'CRITICAL,HIGH,MEDIUM'
         exit-code: '0'
         skip-files: '**/test/**,**/tests/**,**/*.test.*'
-        skip-version-check: true
         ignore-unfixed: true
 
     - name: Run Trivy config scanner
@@ -246,7 +245,6 @@ jobs:
         format: 'table'
         output: 'trivy-config-results.txt'
         severity: 'CRITICAL,HIGH,MEDIUM'
-        skip-version-check: true
 
 
 
@@ -336,7 +334,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements-minimal.txt
+        pip install -r requirements.txt
 
     - name: Run performance benchmarks
       run: |
@@ -366,7 +364,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements-minimal.txt
+        pip install -r requirements.txt
 
     - name: Run bias detection tests
       run: |

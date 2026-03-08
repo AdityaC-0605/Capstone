@@ -50,7 +50,6 @@ jobs:
         output: 'trivy-fs-results.sarif'
         scanners: 'vuln,secret,misconfig'
         severity: 'CRITICAL,HIGH,MEDIUM'
-        skip-version-check: true
         ignore-unfixed: true
 
     - name: Run Trivy config scanner
@@ -61,7 +60,6 @@ jobs:
         format: 'table'
         output: 'trivy-config-results.txt'
         severity: 'CRITICAL,HIGH,MEDIUM'
-        skip-version-check: true
 
 
 
