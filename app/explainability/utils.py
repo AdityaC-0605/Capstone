@@ -189,14 +189,15 @@ def humanize_feature_name(feature_name: str) -> str:
 
 
 def describe_feature_impact(
-    feature_name: str, value: Any, contribution: float, input_data: Mapping[str, Any]
+    feature_name: str,
+    value: Any,
+    contribution: float,
+    input_data: Mapping[str, Any],
 ) -> str:
     direction = (
         "increasing"
         if contribution > 0
-        else "reducing"
-        if contribution < 0
-        else "having little effect on"
+        else "reducing" if contribution < 0 else "having little effect on"
     )
 
     if feature_name == "credit_score":
@@ -218,7 +219,9 @@ def describe_feature_impact(
     if feature_name == "age":
         return f"Applicant age of {int(float(value))} is {direction} the predicted risk."
     if feature_name == "loan_purpose":
-        return f"Loan purpose '{str(value)}' is {direction} the predicted risk."
+        return (
+            f"Loan purpose '{str(value)}' is {direction} the predicted risk."
+        )
     if feature_name == "home_ownership":
         return f"Home ownership status '{str(value)}' is {direction} the predicted risk."
     if feature_name == "verification_status":
@@ -249,9 +252,7 @@ def build_ranked_explanation_factors(
                 "impact": (
                     "risk_increase"
                     if contribution > 0
-                    else "risk_decrease"
-                    if contribution < 0
-                    else "neutral"
+                    else "risk_decrease" if contribution < 0 else "neutral"
                 ),
                 "contribution": float(contribution),
                 "description": describe_feature_impact(
@@ -274,11 +275,19 @@ def build_prediction_summary(
 
     largest_factor = factors[0]
     top_increase = next(
-        (factor for factor in factors if factor.get("impact") == "risk_increase"),
+        (
+            factor
+            for factor in factors
+            if factor.get("impact") == "risk_increase"
+        ),
         None,
     )
     top_decrease = next(
-        (factor for factor in factors if factor.get("impact") == "risk_decrease"),
+        (
+            factor
+            for factor in factors
+            if factor.get("impact") == "risk_decrease"
+        ),
         None,
     )
 

@@ -41,17 +41,12 @@ def test_explanation_reflects_credit_risk_inputs():
     assert high_exp["prediction"] == high_pred["prediction"]
     assert low_exp["prediction"] == low_pred["prediction"]
     assert any(
-        abs(value) > 0.0
-        for value in high_exp["feature_importance"].values()
+        abs(value) > 0.0 for value in high_exp["feature_importance"].values()
     )
     assert any(
-        abs(value) > 0.0
-        for value in low_exp["feature_importance"].values()
+        abs(value) > 0.0 for value in low_exp["feature_importance"].values()
     )
-    assert (
-        high_exp["feature_importance"]
-        != low_exp["feature_importance"]
-    )
+    assert high_exp["feature_importance"] != low_exp["feature_importance"]
     assert high_exp["risk_level"] in {"low", "medium", "high", "very_high"}
     assert low_exp["risk_level"] in {"low", "medium", "high", "very_high"}
     assert high_exp["summary"]

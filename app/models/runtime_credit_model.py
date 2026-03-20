@@ -22,12 +22,8 @@ def normalize_credit_application(data: Mapping[str, Any]) -> Dict[str, Any]:
         "debt_to_income_ratio": float(data.get("debt_to_income_ratio", 0.30)),
         "credit_score": int(float(data.get("credit_score", 680))),
         "loan_amount": float(data.get("loan_amount", 15000.0)),
-        "loan_purpose": _normalized_text(
-            data.get("loan_purpose"), "other"
-        ),
-        "home_ownership": _normalized_text(
-            data.get("home_ownership"), "rent"
-        ),
+        "loan_purpose": _normalized_text(data.get("loan_purpose"), "other"),
+        "home_ownership": _normalized_text(data.get("home_ownership"), "rent"),
         "verification_status": _normalized_text(
             data.get("verification_status"), "not_verified"
         ),
@@ -41,7 +37,9 @@ def compute_credit_risk_score(data: Mapping[str, Any]) -> float:
     age = app["age"]
     income = max(app["income"], 1.0)
     employment_length = app["employment_length"]
-    debt_to_income_ratio = float(np.clip(app["debt_to_income_ratio"], 0.0, 1.0))
+    debt_to_income_ratio = float(
+        np.clip(app["debt_to_income_ratio"], 0.0, 1.0)
+    )
     credit_score = int(np.clip(app["credit_score"], 300, 850))
     loan_amount = max(app["loan_amount"], 1000.0)
     loan_purpose = app["loan_purpose"]
