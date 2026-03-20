@@ -1,90 +1,31 @@
-# Makefile for Sustainable Credit Risk AI System
+.PHONY: help test format lint run-main-api run-inference-api run-backend
 
-.PHONY: help install test lint format build deploy clean
-
-# Default target
 help:
 	@echo "Available targets:"
-	@echo "  install     - Install dependencies"
-	@echo "  test        - Run all tests"
-	@echo "  lint        - Run linting checks"
-	@echo "  format      - Format code"
-	@echo "  build       - Build Docker images"
-	@echo "  deploy      - Deploy to Kubernetes"
-	@echo "  clean       - Clean up artifacts"
+	@echo "  test              Run backend smoke tests"
+	@echo "  format            Format Python files"
+	@echo "  lint              Run lightweight lint checks"
+	@echo "  run-main-api      Start the main FastAPI service"
+	@echo "  run-inference-api Start the inference FastAPI service"
+	@echo "  run-backend       Start both backend services"
 
-# Development setup
-install:
-	pip install -r requirements.txt -r requirements-dev.txt
-	pre-commit install
-
-# Testing
 test:
-	pytest tests/ --cov=app --cov-report=html --cov-report=term-missing -v
-
-test-unit:
-	pytest tests/unit/ -v
-
-test-integration:
-	pytest tests/integration/ -v
-
-test-models:
-	pytest tests/models/ -v
-
-test-compliance:
-	pytest tests/compliance/ -v
-
-# Code quality
-lint:
-	black --check app/ tests/
-	isort --check-only app/ tests/
-	flake8 app/ tests/
-	mypy app/
-	bandit -r app/
+	./venv/bin/python -m pytest -q tests/
 
 format:
-	black app/ tests/
-	isort app/ tests/
+	./venv/bin/black app tests main.py
+	./venv/bin/isort app tests main.py
 
-# Security
-security-scan:
-	safety check
-	bandit -r app/
-	semgrep --config=auto app/
+lint:
+	./venv/bin/black --check app tests main.py
+	./venv/bin/isort --check-only app tests main.py
+	./venv/bin/flake8 app tests main.py
 
-# Docker operations
-build:
-	docker build -t sustainable-credit-risk-ai:latest .
+run-main-api:
+	./venv/bin/uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
 
-build-all:
-	docker build --target production -t sustainable-credit-risk-ai:production .
-	docker build --target training -t sustainable-credit-risk-ai:training .
-	docker build --target development -t sustainable-credit-risk-ai:development .
+run-inference-api:
+	./venv/bin/python -c "from app.api.inference_service import run_inference_service; run_inference_service(port=8001)"
 
-# Kubernetes operations
-deploy:
-	./k8s/deploy.sh deploy
-
-deploy-staging:
-	./k8s/deploy.sh deploy --environment staging
-
-validate-deployment:
-	./k8s/validate-deployment.sh
-
-# Local development
-run-local:
-	docker-compose up -d
-
-stop-local:
-	docker-compose down
-
-# Performance testing
-performance-test:
-	locust -f tests/load/locustfile.py --host=http://localhost:8000
-
-# Cleanup
-clean:
-	docker system prune -f
-	rm -rf htmlcov/ .coverage .pytest_cache/
-	find . -type d -name __pycache__ -delete
-	find . -type f -name "*.pyc" -delete
+run-backend:
+	./start_backend.sh
