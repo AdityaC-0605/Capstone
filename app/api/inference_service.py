@@ -79,13 +79,10 @@ try:
 except ImportError:
     ExplainerService = None  # type: ignore[assignment]
 
-
-class LightweightCreditRiskModel:
-    def predict(self, data):
-        return {"prediction": 0.75, "confidence": 0.85}
-
-    def predict_proba(self, data):
-        return [[0.25, 0.75]]
+try:
+    from ..models.runtime_credit_model import LightweightCreditRiskModel
+except ImportError:
+    LightweightCreditRiskModel = None  # type: ignore[assignment]
 
 
 class MockExplainerService:
@@ -307,12 +304,12 @@ class APIConfig:
         )
         self.version = "1.0.0"
         self.host = "0.0.0.0"
-        self.port = 8000
+        self.port = 8001
 
         # Security settings
         self.enable_authentication = True
         self.api_keys = set()  # Will be populated with valid API keys
-        self.trusted_hosts = ["localhost", "127.0.0.1"]
+        self.trusted_hosts = ["localhost", "127.0.0.1", "testserver"]
 
         # Rate limiting
         self.enable_rate_limiting = True
@@ -469,6 +466,16 @@ class InferenceService:
     def _setup_routes(self):
         """Setup API routes."""
 
+        @self.app.get("/")
+        async def root():
+            """Service metadata endpoint."""
+            return {
+                "service": "credit-risk-inference",
+                "version": self.config.version,
+                "docs_url": "/docs",
+                "health_url": "/health",
+            }
+
         # Health check endpoint
         @self.app.get("/health")
         async def health_check():
@@ -486,7 +493,7 @@ class InferenceService:
             """Get model information."""
             return {
                 "model_version": self.config.model_version,
-                "model_type": "mlp_logistic",
+                "model_type": "runtime_credit_risk",
                 "features_supported": [
                     "age",
                     "income",
@@ -558,6 +565,8 @@ class InferenceService:
     def _load_model(self):
         """Load the lightweight runtime model."""
         try:
+            if LightweightCreditRiskModel is None:
+                raise ImportError("Runtime credit risk model is unavailable")
             self.model = LightweightCreditRiskModel()
             logger.info("Model loaded successfully")
         except Exception as e:
