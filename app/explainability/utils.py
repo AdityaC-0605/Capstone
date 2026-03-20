@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Mapping, Sequence
+from typing import Any, Dict, List, Mapping, Sequence
 
 import numpy as np
 
@@ -182,3 +182,130 @@ def sorted_feature_importance(
     pairs.sort(key=lambda item: abs(float(item[1])), reverse=True)
     top = pairs[:max_features]
     return {name: float(value) for name, value in top}
+
+
+def humanize_feature_name(feature_name: str) -> str:
+    return feature_name.replace("_", " ").title()
+
+
+def describe_feature_impact(
+    feature_name: str, value: Any, contribution: float, input_data: Mapping[str, Any]
+) -> str:
+    direction = (
+        "increasing"
+        if contribution > 0
+        else "reducing"
+        if contribution < 0
+        else "having little effect on"
+    )
+
+    if feature_name == "credit_score":
+        return f"Credit score of {int(float(value))} is {direction} the predicted risk."
+    if feature_name == "debt_to_income_ratio":
+        return f"Debt-to-income ratio of {float(value):.0%} is {direction} the predicted risk."
+    if feature_name == "loan_amount":
+        income = max(float(input_data.get("income", 1.0)), 1.0)
+        loan_to_income = float(value) / income
+        return (
+            f"Loan amount of ${float(value):,.0f} "
+            f"({loan_to_income:.0%} of income) is {direction} the predicted risk."
+        )
+    if feature_name == "income":
+        return f"Annual income of ${float(value):,.0f} is {direction} the predicted risk."
+    if feature_name == "employment_length":
+        years = int(float(value))
+        return f"Employment length of {years} years is {direction} the predicted risk."
+    if feature_name == "age":
+        return f"Applicant age of {int(float(value))} is {direction} the predicted risk."
+    if feature_name == "loan_purpose":
+        return f"Loan purpose '{str(value)}' is {direction} the predicted risk."
+    if feature_name == "home_ownership":
+        return f"Home ownership status '{str(value)}' is {direction} the predicted risk."
+    if feature_name == "verification_status":
+        return f"Verification status '{str(value)}' is {direction} the predicted risk."
+
+    return f"{humanize_feature_name(feature_name)} is {direction} the predicted risk."
+
+
+def build_ranked_explanation_factors(
+    input_data: Mapping[str, Any],
+    feature_importance: Mapping[str, float],
+    limit: int = 3,
+) -> List[Dict[str, Any]]:
+    ranked = sorted(
+        feature_importance.items(),
+        key=lambda item: abs(float(item[1])),
+        reverse=True,
+    )
+
+    factors: List[Dict[str, Any]] = []
+    for feature_name, contribution in ranked[:limit]:
+        value = input_data.get(feature_name, DEFAULT_INPUT.get(feature_name))
+        factors.append(
+            {
+                "feature": feature_name,
+                "label": humanize_feature_name(feature_name),
+                "value": value,
+                "impact": (
+                    "risk_increase"
+                    if contribution > 0
+                    else "risk_decrease"
+                    if contribution < 0
+                    else "neutral"
+                ),
+                "contribution": float(contribution),
+                "description": describe_feature_impact(
+                    feature_name, value, float(contribution), input_data
+                ),
+            }
+        )
+
+    return factors
+
+
+def build_prediction_summary(
+    prediction: float, risk_level: str, factors: Sequence[Mapping[str, Any]]
+) -> str:
+    if not factors:
+        return (
+            f"The applicant is predicted as {risk_level} risk "
+            f"with a score of {prediction:.3f}."
+        )
+
+    largest_factor = factors[0]
+    top_increase = next(
+        (factor for factor in factors if factor.get("impact") == "risk_increase"),
+        None,
+    )
+    top_decrease = next(
+        (factor for factor in factors if factor.get("impact") == "risk_decrease"),
+        None,
+    )
+
+    summary = (
+        f"The applicant is predicted as {risk_level} risk with a score of "
+        f"{prediction:.3f}. The largest overall effect comes from "
+        f"{largest_factor['label'].lower()}, which is "
+        f"{str(largest_factor['impact']).replace('_', ' ')}."
+    )
+
+    if top_increase is not None and top_decrease is not None:
+        return (
+            f"{summary} The main risk increase comes from "
+            f"{top_increase['label'].lower()}, while the main risk decrease "
+            f"comes from {top_decrease['label'].lower()}."
+        )
+
+    if top_increase is not None:
+        return (
+            f"{summary} The main risk increase comes from "
+            f"{top_increase['label'].lower()}."
+        )
+
+    if top_decrease is not None:
+        return (
+            f"{summary} The main risk decrease comes from "
+            f"{top_decrease['label'].lower()}."
+        )
+
+    return summary

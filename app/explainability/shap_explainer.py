@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import os
+import tempfile
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
 
 from .config import ExplainabilityConfig
 from .utils import (
+    DEFAULT_INPUT,
     FEATURE_ORDER,
+    build_prediction_summary,
+    build_ranked_explanation_factors,
     decode_feature_vector,
     encode_feature_dict,
     predict_score,
@@ -17,6 +23,10 @@ from .utils import (
 )
 
 try:
+    os.environ.setdefault(
+        "MPLCONFIGDIR",
+        str(Path(tempfile.gettempdir()) / "mj-matplotlib-cache"),
+    )
     import shap
 
     SHAP_AVAILABLE = True
@@ -33,8 +43,9 @@ class SHAPExplainer:
         self.model = model
         self.config = config or ExplainabilityConfig()
         self.feature_names = list(FEATURE_ORDER)
+        baseline = encode_feature_dict(DEFAULT_INPUT).reshape(1, -1)
         self._background = np.tile(
-            np.zeros((1, len(self.feature_names)), dtype=np.float32),
+            baseline.astype(np.float32),
             (self.config.background_sample_size, 1),
         )
         self._explainer = None
@@ -122,9 +133,17 @@ class SHAPExplainer:
             contributions,
             self.config.max_features_to_display,
         )
+        risk_level = risk_level_from_score(pred)
+        top_factors = build_ranked_explanation_factors(
+            input_data,
+            feature_importance,
+            limit=min(3, self.config.max_features_to_display),
+        )
 
         return {
             "prediction": pred,
-            "risk_level": risk_level_from_score(pred),
+            "risk_level": risk_level,
             "feature_importance": feature_importance,
+            "top_factors": top_factors,
+            "summary": build_prediction_summary(pred, risk_level, top_factors),
         }
