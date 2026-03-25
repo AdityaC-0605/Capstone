@@ -7,10 +7,17 @@ from typing import Any, Dict, Optional
 from .config import ExplainabilityConfig
 from .shap_explainer import SHAPExplainer
 from .utils import (
+    RISK_THRESHOLDS,
+    build_counterfactual,
+    build_methodology_note,
     build_prediction_summary,
     build_ranked_explanation_factors,
+    build_recommendations,
+    build_risk_groups,
+    compute_explanation_confidence,
     prediction_to_float,
     risk_level_from_score,
+    risk_threshold_context,
 )
 
 
@@ -45,12 +52,29 @@ class ExplainerService:
         risk_level = risk_level_from_score(prediction)
 
         if self._shap_explainer is None:
-            top_factors = []
+            top_factors: list = []
+            empty_importance: dict = {}
             return {
                 "prediction": prediction,
                 "risk_level": risk_level,
-                "feature_importance": {},
+                "risk_threshold_context": risk_threshold_context(prediction),
+                "risk_thresholds": [
+                    {"level": t["label"], "max_score": t["ceiling"]}
+                    for t in RISK_THRESHOLDS
+                ],
+                "feature_importance": empty_importance,
                 "top_factors": top_factors,
+                "recommendations": [],
+                "counterfactual": build_counterfactual(
+                    input_data, empty_importance, risk_level,
+                ),
+                "risk_groups": build_risk_groups(
+                    input_data, empty_importance,
+                ),
+                "confidence": compute_explanation_confidence(
+                    empty_importance,
+                ),
+                "methodology": build_methodology_note(shap_used=False),
                 "summary": build_prediction_summary(
                     prediction, risk_level, top_factors
                 ),

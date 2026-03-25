@@ -13,12 +13,19 @@ from .config import ExplainabilityConfig
 from .utils import (
     DEFAULT_INPUT,
     FEATURE_ORDER,
+    RISK_THRESHOLDS,
+    build_counterfactual,
+    build_methodology_note,
     build_prediction_summary,
     build_ranked_explanation_factors,
+    build_recommendations,
+    build_risk_groups,
+    compute_explanation_confidence,
     decode_feature_vector,
     encode_feature_dict,
     predict_score,
     risk_level_from_score,
+    risk_threshold_context,
     sorted_feature_importance,
 )
 
@@ -105,6 +112,7 @@ class SHAPExplainer:
             else float(self._predict_matrix(encoded.reshape(1, -1))[0])
         )
 
+        used_shap = False
         if self._shap_ready and self._explainer is not None:
             try:
                 try:
@@ -123,6 +131,7 @@ class SHAPExplainer:
                 contributions = (
                     np.asarray(shap_values).reshape(-1).astype(np.float32)
                 )
+                used_shap = True
             except Exception:
                 contributions = self._fallback_contributions(encoded, pred)
         else:
@@ -137,13 +146,25 @@ class SHAPExplainer:
         top_factors = build_ranked_explanation_factors(
             input_data,
             feature_importance,
-            limit=min(3, self.config.max_features_to_display),
+            limit=min(5, self.config.max_features_to_display),
         )
 
         return {
             "prediction": pred,
             "risk_level": risk_level,
+            "risk_threshold_context": risk_threshold_context(pred),
+            "risk_thresholds": [
+                {"level": t["label"], "max_score": t["ceiling"]}
+                for t in RISK_THRESHOLDS
+            ],
             "feature_importance": feature_importance,
             "top_factors": top_factors,
+            "recommendations": build_recommendations(top_factors),
+            "counterfactual": build_counterfactual(
+                input_data, feature_importance, risk_level,
+            ),
+            "risk_groups": build_risk_groups(input_data, feature_importance),
+            "confidence": compute_explanation_confidence(feature_importance),
+            "methodology": build_methodology_note(used_shap),
             "summary": build_prediction_summary(pred, risk_level, top_factors),
         }
