@@ -2,9 +2,9 @@
 
 Backend-only repository for credit risk prediction with three primary capabilities:
 
-- Explainable credit risk inference
-- Federated learning simulation
-- Sustainability and carbon-aware experimentation
+- **Explainable credit risk inference** — SHAP-powered explanations with actionable recommendations, counterfactual suggestions, feature grouping, confidence scoring, and analyst-style narrative summaries
+- **Federated learning simulation**
+- **Sustainability and carbon-aware experimentation**
 
 ## What Is Included
 
@@ -97,6 +97,30 @@ Explainability smoke test:
 python -m pytest -q tests/test_explainability_runtime.py
 ```
 
+Manual explainability test (prints full JSON output):
+
+```bash
+./venv/bin/python -c "
+import json
+from app.models.runtime_credit_model import LightweightCreditRiskModel
+from app.explainability.explanation_service import ExplainerService
+
+model = LightweightCreditRiskModel()
+explainer = ExplainerService(model)
+
+sample = {
+    'age': 23, 'income': 28000, 'employment_length': 1,
+    'debt_to_income_ratio': 0.58, 'credit_score': 560,
+    'loan_amount': 26000, 'loan_purpose': 'medical',
+    'home_ownership': 'rent', 'verification_status': 'not_verified',
+}
+
+pred = model.predict(sample)
+exp = explainer.explain_prediction(sample, pred)
+print(json.dumps(exp, indent=2, default=str))
+"
+```
+
 Federated learning simulation:
 
 ```bash
@@ -142,8 +166,32 @@ MJ/
 └── README.md
 ```
 
+## Explainability Output Schema
+
+The `explanation` field in the inference response contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `prediction` | `float` | Risk score (0–1) |
+| `risk_level` | `string` | `low` \| `medium` \| `high` \| `very_high` |
+| `risk_threshold_context` | `string` | Which risk band the score falls into |
+| `risk_thresholds` | `array` | All risk bands with their ceilings |
+| `feature_importance` | `object` | Feature → contribution mapping |
+| `top_factors` | `array` | Top 5 factors with description, magnitude, benchmark context |
+| `recommendations` | `array` | Actionable advice per factor (`action_needed` or `preserve`) |
+| `counterfactual` | `object` | Minimal changes to move to a lower risk band |
+| `risk_groups` | `object` | Features grouped into categories (financial strength, debt burden, stability, loan context) |
+| `confidence` | `object` | Explanation confidence (`low` \| `medium` \| `high` with score and reason) |
+| `methodology` | `object` | How contributions were computed (SHAP or perturbation) + baseline profile |
+| `summary` | `string` | Analyst-style narrative summary |
+
 ## Notes For Frontend Integration
 
 - Treat `http://localhost:8000` as the system/status API.
 - Treat `http://localhost:8001` as the credit risk inference API.
-- Use the inference response `explanation.summary` and `explanation.top_factors` directly in the frontend.
+- Use `explanation.summary` for a quick overview and `explanation.top_factors` for detailed breakdowns.
+- Display `explanation.recommendations` to show users what to improve (`action_needed`) and what to maintain (`preserve`).
+- Use `explanation.counterfactual` to show specific targets (e.g., "Increase credit score to ≥ 700").
+- Show `explanation.risk_groups` for a grouped view of risk categories.
+- Use `explanation.confidence.level` to indicate how reliable the explanation is.
+- Reference `explanation.methodology.baseline.baseline_values` to show the comparison baseline.
