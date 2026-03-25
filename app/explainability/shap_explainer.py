@@ -161,7 +161,9 @@ class SHAPExplainer:
             "top_factors": top_factors,
             "recommendations": build_recommendations(top_factors),
             "counterfactual": build_counterfactual(
-                input_data, feature_importance, risk_level,
+                input_data,
+                feature_importance,
+                risk_level,
             ),
             "risk_groups": build_risk_groups(input_data, feature_importance),
             "confidence": compute_explanation_confidence(feature_importance),

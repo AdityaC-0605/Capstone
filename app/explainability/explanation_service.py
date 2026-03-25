@@ -66,10 +66,13 @@ class ExplainerService:
                 "top_factors": top_factors,
                 "recommendations": [],
                 "counterfactual": build_counterfactual(
-                    input_data, empty_importance, risk_level,
+                    input_data,
+                    empty_importance,
+                    risk_level,
                 ),
                 "risk_groups": build_risk_groups(
-                    input_data, empty_importance,
+                    input_data,
+                    empty_importance,
                 ),
                 "confidence": compute_explanation_confidence(
                     empty_importance,

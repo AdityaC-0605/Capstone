@@ -431,7 +431,11 @@ def _magnitude_label(contribution: float) -> str:
     return "minor"
 
 
-_ADVERB_MAP = {"strong": "strongly", "moderate": "moderately", "minor": "slightly"}
+_ADVERB_MAP = {
+    "strong": "strongly",
+    "moderate": "moderately",
+    "minor": "slightly",
+}
 
 
 def _magnitude_adverb(contribution: float) -> str:
@@ -664,9 +668,7 @@ _RECOMMENDATION_TEMPLATES: Dict[str, Dict[str, str]] = {
             "flexible, consider categorizing under a lower-risk purpose "
             "such as home improvement or debt consolidation."
         ),
-        "risk_decrease": (
-            "Loan purpose is viewed favorably by the model."
-        ),
+        "risk_decrease": ("Loan purpose is viewed favorably by the model."),
     },
     "home_ownership": {
         "risk_increase": (
@@ -759,11 +761,7 @@ def build_counterfactual(
 
     # Only suggest changes for features that increase risk
     risk_drivers = sorted(
-        (
-            (f, c)
-            for f, c in feature_importance.items()
-            if c > 0.01
-        ),
+        ((f, c) for f, c in feature_importance.items() if c > 0.01),
         key=lambda pair: pair[1],
         reverse=True,
     )
@@ -862,7 +860,11 @@ def compute_explanation_confidence(
     """Assess how confident the explanation is based on contribution patterns."""
     contributions = [float(c) for c in feature_importance.values()]
     if not contributions:
-        return {"level": "low", "score": 0.0, "reason": "No contributions available."}
+        return {
+            "level": "low",
+            "score": 0.0,
+            "reason": "No contributions available.",
+        }
 
     abs_contribs = [abs(c) for c in contributions]
     max_contrib = max(abs_contribs)
@@ -913,9 +915,8 @@ def compute_explanation_confidence(
         )
     elif conf_score >= 0.35:
         level = "medium"
-        reason = (
-            f"Moderate signal from {meaningful_count} feature(s)."
-            + (" Mixed risk signals present." if has_conflict else "")
+        reason = f"Moderate signal from {meaningful_count} feature(s)." + (
+            " Mixed risk signals present." if has_conflict else ""
         )
     else:
         level = "low"
@@ -993,12 +994,8 @@ def build_prediction_summary(
                 val_str = f"{val:,.2f}" if val > 100 else f"{val:.2%}"
             else:
                 val_str = str(val)
-            driver_details.append(
-                f"{f['label'].lower()} ({val_str})"
-            )
-        parts.append(
-            f"Key risk drivers: {', '.join(driver_details)}."
-        )
+            driver_details.append(f"{f['label'].lower()} ({val_str})")
+        parts.append(f"Key risk drivers: {', '.join(driver_details)}.")
 
     # Protective factors detail
     if decreases:
@@ -1009,12 +1006,8 @@ def build_prediction_summary(
                 val_str = f"{val:,.2f}" if val > 100 else f"{val:.2%}"
             else:
                 val_str = str(val)
-            shield_details.append(
-                f"{f['label'].lower()} ({val_str})"
-            )
-        parts.append(
-            f"Key protective factors: {', '.join(shield_details)}."
-        )
+            shield_details.append(f"{f['label'].lower()} ({val_str})")
+        parts.append(f"Key protective factors: {', '.join(shield_details)}.")
 
     return " ".join(parts)
 
@@ -1031,8 +1024,7 @@ def build_methodology_note(shap_used: bool) -> Dict[str, Any]:
             "risk ABOVE the baseline; negative values push it BELOW."
         ),
         "baseline_values": {
-            humanize_feature_name(k): v
-            for k, v in DEFAULT_INPUT.items()
+            humanize_feature_name(k): v for k, v in DEFAULT_INPUT.items()
         },
     }
 

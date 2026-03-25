@@ -98,7 +98,12 @@ def test_explanation_reflects_credit_risk_inputs():
     # ── Risk groups ──
     assert "risk_groups" in high_exp
     assert isinstance(high_exp["risk_groups"], dict)
-    expected_groups = {"financial_strength", "debt_burden", "stability", "loan_context"}
+    expected_groups = {
+        "financial_strength",
+        "debt_burden",
+        "stability",
+        "loan_context",
+    }
     assert set(high_exp["risk_groups"].keys()) == expected_groups
     for group_key, group in high_exp["risk_groups"].items():
         assert "label" in group
@@ -144,4 +149,3 @@ def test_explanation_reflects_credit_risk_inputs():
     # ── Summary narrative style ──
     assert "This applicant presents a" in high_exp["summary"]
     assert "primary driver" in high_exp["summary"]
-
