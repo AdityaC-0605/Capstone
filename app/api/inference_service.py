@@ -86,6 +86,12 @@ except ImportError:
 
 
 class MockExplainerService:
+    """Fallback explainer used when the real ExplainerService fails to import.
+
+    Returns a response matching the full explanation schema so downstream
+    consumers (API, frontend) always receive a consistent structure.
+    """
+
     def explain_prediction(self, data, prediction):
         risk_score = float(prediction.get("prediction", 0.5))
         if risk_score < 0.25:
@@ -97,14 +103,59 @@ class MockExplainerService:
         else:
             risk_level = "very_high"
 
+        mock_importance = {
+            "debt_to_income_ratio": 0.3,
+            "credit_score": -0.2,
+            "income": -0.1,
+        }
+
+        risk_tag = risk_level.replace("_", " ").title()
+
         return {
             "prediction": risk_score,
             "risk_level": risk_level,
-            "feature_importance": {
-                "debt_to_income_ratio": 0.3,
-                "credit_score": -0.2,
-                "income": -0.1,
+            "risk_threshold_context": (
+                f"Score {risk_score:.3f} falls in the {risk_tag} band."
+            ),
+            "risk_thresholds": [
+                {"level": "low", "max_score": 0.25},
+                {"level": "medium", "max_score": 0.5},
+                {"level": "high", "max_score": 0.75},
+                {"level": "very_high", "max_score": 1.01},
+            ],
+            "feature_importance": mock_importance,
+            "top_factors": [],
+            "recommendations": [],
+            "counterfactual": {
+                "needed": False,
+                "message": "Mock explainer: no counterfactual available.",
+                "changes": {},
             },
+            "risk_groups": {},
+            "confidence": {
+                "level": "low",
+                "score": 0.0,
+                "reason": "Mock explainer; real SHAP analysis unavailable.",
+            },
+            "methodology": {
+                "method": "Mock (fallback)",
+                "description": (
+                    "The real SHAP explainer could not be loaded. "
+                    "This is a placeholder response with static values."
+                ),
+                "interpretation": (
+                    "These values are illustrative only and should "
+                    "not be used for decision-making."
+                ),
+                "baseline": {
+                    "description": "Not available in mock mode.",
+                    "baseline_values": {},
+                },
+            },
+            "summary": (
+                f"Predicted risk: {risk_tag} (score {risk_score:.3f}). "
+                f"Detailed explanation unavailable (mock explainer)."
+            ),
         }
 
 
