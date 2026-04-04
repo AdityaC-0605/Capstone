@@ -1,96 +1,94 @@
-# Sustainable Credit Risk AI Backend
+# PulseLedger — Sustainable Credit Risk AI
 
-Backend-only repository for credit risk prediction with three primary capabilities:
+A complete, full-stack application providing carbon-aware, federated, and explainable credit risk intelligence.
 
-- **Explainable credit risk inference** — SHAP-powered explanations with actionable recommendations, counterfactual suggestions, feature grouping, confidence scoring, and analyst-style narrative summaries
-- **Federated learning simulation**
-- **Sustainability and carbon-aware experimentation**
+## 🌟 Core Capabilities
 
-## What Is Included
+- **Explainable Credit Risk Inference** — SHAP-powered explanations featuring actionable recommendations, counterfactual suggestions, feature risk grouping, confidence scoring, and dynamic analyst-style narrative summaries.
+- **Federated Learning Simulation** — Distributed client coordination visualization demonstrating privacy-preserving model aggregation.
+- **Sustainability Operations** — Carbon-aware AI telemetry, tracking the carbon footprint and energy consumption of live operational AI models.
+- **"Mercury Noir" Command Center** — A premium, unified React/Next.js frontend engineered with a custom warm-industrial design system indicating live operational intelligence.
 
-- `app/api/` FastAPI services for health, status, and credit risk inference
-- `app/explainability/` SHAP-based and fallback explanation logic
-- `app/federated/` local federated learning simulation utilities
-- `app/sustainability/` carbon-aware NAS, monitoring, and evaluation helpers
-- `app/core/` configuration, logging, security, auth, encryption, GDPR support
-- `tests/` lightweight backend smoke tests
+---
 
-Frontend-specific files have been removed so a separate frontend can be built cleanly against these APIs.
+## 🚀 Quick Start
 
-## Frontend Preview
+The project consists of a Python FastAPI backend and a Next.js frontend. You will need two terminal windows to run both simultaneously.
 
-A new standalone frontend lives in `frontend/`.
-
-Start the backend first:
+### 1. Start the Backend
 
 ```bash
-./start_backend.sh
-```
-
-Then serve the frontend from the repo root:
-
-```bash
-python3 -m http.server 4173 -d frontend
-```
-
-Open:
-
-```text
-http://localhost:4173
-```
-
-Paste the `sk-test-...` API key from the inference log into the UI to run live predictions. If the backend is offline, the frontend can still render a polished demo state locally.
-
-## Quick Start
-
-```bash
-cd /Users/aditya/Documents/MJ
+# In the root 'MJ/' directory
 source venv/bin/activate
-```
-
-Run the backend services:
-
-```bash
 ./start_backend.sh
 ```
 
 This starts:
+- **Main Engine API:** `http://localhost:8000`
+- **Inference Engine API:** `http://localhost:8001`
+*(Note: Keep track of the `sk-test-...` API key printed in the console for inference)*
 
-- Main API: `http://localhost:8000`
-- Inference API: `http://localhost:8001`
-
-## Useful Checks
-
-System bootstrap:
+### 2. Start the Frontend
 
 ```bash
-python main.py
+# In a new terminal window
+cd frontend
+npm install
+npm run dev
 ```
 
-Backend smoke tests:
+Open your browser to:
+[http://localhost:3000](http://localhost:3000)
 
+*Within the PulseLedger Studio UI, navigate to Settings (gear icon) and submit the `sk-test-...` bearer key to begin live polling.*
+
+---
+
+## 🛠️ Project Structure
+
+```text
+PulseLedger/
+├── app/                  # FastAPI Backend Services
+│   ├── api/              # Core endpoints
+│   ├── explainability/   # SHAP explainer & narrative generator
+│   ├── federated/        # FL simulation orchestration
+│   ├── models/           # Lightweight credit models
+│   └── sustainability/   # Carbon-aware NAS and tracking
+├── frontend/             # Next.js Application
+│   ├── app/              # Next App Router (Dashboard, Studio, Federated, Sustainability)
+│   ├── components/       # Mercury Noir UI component library
+│   ├── lib/              # Formatting, Types, API Connectors
+│   └── store/            # Zustand global state (usePulseStore)
+├── tests/                # Backend smoke/unit tests
+├── main.py               # Main API launchbed
+├── start_backend.sh      # Launch script
+└── pyproject.toml / package.json
+```
+
+---
+
+## 📊 Developer Commands
+
+### Backend Verification
+System bootstrap & smoke tests:
 ```bash
+python main.py
 python -m pytest -q tests/
 ```
 
-Main API health:
-
+Manual Explainability Terminal Test:
 ```bash
-curl -s http://localhost:8000/health
-curl -s http://localhost:8000/ready
-curl -s http://localhost:8000/api/v1/status
+python -m pytest -q tests/test_explainability_runtime.py
 ```
 
-Inference API health:
-
+### Checking API Health
 ```bash
+curl -s http://localhost:8000/health
 curl -s http://localhost:8001/health
 ```
 
-## Inference API Example
-
-Start the backend, copy the generated API key from the inference log, then call:
-
+### CLI Inference Example
+Submit a manual trace directly to the Inference Engine (Requires valid API key):
 ```bash
 curl -s http://localhost:8001/predict \
   -H "Authorization: Bearer YOUR_API_KEY" \
@@ -113,40 +111,8 @@ curl -s http://localhost:8001/predict \
   }'
 ```
 
-## Feature Commands
-
-Explainability smoke test:
-
-```bash
-python -m pytest -q tests/test_explainability_runtime.py
-```
-
-Manual explainability test (prints full JSON output):
-
-```bash
-./venv/bin/python -c "
-import json
-from app.models.runtime_credit_model import LightweightCreditRiskModel
-from app.explainability.explanation_service import ExplainerService
-
-model = LightweightCreditRiskModel()
-explainer = ExplainerService(model)
-
-sample = {
-    'age': 23, 'income': 28000, 'employment_length': 1,
-    'debt_to_income_ratio': 0.58, 'credit_score': 560,
-    'loan_amount': 26000, 'loan_purpose': 'medical',
-    'home_ownership': 'rent', 'verification_status': 'not_verified',
-}
-
-pred = model.predict(sample)
-exp = explainer.explain_prediction(sample, pred)
-print(json.dumps(exp, indent=2, default=str))
-"
-```
-
-Federated learning simulation:
-
+### Run Backend Simulations
+Trigger the automated Federated simulation pipeline locally:
 ```bash
 python - <<'PY'
 from app.federated.utils import run_federated_simulation
@@ -155,67 +121,32 @@ from app.federated.config import FLConfig
 result = run_federated_simulation(
     FLConfig(number_of_clients=3, aggregation_rounds=3, local_epochs=2)
 )
-print(result["best_val_loss"])
+print("Best Validation Loss:", result["best_val_loss"])
 PY
 ```
 
-Carbon-aware NAS:
-
+Trigger Neural Architecture Search (NAS) tuning:
 ```bash
 python -m app.sustainability.run_nas
 python -m app.sustainability.run_nas_german
 ```
 
-## Project Structure
+---
 
-```text
-MJ/
-├── app/
-│   ├── api/
-│   ├── core/
-│   ├── explainability/
-│   ├── federated/
-│   ├── models/
-│   ├── services/
-│   └── sustainability/
-├── config/
-├── infrastructure/
-├── model_registry/
-├── models/
-├── tests/
-├── main.py
-├── start_backend.sh
-├── pyproject.toml
-├── requirements.txt
-└── README.md
-```
+## 🧠 Explainability Subsystem Output Schema
 
-## Explainability Output Schema
+The `explanation` payload returned by the inference runtime is consumed by the PulseLedger frontend to hydrate visual widgets. Its structural map includes:
 
-The `explanation` field in the inference response contains:
-
-| Field | Type | Description |
+| Return Field | Type | Function |
 |-------|------|-------------|
-| `prediction` | `float` | Risk score (0–1) |
-| `risk_level` | `string` | `low` \| `medium` \| `high` \| `very_high` |
-| `risk_threshold_context` | `string` | Which risk band the score falls into |
-| `risk_thresholds` | `array` | All risk bands with their ceilings |
-| `feature_importance` | `object` | Feature → contribution mapping |
-| `top_factors` | `array` | Top 5 factors with description, magnitude, benchmark context |
-| `recommendations` | `array` | Actionable advice per factor (`action_needed` or `preserve`) |
-| `counterfactual` | `object` | Minimal changes to move to a lower risk band |
-| `risk_groups` | `object` | Features grouped into categories (financial strength, debt burden, stability, loan context) |
-| `confidence` | `object` | Explanation confidence (`low` \| `medium` \| `high` with score and reason) |
-| `methodology` | `object` | How contributions were computed (SHAP or perturbation) + baseline profile |
-| `summary` | `string` | Analyst-style narrative summary |
-
-## Notes For Frontend Integration
-
-- Treat `http://localhost:8000` as the system/status API.
-- Treat `http://localhost:8001` as the credit risk inference API.
-- Use `explanation.summary` for a quick overview and `explanation.top_factors` for detailed breakdowns.
-- Display `explanation.recommendations` to show users what to improve (`action_needed`) and what to maintain (`preserve`).
-- Use `explanation.counterfactual` to show specific targets (e.g., "Increase credit score to ≥ 700").
-- Show `explanation.risk_groups` for a grouped view of risk categories.
-- Use `explanation.confidence.level` to indicate how reliable the explanation is.
-- Reference `explanation.methodology.baseline.baseline_values` to show the comparison baseline.
+| `prediction` | `float` | Base inferred risk score (0.0 to 1.0) |
+| `risk_level` | `string` | Categorization boundary (`low` \| `medium` \| `high` \| `very_high`) |
+| `risk_threshold_context` | `string` | Plain-text threshold narrative |
+| `feature_importance` | `object` | Key-value mapping of feature impacts |
+| `top_factors` | `array` | Top 5 risk-affecting factors spanning description, directional magnitude, and benchmark context |
+| `recommendations` | `array` | Computed actions required by analyst or user (`action_needed` / `preserve`) |
+| `counterfactual` | `object` | Target perturbations calculated to demote the risk to a lower band |
+| `risk_groups` | `object` | Thematic aggregation (Financial Strength, Debt Burden, Stability, Loan Profile) |
+| `confidence` | `object` | Scoring mechanism on the viability of the specific explainability branch |
+| `methodology` | `object` | Baseline profile metadata defining standard SHAP vs perturbation origins |
+| `summary` | `string` | NLP-stylized auto-generated narrative summary synthesizing the inference context |
