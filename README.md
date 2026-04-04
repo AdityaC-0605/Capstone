@@ -17,6 +17,30 @@ Backend-only repository for credit risk prediction with three primary capabiliti
 
 Frontend-specific files have been removed so a separate frontend can be built cleanly against these APIs.
 
+## Frontend Preview
+
+A new standalone frontend lives in `frontend/`.
+
+Start the backend first:
+
+```bash
+./start_backend.sh
+```
+
+Then serve the frontend from the repo root:
+
+```bash
+python3 -m http.server 4173 -d frontend
+```
+
+Open:
+
+```text
+http://localhost:4173
+```
+
+Paste the `sk-test-...` API key from the inference log into the UI to run live predictions. If the backend is offline, the frontend can still render a polished demo state locally.
+
 ## Quick Start
 
 ```bash
