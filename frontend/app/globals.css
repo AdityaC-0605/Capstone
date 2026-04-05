@@ -1,0 +1,313 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Production Grade Design System ─── */
+:root {
+  /* Core Backgrounds */
+  --color-bg-primary: 10 10 15;        /* #0a0a0f */
+  --color-bg-surface: 18 19 23;        /* Slightly lighter */
+  --color-bg-elevated: 28 29 36;       /* Elevated layers */
+  
+  /* Borders */
+  --color-border: 45 45 55;            /* Subdued separation */
+  --color-border-strong: 80 80 90;     /* Prominent edges */
+  
+  /* Typography Colors */
+  --color-text-primary: 242 242 245;   /* High contrast */
+  --color-text-secondary: 160 162 170; /* Secondary reads */
+  --color-text-muted: 100 102 110;     /* Disclaimers & hierarchy */
+  
+  /* Accents & Semantics */
+  --color-accent: 59 130 246;          /* Electric Blue */
+  --color-accent-hover: 96 165 250;
+  
+  --color-success: 34 197 94;          /* Emerald */
+  --color-warning: 245 158 11;         /* Amber */
+  --color-destructive: 239 68 68;      /* Red */
+
+  /* Typography Stacks */
+  --font-display: "Sora", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Form/Layout variables */
+  --sidebar-w: 260px;
+  --sidebar-collapsed: 72px;
+
+  /* Motion Defaults */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 350ms ease;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: rgb(var(--color-bg-primary));
+  color: rgb(var(--color-text-primary));
+  font-family: var(--font-body);
+  /* Text rendering optimizations for dark mode */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle 3-5% Noise Texture */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+::selection {
+  background: rgb(var(--color-accent) / 0.3);
+  color: rgb(var(--color-text-primary));
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--color-bg-primary));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-border));
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-border-strong));
+}
+
+/* ─── Layout & Surfaces ─── */
+.page-frame {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Base surface mapping */
+.glass-panel,
+.glass-panel-static {
+  background: rgb(var(--color-bg-surface));
+  border: 1px solid rgb(var(--color-border) / 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all var(--transition-base);
+}
+
+.glass-panel:hover {
+  border-color: rgb(var(--color-border-strong));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Form Controls & Buttons ─── */
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-[2px] focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary;
+}
+
+/* Primary Button */
+.button-primary {
+  @apply focus-ring relative inline-flex items-center justify-center font-medium text-white overflow-hidden rounded-md border border-transparent;
+  padding: 0.5rem 1rem;
+  background: rgb(var(--color-accent));
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+  transition: all var(--transition-fast);
+}
+
+.button-primary:hover {
+  background: rgb(var(--color-accent-hover));
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 12px rgb(var(--color-accent) / 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.button-primary:active,
+button:active {
+  transform: scale(0.98);
+}
+
+/* Secondary Button */
+.button-ghost {
+  @apply focus-ring relative inline-flex items-center justify-center font-medium rounded-md;
+  padding: 0.5rem 1rem;
+  background: rgb(var(--color-bg-elevated) / 0.5);
+  border: 1px solid rgb(var(--color-border));
+  color: rgb(var(--color-text-primary));
+  transition: all var(--transition-fast);
+}
+
+.button-ghost:hover {
+  background: rgb(var(--color-bg-elevated));
+  border-color: rgb(var(--color-border-strong));
+}
+
+/* Input Shells */
+.input-shell {
+  @apply rounded-md border text-sm w-full;
+  background: rgb(var(--color-bg-primary));
+  border-color: rgb(var(--color-border));
+  color: rgb(var(--color-text-primary));
+  padding: 0.5rem 0.75rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.input-shell::placeholder {
+  color: rgb(var(--color-text-muted));
+}
+
+.input-shell:focus,
+.input-shell:focus-within {
+  outline: none;
+  border-color: rgb(var(--color-accent));
+  box-shadow: 0 0 0 2px rgb(var(--color-accent) / 0.3);
+}
+
+/* ─── Type Scale & Display ─── */
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.section-kicker {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: rgb(var(--color-text-muted));
+}
+
+/* ─── Badges & Status ─── */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  display: inline-block;
+  position: relative;
+}
+
+.status-online { background: rgb(var(--color-success)); }
+.status-partial { background: rgb(var(--color-warning)); }
+.status-offline { background: rgb(var(--color-destructive)); }
+.status-checking { background: rgb(var(--color-accent)); }
+
+.status-dot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  border: 1px solid currentColor;
+  opacity: 0.3;
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Range Tracks */
+.range-track {
+  width: 100%;
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(var(--color-bg-elevated));
+  outline: none;
+}
+
+.range-track::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: white;
+  border: 2px solid rgb(var(--color-accent));
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.range-track::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.range-track.score-track::-webkit-slider-thumb { border-color: rgb(var(--color-warning)); }
+.range-track.warning-track::-webkit-slider-thumb { border-color: rgb(var(--color-destructive)); }
+
+/* ─── Animations (Staggered Load & Structure) ─── */
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-enter {
+  animation: slide-up-fade 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-enter-1 { animation-delay: 40ms; }
+.animate-enter-2 { animation-delay: 80ms; }
+.animate-enter-3 { animation-delay: 120ms; }
+.animate-enter-4 { animation-delay: 160ms; }
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Modals */
+.modal-enter {
+  animation: modal-enter 180ms ease-out both;
+}
+@keyframes modal-enter {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ─── Backwards Compatibility Shims (Temporary until component refactor) ─── */
+/* Some components still rely on direct class colors; route them to new variables */
+.teal-text-glow { color: rgb(var(--color-accent)); text-shadow: 0 0 12px rgb(var(--color-accent)/0.3); }
+.gold-text-glow { color: rgb(var(--color-warning)); }
+.emerald-text-glow { color: rgb(var(--color-success)); }
+.rose-text-glow { color: rgb(var(--color-destructive)); }
+.violet-text-glow, .cyan-text-glow, .amber-text-glow, .green-text-glow, .blue-text-glow, .crimson-text-glow {
+  color: rgb(var(--color-accent));
+}
+
+.factor-flip { perspective: 1200px; }
+.factor-flip-inner { transform-style: preserve-3d; transition: transform var(--transition-slow); }
+.factor-flip:hover .factor-flip-inner { transform: rotateY(180deg); }
+.factor-face { backface-visibility: hidden; }
+.factor-face-back { transform: rotateY(180deg); }
+
+.button-spinner {
+  width: 16px; height: 16px;
+  border-radius: 9999px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px; /* Strict 8px grid */
+}
