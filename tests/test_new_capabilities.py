@@ -70,7 +70,11 @@ def test_federated_run_rejects_out_of_range_params():
     # 1 client is below the ge=2 bound -> validation error.
     response = client.post(
         "/api/v1/federated/run",
-        json={"number_of_clients": 1, "aggregation_rounds": 2, "local_epochs": 1},
+        json={
+            "number_of_clients": 1,
+            "aggregation_rounds": 2,
+            "local_epochs": 1,
+        },
     )
     assert response.status_code == 422
 
@@ -100,7 +104,10 @@ def test_prediction_history_and_metrics():
         "track_sustainability": False,
         "explanation_type": "shap",
     }
-    assert client.post("/predict", json=payload, headers=headers).status_code == 200
+    assert (
+        client.post("/predict", json=payload, headers=headers).status_code
+        == 200
+    )
 
     history = client.get("/predict/history", headers=headers).json()
     assert history["count"] == 1
@@ -124,7 +131,9 @@ def test_pydantic_v2_validation_rejects_bad_enum():
         "track_sustainability": False,
         "explanation_type": "shap",
     }
-    assert client.post("/predict", json=bad, headers=headers).status_code == 422
+    assert (
+        client.post("/predict", json=bad, headers=headers).status_code == 422
+    )
 
 
 def test_invalid_api_key_rejected():
@@ -151,7 +160,9 @@ def test_api_key_persists_across_instances(tmp_path):
         first = APIKeyManager(key_path=str(key_file))
         second = APIKeyManager(key_path=str(key_file))
         assert first.default_key == second.default_key
-        assert key_file.read_text(encoding="utf-8").strip() == first.default_key
+        assert (
+            key_file.read_text(encoding="utf-8").strip() == first.default_key
+        )
     finally:
         if previous is not None:
             os.environ["PULSELEDGER_API_KEY"] = previous

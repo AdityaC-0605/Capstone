@@ -226,9 +226,8 @@ async def fairness_audit(
     bias_strength = max(0.5, min(bias_strength, 2.0))
 
     try:
-        from fastapi.concurrency import run_in_threadpool
-
         import numpy as np
+        from fastapi.concurrency import run_in_threadpool
 
         from app.services.bias_detector import create_bias_detector
     except ImportError as exc:  # pragma: no cover - optional dependency
