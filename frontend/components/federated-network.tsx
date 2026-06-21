@@ -1,7 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-
 interface FederatedNetworkProps {
   clients: number;
   running: boolean;
@@ -10,6 +8,10 @@ interface FederatedNetworkProps {
   activeNode: string | null;
 }
 
+/**
+ * Federated topology — a quiet ink diagram on paper. Clients arc above a
+ * central aggregator; dots travel the edges during upload/broadcast phases.
+ */
 export function FederatedNetwork({
   clients,
   running,
@@ -18,30 +20,39 @@ export function FederatedNetwork({
   activeNode,
 }: FederatedNetworkProps) {
   const serverCx = 250;
-  const serverCy = 120;
+  const serverCy = 130;
   const viewWidth = 500;
-  const viewHeight = 240;
-  const nodeRadius = 160;
+  const viewHeight = 220;
+  const nodeRadius = 165;
   const nodeCount = Math.min(clients, 10);
+
+  const ink = "rgb(var(--color-text-primary))";
+  const accent = "rgb(var(--color-accent))";
+  const rule = "rgb(var(--color-border-strong))";
+  const muted = "rgb(var(--color-text-muted))";
 
   const clientNodes = Array.from({ length: nodeCount }, (_, i) => {
     const angle = Math.PI + (Math.PI / (nodeCount + 1)) * (i + 1);
     return {
       id: `C${i + 1}`,
       cx: serverCx + Math.cos(angle) * nodeRadius,
-      cy: serverCy + Math.sin(angle) * nodeRadius * 0.7,
+      cy: serverCy + Math.sin(angle) * nodeRadius * 0.62,
     };
   });
 
   return (
-    <div className="glass-panel-static rounded-2xl p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="section-kicker !text-gold">Network Topology</p>
+    <div className="leaf p-5">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="section-kicker">Network Topology</span>
         {running ? (
-          <span className="rounded-lg border border-gold/20 bg-gold/6 px-2.5 py-1 font-mono text-[10px] font-semibold text-gold">
+          <span className="rounded-[3px] border border-accent/40 bg-accent/8 px-2 py-0.5 font-mono text-[11px] text-accent">
             Round {round}
           </span>
-        ) : null}
+        ) : (
+          <span className="font-mono text-[11px] text-text-muted">
+            {nodeCount} clients
+          </span>
+        )}
       </div>
       <svg viewBox={`0 0 ${viewWidth} ${viewHeight}`} className="w-full">
         {/* Edges */}
@@ -52,14 +63,14 @@ export function FederatedNetwork({
             y1={serverCy}
             x2={node.cx}
             y2={node.cy}
-            stroke="rgba(245,158,11,0.1)"
-            strokeWidth="1.5"
-            strokeDasharray={phase === "idle" ? "none" : "6 6"}
-            className={phase !== "idle" ? "animate-dash-flow" : ""}
+            stroke={rule}
+            strokeOpacity={0.5}
+            strokeWidth="1"
+            strokeDasharray={phase === "idle" ? "none" : "4 5"}
           />
         ))}
 
-        {/* Travel dots during phase */}
+        {/* Travel dots during a phase */}
         {phase !== "idle" &&
           clientNodes.map((node) => {
             const isUpload = phase === "upload";
@@ -67,11 +78,10 @@ export function FederatedNetwork({
               <circle
                 key={`dot-${node.id}`}
                 r="3"
-                fill="#F59E0B"
-                className="travel-dot"
+                fill={isUpload ? accent : "rgb(var(--color-warning))"}
               >
                 <animateMotion
-                  dur="1.2s"
+                  dur="1.1s"
                   repeatCount="indefinite"
                   path={
                     isUpload
@@ -83,59 +93,55 @@ export function FederatedNetwork({
             );
           })}
 
-        {/* Server Node */}
+        {/* Aggregator */}
         <circle
           cx={serverCx}
           cy={serverCy}
-          r="22"
-          fill="rgba(245,158,11,0.06)"
-          stroke={activeNode === "SERVER" ? "#F59E0B" : "rgba(245,158,11,0.2)"}
-          strokeWidth="2"
-          className={activeNode === "SERVER" ? "node-pulse" : ""}
+          r="24"
+          fill={activeNode === "SERVER" ? accent : "rgb(var(--color-bg-elevated))"}
+          stroke={accent}
+          strokeWidth="1.5"
         />
         <text
           x={serverCx}
           y={serverCy + 1}
           textAnchor="middle"
           dominantBaseline="middle"
-          fill="rgb(var(--copy))"
+          fill={activeNode === "SERVER" ? "rgb(var(--color-bg-surface))" : ink}
           fontSize="9"
-          fontWeight="600"
-          fontFamily="var(--font-sans)"
+          fontFamily="ui-monospace, monospace"
+          letterSpacing="0.5"
         >
-          SERVER
+          AGG
         </text>
 
-        {/* Client Nodes */}
-        {clientNodes.map((node) => (
-          <g key={node.id}>
-            <circle
-              cx={node.cx}
-              cy={node.cy}
-              r="16"
-              fill="rgba(45,212,191,0.05)"
-              stroke={
-                activeNode === node.id
-                  ? "#2DD4BF"
-                  : "rgba(45,212,191,0.18)"
-              }
-              strokeWidth="1.5"
-              className={activeNode === node.id ? "node-pulse" : ""}
-            />
-            <text
-              x={node.cx}
-              y={node.cy + 1}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="rgb(var(--muted))"
-              fontSize="8"
-              fontWeight="600"
-              fontFamily="var(--font-mono)"
-            >
-              {node.id}
-            </text>
-          </g>
-        ))}
+        {/* Clients */}
+        {clientNodes.map((node) => {
+          const active = activeNode === node.id;
+          return (
+            <g key={node.id}>
+              <circle
+                cx={node.cx}
+                cy={node.cy}
+                r="15"
+                fill={active ? "rgb(var(--color-accent) / 0.12)" : "rgb(var(--color-bg-elevated))"}
+                stroke={active ? accent : rule}
+                strokeWidth={active ? 1.5 : 1}
+              />
+              <text
+                x={node.cx}
+                y={node.cy + 1}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill={active ? accent : muted}
+                fontSize="8"
+                fontFamily="ui-monospace, monospace"
+              >
+                {node.id}
+              </text>
+            </g>
+          );
+        })}
       </svg>
     </div>
   );

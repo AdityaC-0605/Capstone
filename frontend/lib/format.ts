@@ -1,4 +1,3 @@
-import { riskBands } from "@/lib/constants";
 import type {
   PredictionTopFactor,
   Recommendation,
@@ -13,14 +12,7 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-const compactFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
 export const formatCurrency = (value: number) => currencyFormatter.format(value);
-
-export const formatCompact = (value: number) => compactFormatter.format(value);
 
 export const formatPercent = (value: number, digits = 0) =>
   `${(value * 100).toFixed(digits)}%`;
@@ -43,21 +35,35 @@ export const formatCarbon = (value: number) => `${value.toFixed(4)} kg CO2`;
 export const riskColorClasses = (risk?: RiskLevel) => {
   switch (risk) {
     case "low":
-      return "bg-emerald/12 text-emerald border-emerald/35";
+      return "bg-success/10 text-success border-success/35";
     case "medium":
-      return "bg-gold/12 text-gold border-gold/35";
+      return "bg-warning/10 text-warning border-warning/35";
     case "high":
     case "very_high":
-      return "bg-rose/12 text-rose border-rose/35";
+      return "bg-destructive/10 text-destructive border-destructive/35";
     default:
-      return "bg-white/4 text-copy border-white/8";
+      return "bg-bg-elevated text-text-muted border-border";
   }
 };
 
+// Ledger palette: evergreen (low) → ochre (medium) → oxblood (high).
 export const gaugeColor = (score: number) => {
-  if (score < 0.3) return "#34D399";
-  if (score < 0.6) return "#F59E0B";
-  return "#F43F5E";
+  if (score < 0.3) return "#2E6B4F";
+  if (score < 0.6) return "#B07A2C";
+  return "#A3392A";
+};
+
+export const relativeTime = (iso: string) => {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "—";
+  const seconds = Math.max(0, Math.round((Date.now() - then) / 1000));
+  if (seconds < 60) return "just now";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
 };
 
 export const aggregateStatusColor = (state: string) => {
@@ -85,9 +91,6 @@ export const factorDirection = (factor: PredictionTopFactor) => {
   }
   return (factor.contribution ?? 0) < 0 ? "decrease" : "increase";
 };
-
-export const factorBarColor = (factor: PredictionTopFactor) =>
-  factorDirection(factor) === "decrease" ? "bg-emerald" : "bg-rose";
 
 export const recommendationCopy = (recommendation?: Recommendation) => {
   if (!recommendation) {
@@ -127,12 +130,6 @@ export const narrativeForGroup = (key: string, group: RiskGroup) => {
   }
   return `${label} is presently balanced relative to the model baseline.`;
 };
-
-export const riskMarkerLeft = (score: number) =>
-  `${Math.max(2, Math.min(98, score * 100))}%`;
-
-export const riskBandLabel = (score: number) =>
-  riskBands.find((band) => score <= band.max)?.label ?? "Very High";
 
 export const getContrastVerdict = (ecoScore: number) => {
   if (ecoScore >= 85) return "EFFICIENT";

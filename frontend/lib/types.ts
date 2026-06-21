@@ -161,6 +161,8 @@ export interface SessionSustainability {
 export interface FederatedLossPoint {
   round: number;
   loss: number;
+  valAccuracy?: number;
+  clientLoss?: number;
 }
 
 export interface FederatedState {
@@ -171,6 +173,90 @@ export interface FederatedState {
   localEpochs: number;
   completed: boolean;
   bestValLoss: number | null;
+  bestRound?: number | null;
+  wallTimeSeconds?: number | null;
+  stoppedEarly?: boolean;
+  source?: "live" | "simulated";
+}
+
+/** Raw round metric returned by the backend FedAvg simulation. */
+export interface FederatedRoundMetric {
+  round_number: number;
+  participating_clients: number;
+  average_client_loss: number;
+  average_client_accuracy: number;
+  average_val_loss: number;
+  average_val_accuracy: number;
+}
+
+export interface FederatedRunResult {
+  config: Record<string, number>;
+  round_metrics: FederatedRoundMetric[];
+  global_keys: string[];
+  best_round: number;
+  best_val_loss: number;
+  stopped_early: boolean;
+  best_model_path: string;
+  wall_time_seconds: number;
+}
+
+export interface FederatedRunParams {
+  number_of_clients: number;
+  aggregation_rounds: number;
+  local_epochs: number;
+}
+
+/** A single fairness metric outcome for one protected attribute. */
+export interface FairnessFinding {
+  protected_attribute?: string;
+  fairness_metric?: string;
+  metric_value?: number;
+  threshold?: number;
+  bias_level?: string;
+  is_biased?: boolean;
+}
+
+export interface FairnessAttributeStat {
+  tests_conducted: number;
+  violations: number;
+  violation_rate: number;
+  worst_violation: string;
+}
+
+export interface FairnessMetricStat {
+  tests_conducted: number;
+  violations: number;
+  violation_rate: number;
+  average_disparity: number;
+}
+
+export interface FairnessReport {
+  timestamp?: string;
+  summary?: {
+    total_tests: number;
+    violations_detected: number;
+    violation_rate: number;
+    bias_level_distribution: Record<string, number>;
+  };
+  by_protected_attribute?: Record<string, FairnessAttributeStat>;
+  by_fairness_metric?: Record<string, FairnessMetricStat>;
+  recommendations?: string[];
+}
+
+export interface FairnessAuditResult {
+  parameters: { samples: number; bias_strength: number; seed: number };
+  report: FairnessReport;
+}
+
+export interface PredictionHistoryItem {
+  prediction_id: string;
+  timestamp: string;
+  risk_score: number;
+  risk_level: RiskLevel;
+  confidence: number;
+  processing_time_ms: number;
+  loan_amount: number;
+  loan_purpose: string;
 }
 
 export interface NasExperiment {

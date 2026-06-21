@@ -32,6 +32,7 @@ keys/*.pem
 keys/*.crt
 keys/*.p12
 keys/*.jks
+keys/api_key.txt
 
 # Build / packaging
 build/

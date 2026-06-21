@@ -28,8 +28,7 @@ export function Sparkline({ values, color }: SparklineProps) {
         d={pathD}
         className="sparkline-path"
         stroke={color}
-        strokeWidth="2"
-        style={{ filter: `drop-shadow(0 0 4px ${color}66)` }}
+        strokeWidth="1.75"
       />
     </svg>
   );

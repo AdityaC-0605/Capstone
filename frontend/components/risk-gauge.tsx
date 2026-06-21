@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { gaugeColor } from "@/lib/format";
 
 interface RiskGaugeProps {
@@ -9,56 +8,71 @@ interface RiskGaugeProps {
   idle?: boolean;
 }
 
+const bands = [
+  { label: "Low", weight: "0.32" },
+  { label: "Medium", weight: "0.32", tone: "warning" },
+  { label: "High", weight: "0.28", tone: "destructive" },
+  { label: "Severe", weight: "0.5", tone: "destructive" },
+];
+
+/**
+ * The risk instrument: a precise ink ruler rather than a glowing gauge.
+ * A large serif score, a band chip, and a marker on a four-segment scale.
+ */
 export function RiskGauge({ score, riskLevel, idle }: RiskGaugeProps) {
-  const radius = 90;
-  const circumference = Math.PI * radius; // semicircle
   const normalized = idle ? 0 : Math.min(1, Math.max(0, score));
-  const offset = circumference - normalized * circumference;
-  const color = idle ? "rgb(var(--color-border))" : gaugeColor(score);
-  const displayScore = idle ? "—" : score.toFixed(3);
-  const displayLevel = idle ? "idle" : riskLevel.replaceAll("_", " ");
+  const color = idle ? "rgb(var(--color-text-muted))" : gaugeColor(score);
+  const displayScore = idle ? "—" : score.toFixed(2);
+  const displayLevel = idle ? "Standby" : riskLevel.replaceAll("_", " ");
 
   return (
-    <div className="rounded-lg border border-border bg-bg-surface p-6 shadow-sm">
-      <div className="flex flex-col items-center">
-        <div className="relative h-[140px] w-[240px]">
-          <svg viewBox="0 0 240 140" className="h-full w-full">
-            {/* Background arc */}
-            <path
-              d="M 20 130 A 100 100 0 0 1 220 130"
-              fill="none"
-              stroke="rgb(var(--color-border))"
-              strokeWidth="14"
-              strokeLinecap="round"
-            />
-            {/* Filled arc */}
-            <path
-              d="M 20 130 A 100 100 0 0 1 220 130"
-              fill="none"
-              stroke={color}
-              strokeWidth="14"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={offset}
-              className="transition-all duration-1000 ease-out"
-              style={{
-                filter: idle
-                  ? "none"
-                  : `drop-shadow(0 0 10px ${color}88)`,
-              }}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
-            <p
-              className="font-mono text-3xl font-bold transition-colors duration-500"
-              style={{ color: idle ? "rgb(var(--color-text-muted))" : color }}
-            >
-              {displayScore}
-            </p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-text-muted">
-              {displayLevel}
-            </p>
+    <div className="leaf p-6">
+      <div className="flex items-center justify-between">
+        <span className="section-kicker">Risk Assessment</span>
+        <span
+          className="rounded-[3px] border px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-wider"
+          style={{
+            color,
+            borderColor: idle ? "rgb(var(--color-border))" : `${color}66`,
+            background: idle ? "transparent" : `${color}14`,
+          }}
+        >
+          {displayLevel}
+        </span>
+      </div>
+
+      <div className="mt-5 flex items-end gap-4">
+        <span
+          className="font-display text-7xl font-medium leading-[0.9] tabular transition-colors duration-500"
+          style={{ color: idle ? "rgb(var(--color-text-muted))" : "rgb(var(--color-text-primary))" }}
+        >
+          {displayScore}
+        </span>
+        <span className="pb-2 text-sm text-text-muted">
+          on a 0–1 risk scale
+        </span>
+      </div>
+
+      {/* Band ruler */}
+      <div className="mt-7">
+        <div className="relative">
+          <div className="flex h-2 overflow-hidden rounded-[2px]">
+            <span className="flex-1" style={{ background: "rgb(var(--color-success) / 0.32)" }} />
+            <span className="flex-1" style={{ background: "rgb(var(--color-warning) / 0.32)" }} />
+            <span className="flex-1" style={{ background: "rgb(var(--color-destructive) / 0.28)" }} />
+            <span className="flex-1" style={{ background: "rgb(var(--color-destructive) / 0.5)" }} />
           </div>
+          {!idle ? (
+            <span
+              className="absolute -top-1 h-4 w-[3px] -translate-x-1/2 rounded-[1px] transition-all duration-700 ease-out"
+              style={{ left: `${normalized * 100}%`, background: "rgb(var(--color-text-primary))" }}
+            />
+          ) : null}
+        </div>
+        <div className="mt-2 flex justify-between font-mono text-[10px] uppercase tracking-wider text-text-muted">
+          {bands.map((band) => (
+            <span key={band.label}>{band.label}</span>
+          ))}
         </div>
       </div>
     </div>

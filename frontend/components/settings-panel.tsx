@@ -3,19 +3,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 
+import { SyntaxCodeBlock } from "@/components/syntax-code-block";
 import { buildCurlCommand, probeBackends, runSamplePrediction } from "@/lib/api";
-import {
-  defaultBackendConfig,
-  samplePredictionRequest,
-} from "@/lib/constants";
+import { defaultBackendConfig, samplePredictionRequest } from "@/lib/constants";
 import { aggregateStatusColor } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { SyntaxCodeBlock } from "@/components/syntax-code-block";
 import { usePulseStore } from "@/store/use-pulse-store";
+import { toast } from "@/store/use-toast-store";
 
 interface SettingsPanelProps {
   standalone?: boolean;
 }
+
+const offlineStatus = (detail: string) => ({
+  main: { state: "offline" as const, label: "Main API", detail },
+  inference: {
+    state: "offline" as const,
+    label: "Inference Engine",
+    detail: "Failed to fetch. Is the backend running?",
+  },
+  features: [],
+  overall: { state: "offline" as const, label: "Offline", detail },
+  lastChecked: new Date().toISOString(),
+});
 
 export function SettingsPanel({ standalone = false }: SettingsPanelProps) {
   const backendConfig = usePulseStore((state) => state.backendConfig);
@@ -31,7 +41,6 @@ export function SettingsPanel({ standalone = false }: SettingsPanelProps) {
 
   const [formState, setFormState] = useState(backendConfig);
   const [showKey, setShowKey] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     setFormState(backendConfig);
@@ -41,31 +50,13 @@ export function SettingsPanel({ standalone = false }: SettingsPanelProps) {
     if (!standalone && !ui.settingsOpen) return;
     const refresh = async () => {
       try {
-        const status = await probeBackends(formState);
-        setBackendStatus(status);
+        setBackendStatus(await probeBackends(formState));
       } catch {
-        setBackendStatus({
-          main: {
-            state: "offline",
-            label: "Main API",
-            detail: "Failed to fetch. Is the backend running?",
-          },
-          inference: {
-            state: "offline",
-            label: "Inference Engine",
-            detail: "Failed to fetch. Is the backend running?",
-          },
-          features: [],
-          overall: {
-            state: "offline",
-            label: "Offline",
-            detail: "Failed to fetch. Is the backend running?",
-          },
-          lastChecked: new Date().toISOString(),
-        });
+        setBackendStatus(offlineStatus("Failed to fetch. Is the backend running?"));
       }
     };
     void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setBackendStatus, standalone, ui.settingsOpen]);
 
   const curlCommand = useMemo(() => buildCurlCommand(formState), [formState]);
@@ -78,10 +69,8 @@ export function SettingsPanel({ standalone = false }: SettingsPanelProps) {
       apiKey: formState.apiKey.trim(),
     };
     setBackendConfig(normalized);
-    const status = await probeBackends(normalized);
-    setBackendStatus(status);
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2000);
+    setBackendStatus(await probeBackends(normalized));
+    toast.success("Configuration saved", "Backend endpoints updated.");
     if (!standalone) closeSettings();
   };
 
@@ -91,7 +80,6 @@ export function SettingsPanel({ standalone = false }: SettingsPanelProps) {
       samplePredictionError: "",
       samplePredictionResponse: "",
     });
-
     try {
       const response = await runSamplePrediction(formState);
       addPredictionRecord(samplePredictionRequest.application, response);
@@ -99,184 +87,170 @@ export function SettingsPanel({ standalone = false }: SettingsPanelProps) {
         samplePredictionLoading: false,
         samplePredictionResponse: JSON.stringify(response, null, 2),
       });
+      toast.success("Sample prediction ran", `Risk ${(response.risk_score * 100).toFixed(0)}%.`);
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Sample prediction failed.";
       setSamplePredictionState({
         samplePredictionLoading: false,
-        samplePredictionError:
-          error instanceof Error
-            ? error.message
-            : "Sample prediction failed unexpectedly.",
+        samplePredictionError: message,
       });
+      toast.error("Sample prediction failed", message);
     }
   };
 
   const copyCurl = async () => {
     await navigator.clipboard.writeText(curlCommand);
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2000);
+    toast.success("Copied", "cURL command on your clipboard.");
   };
 
-  return (
-    <div
-      className={cn(
-        standalone
-          ? "min-h-[calc(100vh-6rem)] rounded-lg p-4"
-          : "fixed inset-0 z-[60] flex items-center justify-center p-4",
-      )}
-    >
-      <div className="glass-panel w-full max-w-4xl rounded-lg p-6 shadow-lg md:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="section-kicker">Backend Configuration</p>
-            <h2 className="mt-2 font-display text-2xl font-semibold text-text-primary">
-              Connect PulseLedger to your backend services.
-            </h2>
-          </div>
-          {!standalone ? (
+  const body = (
+    <div className="space-y-7">
+      {/* Endpoints */}
+      <section className="space-y-4">
+        <p className="section-kicker">Endpoints</p>
+        <label className="block space-y-1.5">
+          <span className="text-sm text-text-secondary">Main API URL</span>
+          <input
+            className="input-shell font-mono"
+            value={formState.mainUrl}
+            onChange={(event) =>
+              setFormState((current) => ({ ...current, mainUrl: event.target.value }))
+            }
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm text-text-secondary">Inference API URL</span>
+          <input
+            className="input-shell font-mono"
+            value={formState.inferenceUrl}
+            onChange={(event) =>
+              setFormState((current) => ({
+                ...current,
+                inferenceUrl: event.target.value,
+              }))
+            }
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-sm text-text-secondary">Bearer API key</span>
+          <div className="input-shell flex items-center gap-2 p-1 pl-3">
+            <input
+              className="w-full bg-transparent font-mono text-sm focus:outline-none"
+              type={showKey ? "text" : "password"}
+              value={formState.apiKey}
+              placeholder="Paste the sk-test key from the inference log"
+              onChange={(event) =>
+                setFormState((current) => ({ ...current, apiKey: event.target.value }))
+              }
+            />
             <button
               type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-bg-surface text-text-muted hover:text-text-primary hover:bg-bg-elevated transition"
-              onClick={closeSettings}
+              onClick={() => setShowKey((current) => !current)}
+              className="focus-ring rounded-[3px] border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-text-muted hover:text-text-primary"
             >
-              <X className="h-4 w-4" />
+              {showKey ? "Hide" : "Show"}
             </button>
-          ) : null}
-        </div>
-
-        <div className="mt-8 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-5">
-            <label className="block space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                Main API URL
-              </span>
-              <input
-                className="input-shell font-mono"
-                value={formState.mainUrl}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    mainUrl: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                Inference API URL
-              </span>
-              <input
-                className="input-shell font-mono"
-                value={formState.inferenceUrl}
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    inferenceUrl: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                Bearer API Key
-              </span>
-              <div className="input-shell flex items-center gap-2 p-1.5 pl-3">
-                <input
-                  className="w-full bg-transparent font-mono text-sm focus:outline-none"
-                  type={showKey ? "text" : "password"}
-                  value={formState.apiKey}
-                  placeholder="Paste the sk-test key from the inference log"
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      apiKey: event.target.value,
-                    }))
-                  }
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowKey((current) => !current)}
-                  className="rounded-md border border-border bg-bg-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-text-muted hover:text-text-primary transition"
-                >
-                  {showKey ? "Hide" : "Show"}
-                </button>
-              </div>
-            </label>
-
-            <div className="grid gap-3 pt-2 md:grid-cols-2">
-              {[backendStatus.main, backendStatus.inference].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-md border border-border bg-bg-primary p-3"
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "status-dot",
-                        aggregateStatusColor(item.state),
-                      )}
-                    />
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                        {item.label}
-                      </p>
-                      <p className="mt-0.5 text-xs font-semibold text-text-primary">{item.state}</p>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-xs leading-5 text-text-secondary">{item.detail}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-3 pt-4">
-              <button type="button" className="button-ghost" onClick={copyCurl}>
-                Copy cURL
-              </button>
-              <button
-                type="button"
-                className="button-ghost border-success/30 text-success hover:bg-success/10 hover:border-success/50"
-                onClick={handleSamplePrediction}
-                disabled={ui.samplePredictionLoading}
-              >
-                {ui.samplePredictionLoading ? "Running..." : "Sample Prediction"}
-              </button>
-              <button type="button" className="button-primary" onClick={handleSave}>
-                Save Configuration
-              </button>
-            </div>
-
-            {saved ? (
-              <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-success animate-enter">
-                Saved successfully.
-              </div>
-            ) : null}
           </div>
+        </label>
+      </section>
 
-          <div className="space-y-4">
-            <div className="rounded-md border border-border bg-bg-primary p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                cURL Template
-              </p>
-              <SyntaxCodeBlock
-                code={curlCommand}
-                className="mt-3 overflow-x-auto font-mono text-xs leading-relaxed"
-              />
+      {/* Status */}
+      <section className="space-y-3">
+        <p className="section-kicker">Connectivity</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[backendStatus.main, backendStatus.inference].map((item) => (
+            <div key={item.label} className="inset p-3">
+              <div className="flex items-center gap-2">
+                <span className={cn("status-dot", aggregateStatusColor(item.state))} />
+                <p className="text-sm font-medium text-text-primary">{item.label}</p>
+                <span className="ml-auto font-mono text-[11px] uppercase tracking-wider text-text-muted">
+                  {item.state}
+                </span>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-text-secondary">{item.detail}</p>
             </div>
-            <div className="rounded-md border border-border bg-bg-primary p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                Sample Response
-              </p>
-              <SyntaxCodeBlock
-                code={
-                  ui.samplePredictionError
-                    ? `{"error":"${ui.samplePredictionError}"}`
-                    : ui.samplePredictionResponse || '{\n  "status": "idle"\n}'
-                }
-                className="mt-3 max-h-[340px] overflow-auto font-mono text-xs leading-relaxed"
-              />
-            </div>
-          </div>
+          ))}
         </div>
+      </section>
+
+      {/* Actions */}
+      <section className="flex flex-wrap gap-3">
+        <button type="button" className="button-primary" onClick={handleSave}>
+          Save configuration
+        </button>
+        <button
+          type="button"
+          className="button-ghost"
+          onClick={handleSamplePrediction}
+          disabled={ui.samplePredictionLoading}
+        >
+          {ui.samplePredictionLoading ? "Running…" : "Run sample"}
+        </button>
+        <button type="button" className="button-ghost" onClick={copyCurl}>
+          Copy cURL
+        </button>
+      </section>
+
+      {/* Reference */}
+      <section className="space-y-4">
+        <div className="inset p-4">
+          <p className="section-kicker">cURL template</p>
+          <SyntaxCodeBlock
+            code={curlCommand}
+            className="mt-3 overflow-x-auto font-mono text-xs leading-relaxed"
+          />
+        </div>
+        <div className="inset p-4">
+          <p className="section-kicker">Sample response</p>
+          <SyntaxCodeBlock
+            code={
+              ui.samplePredictionError
+                ? `{"error":"${ui.samplePredictionError}"}`
+                : ui.samplePredictionResponse || '{\n  "status": "idle"\n}'
+            }
+            className="mt-3 max-h-[300px] overflow-auto font-mono text-xs leading-relaxed"
+          />
+        </div>
+      </section>
+    </div>
+  );
+
+  if (standalone) {
+    return (
+      <div className="page-frame max-w-3xl py-2">
+        <p className="section-kicker">Settings</p>
+        <h1 className="mt-3 font-display text-3xl font-medium text-text-primary">
+          Connect to your backend.
+        </h1>
+        <p className="mt-2 max-w-lg text-sm text-text-secondary">
+          Point PulseLedger at your running services and paste the inference
+          bearer key to enable live scoring.
+        </p>
+        <div className="mt-8 leaf p-6">{body}</div>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col border-l border-border-strong bg-bg-surface shadow-[-8px_0_24px_rgba(26,23,20,0.08)]">
+      <header className="flex items-center justify-between border-b border-border px-6 py-4">
+        <div>
+          <p className="section-kicker">Settings</p>
+          <h2 className="mt-1 font-display text-xl font-medium text-text-primary">
+            Backend connection
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={closeSettings}
+          className="focus-ring flex h-8 w-8 items-center justify-center rounded-[3px] border border-border text-text-muted hover:text-text-primary"
+          aria-label="Close settings"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </header>
+      <div className="flex-1 overflow-y-auto px-6 py-6">{body}</div>
     </div>
   );
 }

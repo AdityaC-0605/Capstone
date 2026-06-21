@@ -1,13 +1,38 @@
 import type { Metadata } from "next";
+import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 
 import "@/app/globals.css";
 import { Providers } from "@/components/providers";
-import { SiteShell } from "@/components/site-shell";
+
+// Display: a characterful old-style serif — the voice of human judgment.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+// Body: a precise, enterprise grotesk.
+const plexSans = IBM_Plex_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+// Data: monospace for every number — the ledger voice.
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "PulseLedger — Credit Risk Intelligence",
   description:
-    "Production-grade command center for explainable credit risk, federated learning, and carbon-aware AI operations.",
+    "An editorial command center for explainable credit risk, federated learning, fairness auditing, and carbon-aware AI operations.",
 };
 
 export default function RootLayout({
@@ -16,19 +41,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="en"
+      className={`${fraunces.variable} ${plexSans.variable} ${plexMono.variable}`}
+    >
       <body className="bg-bg-primary font-sans text-text-primary antialiased">
-        <Providers>
-          <SiteShell>{children}</SiteShell>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

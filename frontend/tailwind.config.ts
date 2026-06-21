@@ -30,38 +30,25 @@ const config: Config = {
         success: "rgb(var(--color-success) / <alpha-value>)",
         warning: "rgb(var(--color-warning) / <alpha-value>)",
         destructive: "rgb(var(--color-destructive) / <alpha-value>)",
-        
-        // Backward compats for any un-migrated components until Phase 2 is complete
+
+        // Compatibility aliases (older markup) → remapped onto the Ledger scale
         teal: "rgb(var(--color-accent) / <alpha-value>)",
+        violet: "rgb(var(--color-accent) / <alpha-value>)",
         emerald: "rgb(var(--color-success) / <alpha-value>)",
         gold: "rgb(var(--color-warning) / <alpha-value>)",
-        rose: "rgb(var(--color-destructive) / <alpha-value>)",
-        violet: "rgb(var(--color-accent) / <alpha-value>)",
         amber: "rgb(var(--color-warning) / <alpha-value>)",
+        rose: "rgb(var(--color-destructive) / <alpha-value>)",
         red: "rgb(var(--color-destructive) / <alpha-value>)",
       },
       fontFamily: {
-        sans: ["var(--font-body)"],
-        display: ["var(--font-display)"],
-        mono: ["var(--font-mono)"],
+        sans: ["var(--font-body)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Georgia", "serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
-      spacing: {
-        // Enforcing 4px/8px rhythm as explicitly mapped if users use arbitrary values
-        "0.25": "1px",
-        "0.5": "2px",
-        "1": "4px",
-        "2": "8px",
-        "3": "12px",
-        "4": "16px",
-        "5": "20px",
-        "6": "24px",
-        "8": "32px",
-        "10": "40px",
-        "12": "48px",
-        "16": "64px",
-      },
-      animation: {
-        "enter": "slide-up-fade 400ms cubic-bezier(0.16, 1, 0.3, 1) both",
+      borderRadius: {
+        DEFAULT: "3px",
+        md: "4px",
+        lg: "6px",
       },
     },
   },

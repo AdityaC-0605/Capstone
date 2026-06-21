@@ -1,6 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/studio/page": "app/studio/page.js",
-  "/sustainability/page": "app/sustainability/page.js",
-  "/federated/page": "app/federated/page.js"
-}

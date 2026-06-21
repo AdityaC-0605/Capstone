@@ -34,14 +34,12 @@ export function RangeField({
       : "rgb(var(--color-accent))";
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-          {label}
-        </p>
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between">
+        <p className="section-kicker">{label}</p>
         <p
           className={cn(
-            "font-mono text-xs font-semibold",
+            "font-mono text-[13px] font-medium tabular",
             warning ? "text-destructive" : "text-text-primary",
           )}
         >

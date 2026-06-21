@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Analyst narrative — set as an editorial note (serif, ruled left margin)
+ * rather than a terminal readout. The serif voice signals human judgment.
+ */
 export function TerminalPanel({
   label,
   text,
@@ -8,14 +12,11 @@ export function TerminalPanel({
   text: string;
 }) {
   return (
-    <div className="rounded-md border border-border bg-bg-elevated p-4 shadow-inner">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-success/80">
-        {label}
-      </p>
-      <p className="mt-3 font-mono text-sm leading-relaxed text-success font-medium">
+    <figure className="border-l-2 border-l-accent bg-bg-elevated/60 py-3 pl-4 pr-3">
+      <figcaption className="section-kicker">{label}</figcaption>
+      <p className="mt-2 font-display text-[15px] leading-relaxed text-text-primary">
         {text}
-        <span className="cursor-blink ml-0.5 inline-block">_</span>
       </p>
-    </div>
+    </figure>
   );
 }

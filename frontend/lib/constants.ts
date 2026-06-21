@@ -4,7 +4,6 @@ import type {
   CreditApplication,
   HomeOwnership,
   LoanPurpose,
-  RiskLevel,
   VerificationStatus,
 } from "@/lib/types";
 
@@ -64,41 +63,6 @@ export const verificationOptions: Array<{
   { label: "Verified", value: "verified" },
   { label: "Source Verified", value: "source_verified" },
   { label: "Not Verified", value: "not_verified" },
-];
-
-export const riskBands: Array<{
-  level: RiskLevel;
-  max: number;
-  label: string;
-}> = [
-  { level: "low", max: 0.3, label: "Low" },
-  { level: "medium", max: 0.6, label: "Medium" },
-  { level: "high", max: 0.8, label: "High" },
-  { level: "very_high", max: 1, label: "Very High" },
-];
-
-export const pillarCards = [
-  {
-    title: "Explainability",
-    eyebrow: "SHAP Narrative",
-    copy:
-      "Turn a raw score into analyst-grade reasoning with top factors, recommendations, counterfactuals, and confidence context.",
-    accent: "amber",
-  },
-  {
-    title: "Federated Learning",
-    eyebrow: "Distributed Training",
-    copy:
-      "Visualize client coordination, aggregation rounds, and convergence patterns without centralizing every sensitive record.",
-    accent: "blue",
-  },
-  {
-    title: "Carbon-Aware AI",
-    eyebrow: "Identity Layer",
-    copy:
-      "Track energy, carbon, and experiment efficiency alongside credit decisions so sustainability becomes an operating signal.",
-    accent: "green",
-  },
 ];
 
 export const defaultBackendStatus: BackendStatus = {

@@ -4,7 +4,6 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import {
-  defaultApplication,
   defaultBackendConfig,
   defaultBackendStatus,
 } from "@/lib/constants";
@@ -91,6 +90,10 @@ export const usePulseStore = create<PulseState>()(
         localEpochs: 2,
         completed: false,
         bestValLoss: null,
+        bestRound: null,
+        wallTimeSeconds: null,
+        stoppedEarly: false,
+        source: "live",
       },
       ui: {
         settingsOpen: false,
@@ -177,5 +180,3 @@ export const usePulseStore = create<PulseState>()(
     },
   ),
 );
-
-export const defaultStudioState = defaultApplication;

@@ -7,13 +7,16 @@ with request validation, authentication, rate limiting, and explainability.
 
 import hashlib
 import json
+import os
 import secrets
 import time
 import warnings
+from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from pathlib import Path
+from typing import Any, Deque, Dict, List, Optional, Union
 
 # FastAPI dependencies
 try:
@@ -29,7 +32,7 @@ try:
     from fastapi.middleware.trustedhost import TrustedHostMiddleware
     from fastapi.responses import JSONResponse
     from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-    from pydantic import BaseModel, Field, validator
+    from pydantic import BaseModel, Field, field_validator
 
     FASTAPI_AVAILABLE = True
 except ImportError:
@@ -224,7 +227,8 @@ class CreditApplication(BaseModel):
         ..., description="Income verification status"
     )
 
-    @validator("loan_purpose")
+    @field_validator("loan_purpose")
+    @classmethod
     def validate_loan_purpose(cls, v):
         valid_purposes = [
             "debt_consolidation",
@@ -242,7 +246,8 @@ class CreditApplication(BaseModel):
             )
         return v.lower()
 
-    @validator("home_ownership")
+    @field_validator("home_ownership")
+    @classmethod
     def validate_home_ownership(cls, v):
         valid_statuses = ["own", "rent", "mortgage", "other"]
         if v.lower() not in valid_statuses:
@@ -251,7 +256,8 @@ class CreditApplication(BaseModel):
             )
         return v.lower()
 
-    @validator("verification_status")
+    @field_validator("verification_status")
+    @classmethod
     def validate_verification_status(cls, v):
         valid_statuses = ["verified", "source_verified", "not_verified"]
         if v.lower() not in valid_statuses:
@@ -273,7 +279,8 @@ class PredictionRequest(BaseModel):
         True, description="Track sustainability metrics"
     )
 
-    @validator("explanation_type")
+    @field_validator("explanation_type")
+    @classmethod
     def validate_explanation_type(cls, v):
         valid_types = ["shap"]
         if v.lower() not in valid_types:
@@ -314,7 +321,7 @@ class BatchPredictionRequest(BaseModel):
     """Batch prediction request model."""
 
     applications: List[CreditApplication] = Field(
-        ..., max_items=100, description="List of applications (max 100)"
+        ..., max_length=100, description="List of applications (max 100)"
     )
     include_explanation: bool = Field(
         False, description="Include explanations (slower for batch)"
@@ -324,7 +331,8 @@ class BatchPredictionRequest(BaseModel):
         True, description="Track sustainability metrics"
     )
 
-    @validator("explanation_type")
+    @field_validator("explanation_type")
+    @classmethod
     def validate_explanation_type(cls, v):
         valid_types = ["shap"]
         if v.lower() not in valid_types:
@@ -386,23 +394,55 @@ class APIConfig:
 class APIKeyManager:
     """Manages API key authentication."""
 
-    def __init__(self):
+    def __init__(self, key_path: Optional[str] = None):
         self.api_keys = {}  # key -> metadata
         self.key_usage = {}  # key -> usage stats
+        self.key_path = Path(
+            key_path
+            or os.getenv("PULSELEDGER_API_KEY_FILE", "keys/api_key.txt")
+        )
+        self.default_key: Optional[str] = None
 
-        # Generate default API key for testing
-        self._generate_default_key()
+        # Resolve a *persistent* default API key.
+        self._load_or_create_key()
 
-    def _generate_default_key(self):
-        """Generate a default API key for testing."""
-        default_key = "sk-test-" + secrets.token_urlsafe(32)
-        self.api_keys[default_key] = {
+    def _load_or_create_key(self):
+        """Resolve the default API key from env -> file -> freshly generated.
+
+        Persisting the key means the frontend's saved bearer token keeps
+        working across backend restarts. Previously a brand-new key was minted
+        on every startup, silently invalidating the token stored in the UI.
+        Precedence: ``PULSELEDGER_API_KEY`` env var, then the on-disk key file,
+        then a newly generated key written back to that file.
+        """
+        env_key = os.getenv("PULSELEDGER_API_KEY")
+        if env_key and env_key.strip():
+            key = env_key.strip()
+            source = "environment"
+        elif self.key_path.exists():
+            key = self.key_path.read_text(encoding="utf-8").strip()
+            source = f"file {self.key_path}"
+        else:
+            key = "sk-test-" + secrets.token_urlsafe(32)
+            try:
+                self.key_path.parent.mkdir(parents=True, exist_ok=True)
+                self.key_path.write_text(key, encoding="utf-8")
+                try:
+                    os.chmod(self.key_path, 0o600)
+                except OSError:
+                    pass
+                source = f"generated, saved to {self.key_path}"
+            except OSError as exc:
+                source = f"generated (in-memory only; persist failed: {exc})"
+
+        self.api_keys[key] = {
             "name": "Default Test Key",
             "created_at": datetime.now(),
             "permissions": ["predict", "batch_predict"],
             "rate_limit": 1000,
         }
-        logger.info(f"Generated default API key: {default_key}")
+        self.default_key = key
+        logger.info(f"Active API key [{source}]: {key}")
 
     def validate_key(self, api_key: str) -> bool:
         """Validate API key."""
@@ -442,6 +482,15 @@ class InferenceService:
         self.model = None
         self.explainer = None
         self.sustainability_monitor = None
+
+        # In-memory rolling prediction history + counters (surfaced via API).
+        self.prediction_history: Deque[Dict[str, Any]] = deque(maxlen=200)
+        self.metrics = {
+            "predictions_total": 0,
+            "batch_predictions_total": 0,
+            "prediction_errors_total": 0,
+            "auth_failures_total": 0,
+        }
 
         # Initialize FastAPI app
         self.app = FastAPI(
@@ -514,6 +563,19 @@ class InferenceService:
 
         self.limiter = limiter
 
+    def _rate_limit(self, limit_value: str):
+        """Return a slowapi rate-limit decorator, or a no-op if rate limiting
+        is unavailable/disabled. This lets the route definitions stay uniform.
+        """
+        limiter = getattr(self, "limiter", None)
+        if limiter is not None:
+            return limiter.limit(limit_value)
+
+        def _noop(func):
+            return func
+
+        return _noop
+
     def _setup_routes(self):
         """Setup API routes."""
 
@@ -562,38 +624,64 @@ class InferenceService:
                 "sustainability_tracking": self.config.enable_sustainability_tracking,
             }
 
-        # Single prediction endpoint
+        # Single prediction endpoint (rate limited per client IP)
         @self.app.post("/predict", response_model=PredictionResponse)
+        @self._rate_limit(f"{self.config.rate_limit_per_minute}/minute")
         async def predict(
-            request: PredictionRequest,
+            request: Request,
+            payload: PredictionRequest,
             background_tasks: BackgroundTasks,
             api_key: str = Depends(self._verify_api_key),
         ):
             """Make a single credit risk prediction."""
-
-            # Apply rate limiting if available
-            if hasattr(self, "limiter"):
-                # This would be applied as a decorator in a real implementation
-                pass
-
             return await self._make_prediction(
-                request, background_tasks, api_key
+                payload, background_tasks, api_key
             )
 
-        # Batch prediction endpoint
+        # Batch prediction endpoint (tighter limit; each call fans out)
         @self.app.post(
             "/predict/batch", response_model=BatchPredictionResponse
         )
+        @self._rate_limit(
+            f"{max(1, self.config.rate_limit_per_minute // 4)}/minute"
+        )
         async def predict_batch(
-            request: BatchPredictionRequest,
+            request: Request,
+            payload: BatchPredictionRequest,
             background_tasks: BackgroundTasks,
             api_key: str = Depends(self._verify_api_key),
         ):
             """Make batch credit risk predictions."""
-
             return await self._make_batch_prediction(
-                request, background_tasks, api_key
+                payload, background_tasks, api_key
             )
+
+        # Recent prediction history (server-side, in-memory rolling window)
+        @self.app.get("/predict/history")
+        async def prediction_history(
+            limit: int = 25,
+            api_key: str = Depends(self._verify_api_key),
+        ):
+            """Return the most recent predictions served by this instance."""
+            limit = max(1, min(limit, self.prediction_history.maxlen or 200))
+            items = list(self.prediction_history)[-limit:][::-1]
+            return {
+                "count": len(items),
+                "total_served": self.metrics["predictions_total"],
+                "items": items,
+            }
+
+        # Prometheus-style metrics exposition
+        @self.app.get("/metrics")
+        async def metrics():
+            lines = []
+            for name, value in self.metrics.items():
+                metric = f"pulseledger_inference_{name}"
+                lines.append(f"# TYPE {metric} counter")
+                lines.append(f"{metric} {value}")
+            from fastapi.responses import PlainTextResponse
+
+            return PlainTextResponse("\n".join(lines) + "\n")
 
         # API key info endpoint
         @self.app.get("/api-key/info")
@@ -654,6 +742,7 @@ class InferenceService:
         api_key = credentials.credentials
 
         if not self.api_key_manager.validate_key(api_key):
+            self.metrics["auth_failures_total"] += 1
             raise HTTPException(status_code=401, detail="Invalid API key")
 
         return api_key
@@ -738,6 +827,21 @@ class InferenceService:
                 message="Prediction completed successfully",
             )
 
+            # Track metrics + rolling server-side history
+            self.metrics["predictions_total"] += 1
+            self.prediction_history.append(
+                {
+                    "prediction_id": prediction_id,
+                    "timestamp": response.prediction_timestamp.isoformat(),
+                    "risk_score": round(risk_score, 4),
+                    "risk_level": risk_level.value,
+                    "confidence": round(confidence, 4),
+                    "processing_time_ms": round(processing_time, 2),
+                    "loan_amount": request.application.loan_amount,
+                    "loan_purpose": request.application.loan_purpose,
+                }
+            )
+
             # Log prediction
             if self.config.log_predictions:
                 background_tasks.add_task(
@@ -762,6 +866,7 @@ class InferenceService:
         except HTTPException:
             raise
         except Exception as e:
+            self.metrics["prediction_errors_total"] += 1
             logger.error(f"Prediction error: {e}")
 
             # Stop sustainability tracking on error
@@ -871,6 +976,8 @@ class InferenceService:
 
             # Calculate processing time
             processing_time = (time.time() - start_time) * 1000
+
+            self.metrics["batch_predictions_total"] += 1
 
             # Create batch response
             response = BatchPredictionResponse(
