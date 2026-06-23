@@ -8,8 +8,10 @@ import type {
 } from "@/lib/types";
 
 export const defaultBackendConfig: BackendConfig = {
-  mainUrl: "http://localhost:8000",
-  inferenceUrl: "http://localhost:8001",
+  // Configurable at build time for deployments; falls back to local dev.
+  mainUrl: process.env.NEXT_PUBLIC_MAIN_URL || "http://localhost:8000",
+  inferenceUrl:
+    process.env.NEXT_PUBLIC_INFERENCE_URL || "http://localhost:8001",
   apiKey: "",
 };
 

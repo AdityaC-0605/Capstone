@@ -1,0 +1,62 @@
+# Full local stack: Postgres + both APIs + the Next.js frontend.
+#   docker compose up --build
+# First build is large (the backend pulls torch). Then open http://localhost:3000
+# and sign in with the demo account (demo@pulseledger.app / demo12345).
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pulse
+      POSTGRES_PASSWORD: pulse
+      POSTGRES_DB: pulseledger
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pulse -d pulseledger"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  main-api:
+    build: .
+    command: uvicorn app.api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      PULSELEDGER_DATABASE_URL: postgresql+psycopg2://pulse:pulse@db:5432/pulseledger
+      PULSELEDGER_ALLOWED_ORIGINS: "http://localhost:3000"
+      PULSELEDGER_TRUSTED_HOSTS: "*"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  inference-api:
+    build: .
+    command: uvicorn app.api.inference_service:asgi_app --factory --host 0.0.0.0 --port 8001
+    environment:
+      PULSELEDGER_DATABASE_URL: postgresql+psycopg2://pulse:pulse@db:5432/pulseledger
+      PULSELEDGER_ALLOWED_ORIGINS: "http://localhost:3000"
+      PULSELEDGER_TRUSTED_HOSTS: "*"
+      PULSELEDGER_JWT_SECRET: "change-me-in-production"
+      PULSELEDGER_DEMO_PASSWORD: "demo12345"
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_MAIN_URL: "http://localhost:8000"
+        NEXT_PUBLIC_INFERENCE_URL: "http://localhost:8001"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - main-api
+      - inference-api
+
+volumes:
+  pgdata:

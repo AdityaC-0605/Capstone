@@ -35,6 +35,10 @@ def configure(url: Optional[str] = None) -> None:
     """Create the engine + session factory and ensure tables exist."""
     global _engine, _SessionLocal
     url = url or get_database_url()
+    # Managed Postgres (Render/Heroku) hands out a "postgres://" scheme that
+    # SQLAlchemy 2.0 no longer accepts; normalize to the modern dialect URL.
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://") :]
     connect_args = (
         {"check_same_thread": False} if url.startswith("sqlite") else {}
     )

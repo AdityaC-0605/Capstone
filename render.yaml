@@ -1,0 +1,60 @@
+# Render Blueprint — full-stack deploy (Dashboard ▸ New ▸ Blueprint).
+# NOTE: the API services pull torch, so give them a Standard (or larger)
+# instance; the Free tier will OOM. See DEPLOY.md for the post-deploy env vars
+# you must set (CORS origins + the frontend's NEXT_PUBLIC_* API URLs).
+
+databases:
+  - name: pulseledger-db
+    databaseName: pulseledger
+    user: pulse
+    plan: free
+
+services:
+  - type: web
+    name: pulseledger-main
+    runtime: python
+    plan: standard
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PULSELEDGER_DATABASE_URL
+        fromDatabase:
+          name: pulseledger-db
+          property: connectionString
+      - key: PULSELEDGER_TRUSTED_HOSTS
+        value: "*"
+      - key: PULSELEDGER_ALLOWED_ORIGINS
+        sync: false # set to the deployed frontend URL after first deploy
+
+  - type: web
+    name: pulseledger-inference
+    runtime: python
+    plan: standard
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.api.inference_service:asgi_app --factory --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PULSELEDGER_DATABASE_URL
+        fromDatabase:
+          name: pulseledger-db
+          property: connectionString
+      - key: PULSELEDGER_TRUSTED_HOSTS
+        value: "*"
+      - key: PULSELEDGER_ALLOWED_ORIGINS
+        sync: false # set to the deployed frontend URL
+      - key: PULSELEDGER_JWT_SECRET
+        generateValue: true
+
+  - type: web
+    name: pulseledger-frontend
+    runtime: node
+    plan: starter
+    buildCommand: cd frontend && npm ci && npm run build
+    startCommand: cd frontend && npm run start
+    envVars:
+      # Inlined at build time — set these to the API service URLs from above.
+      - key: NEXT_PUBLIC_MAIN_URL
+        sync: false
+      - key: NEXT_PUBLIC_INFERENCE_URL
+        sync: false

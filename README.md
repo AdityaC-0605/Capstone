@@ -69,6 +69,14 @@ Open **http://localhost:3000** → **Launch app** → on the login screen click 
 
 > **Demo credentials:** `demo@pulseledger.app` / `demo12345`. Federated learning and the fairness audit call the platform API directly and need no credentials.
 
+### Or run the whole stack in Docker
+
+```bash
+docker compose up --build   # Postgres + both APIs + frontend → http://localhost:3000
+```
+
+See **[DEPLOY.md](DEPLOY.md)** for Docker Compose, Render (one-click Blueprint), and Vercel.
+
 ---
 
 ## 🎨 Frontend — "The Ledger"
@@ -260,16 +268,15 @@ The `explanation` object returned by `/predict` drives the UI's explainability w
 
 ## 🗺️ Roadmap
 
-Done since v1.0: ✅ real federated endpoint · ✅ live fairness **dashboard** · ✅ persistent API key · ✅ enforced rate limiting · ✅ Pydantic v2 · ✅ `/metrics` + `/predict/history` · ✅ landing site + app workspace · ✅ **durable persistence** (SQLite/Postgres + Alembic) · ✅ **accounts & multi-tenancy** (JWT auth, per-user scoping) · ✅ **bulk CSV scoring**.
+Done since v1.0: ✅ real federated endpoint · ✅ live fairness **dashboard** · ✅ persistent API key · ✅ enforced rate limiting · ✅ Pydantic v2 · ✅ `/metrics` + `/predict/history` · ✅ landing site + app workspace · ✅ **durable persistence** (SQLite/Postgres + Alembic) · ✅ **accounts & multi-tenancy** (JWT auth, per-user scoping) · ✅ **bulk CSV scoring** · ✅ **deploy configs** (Docker, Compose, Render — see [DEPLOY.md](DEPLOY.md)).
 
 Toward production:
 
 1. **Extend persistence** — predictions and users are durably stored; next, persist the audit log and rotate the JWT secret via a secrets manager.
 2. **RBAC, admin & SSO** — accounts and per-user scoping exist; add role-based admin views and SSO/OAuth providers.
-3. **Live deployment** — Docker + compose + a Postgres URL behind a public host for a shareable demo link.
+3. **Model registry serving** — load the trained artifacts in `model_registry/` with versioning and rollback.
 4. **Real NAS runs** — replace the simulated NAS preview with the `app.sustainability.run_nas` pipeline (bounded/async).
-5. **Model registry serving** — load the trained artifacts in `model_registry/` with versioning and rollback.
-6. **Real-time telemetry** — WebSocket/SSE stream so the dashboard updates without polling.
+5. **Real-time telemetry** — WebSocket/SSE stream so the dashboard updates without polling.
 
 ---
 

@@ -400,7 +400,17 @@ class APIConfig:
         # Security settings
         self.enable_authentication = True
         self.api_keys = set()  # Will be populated with valid API keys
-        self.trusted_hosts = ["localhost", "127.0.0.1", "testserver"]
+        # Trusted hosts: env override (comma list or "*") for deployments;
+        # defaults to local + "testserver" so the test client keeps working.
+        _hosts = os.getenv("PULSELEDGER_TRUSTED_HOSTS", "").strip()
+        if _hosts == "*":
+            self.trusted_hosts = ["*"]
+        elif _hosts:
+            self.trusted_hosts = [
+                h.strip() for h in _hosts.split(",") if h.strip()
+            ]
+        else:
+            self.trusted_hosts = ["localhost", "127.0.0.1", "testserver"]
 
         # Rate limiting
         self.enable_rate_limiting = True
@@ -414,9 +424,15 @@ class APIConfig:
         # Sustainability tracking
         self.enable_sustainability_tracking = True
 
-        # CORS settings
+        # CORS settings — env override for deployments (comma list or "*").
         self.enable_cors = True
-        self.cors_origins = ["*"]  # Configure appropriately for production
+        _origins = os.getenv("PULSELEDGER_ALLOWED_ORIGINS", "*").strip()
+        if not _origins or _origins == "*":
+            self.cors_origins = ["*"]
+        else:
+            self.cors_origins = [
+                o.strip() for o in _origins.split(",") if o.strip()
+            ]
 
         # Logging
         self.log_predictions = True
@@ -1438,6 +1454,16 @@ def run_inference_service(
     """Run inference service."""
     service = create_inference_service(config)
     service.run(host, port)
+
+
+def asgi_app():
+    """ASGI factory for production servers.
+
+    Use with: ``uvicorn app.api.inference_service:asgi_app --factory``.
+    Defined as a factory (not a module-level instance) so importing this
+    module never constructs the service or touches the database.
+    """
+    return create_inference_service().get_app()
 
 
 if __name__ == "__main__":
