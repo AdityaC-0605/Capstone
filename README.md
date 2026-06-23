@@ -13,6 +13,7 @@ A full-stack platform for credit-risk scoring that ships **a defensible reason w
 - **Federated learning (live)** — A real multi-client FedAvg simulation runs on the backend and returns genuine round-by-round validation loss **and** accuracy; the UI plots the real convergence curve.
 - **Fairness auditing (live)** — Demographic parity, equal opportunity, equalized odds, calibration and treatment equality across protected groups, with severity grading and remediation recommendations, on its own dashboard.
 - **Carbon-aware operations** — Energy, emissions, and latency are tracked alongside predictions and aggregated into a session footprint with an eco-score verdict.
+- **Accounts & multi-tenancy** — email/password auth with JWT sessions; each analyst sees only their own assessments. A one-click demo account is seeded for instant access.
 - **"The Ledger" experience** — A light, editorial, institutional design (bone paper + evergreen ink, Fraunces / IBM Plex) — accessible by default (honors `prefers-reduced-motion`, dialog semantics, keyboard focus, toasts).
 
 ---
@@ -62,11 +63,11 @@ npm install
 npm run dev            # http://localhost:3000  (or: npm run build && npm start)
 ```
 
-### 3. Connect
+### 3. Sign in
 
-Open **http://localhost:3000** → **Launch app** → **Settings** (left sidebar) → paste the `sk-test-…` key and save. Live scoring, history, and carbon telemetry then light up across the workspace.
+Open **http://localhost:3000** → **Launch app** → on the login screen click **Use demo account** (or register your own). The workspace is gated behind login; your session token authorizes scoring and your assessments are scoped to your account.
 
-> Federated learning and the fairness audit call the platform API directly and need **no** API key.
+> **Demo credentials:** `demo@pulseledger.app` / `demo12345`. Federated learning and the fairness audit call the platform API directly and need no credentials.
 
 ---
 
@@ -137,6 +138,17 @@ curl -s "http://localhost:8001/predict/history?limit=25" -H "Authorization: Bear
 
 # A single persisted assessment by id (full record incl. explanation)
 curl -s "http://localhost:8001/predict/pred_abc123" -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+**Accounts** (inference API). Login returns a session JWT; use it as the bearer
+for `/predict*` — a logged-in user only sees their own assessments. A legacy
+service API key still works for machine access.
+
+```bash
+curl -s -X POST http://localhost:8001/auth/login -H "Content-Type: application/json" \
+  -d '{"email":"demo@pulseledger.app","password":"demo12345"}'
+# -> { "access_token": "<jwt>", "token_type": "bearer", "user": {...} }
+curl -s http://localhost:8001/auth/me -H "Authorization: Bearer <access_token>"
 
 # Batch scoring (up to 100 applications) and metrics
 curl -s -X POST http://localhost:8001/predict/batch -H "Authorization: Bearer YOUR_API_KEY" -H "Content-Type: application/json" -d '{"applications": [ ... ]}'
@@ -151,7 +163,9 @@ Interactive docs: `http://localhost:8000/docs` and `http://localhost:8001/docs`.
 |----------|---------|---------|
 | `PULSELEDGER_API_KEY` | Pin the inference bearer key (highest precedence) | _generated_ |
 | `PULSELEDGER_API_KEY_FILE` | Where the key is persisted/loaded | `keys/api_key.txt` |
-| `PULSELEDGER_DATABASE_URL` | SQLAlchemy DB URL — assessments persist here | `sqlite:///./pulseledger.db` |
+| `PULSELEDGER_DATABASE_URL` | SQLAlchemy DB URL — users + assessments persist here | `sqlite:///./pulseledger.db` |
+| `PULSELEDGER_JWT_SECRET` | Secret for signing session tokens — **set in production** | `dev-insecure-change-me` |
+| `PULSELEDGER_DEMO_PASSWORD` | Seeded demo-account password | `demo12345` |
 | `PULSELEDGER_ALLOWED_ORIGINS` | Comma-separated CORS allow-list for the platform API | `*` |
 | `ENVIRONMENT` | `development` enables hot reload | `development` |
 
@@ -202,18 +216,19 @@ PulseLedger/
 │   ├── services/              # bias_detector (live) + compliance/ingestion modules
 │   ├── sustainability/        # carbon tracking + carbon-aware NAS research
 │   ├── models/                # lightweight runtime credit model
-│   ├── db/                    # SQLAlchemy base, ORM models, repository
-│   └── core/                  # config, logging, auth, encryption, GDPR scaffolding
+│   ├── db/                    # SQLAlchemy base, ORM models (User, Prediction), repository
+│   └── core/                  # config, logging, security (JWT), auth/RBAC, GDPR scaffolding
 ├── frontend/
 │   ├── app/
 │   │   ├── page.tsx           # Landing (/)
+│   │   ├── login/page.tsx     # Auth — sign in / register (/login)
 │   │   ├── layout.tsx, globals.css
-│   │   └── (app)/             # App route group (sidebar shell)
+│   │   └── (app)/             # App route group (sidebar shell, login-gated)
 │   │       ├── dashboard/  assessments/{,(new),[id]}/
 │   │       ├── federated/  fairness/  sustainability/  settings/
 │   ├── components/            # Ledger design-system components
 │   ├── lib/                   # api client, types, formatters, utils
-│   └── store/                 # Zustand stores (pulse + toast)
+│   └── store/                 # Zustand stores (pulse, auth, toast)
 ├── migrations/                # Alembic migration environment + versions
 ├── tests/                     # backend pytest suite (+ conftest isolated DB)
 ├── start_backend.sh           # launches both APIs
@@ -245,12 +260,12 @@ The `explanation` object returned by `/predict` drives the UI's explainability w
 
 ## 🗺️ Roadmap
 
-Done since v1.0: ✅ real federated endpoint · ✅ live fairness **dashboard** · ✅ persistent API key · ✅ enforced rate limiting · ✅ Pydantic v2 · ✅ `/metrics` + `/predict/history` · ✅ landing site + app workspace · ✅ **durable persistence** (SQLite/Postgres + Alembic).
+Done since v1.0: ✅ real federated endpoint · ✅ live fairness **dashboard** · ✅ persistent API key · ✅ enforced rate limiting · ✅ Pydantic v2 · ✅ `/metrics` + `/predict/history` · ✅ landing site + app workspace · ✅ **durable persistence** (SQLite/Postgres + Alembic) · ✅ **accounts & multi-tenancy** (JWT auth, per-user scoping).
 
 Toward production:
 
-1. **Extend persistence** — assessments are now durably stored; next, persist the audit log and API keys in the DB and add per-user scoping.
-2. **Authentication & multi-tenancy** — the JWT/RBAC scaffold in `app/core/auth.py` is built but unused; gate the app behind login and scope keys per user.
+1. **Extend persistence** — predictions and users are durably stored; next, persist the audit log and rotate the JWT secret via a secrets manager.
+2. **RBAC, admin & SSO** — accounts and per-user scoping exist; add role-based admin views and SSO/OAuth providers.
 3. **Batch / CSV scoring UI** — a bulk mode over the existing `/predict/batch` endpoint with a downloadable results table.
 4. **Real NAS runs** — replace the simulated NAS preview with the `app.sustainability.run_nas` pipeline (bounded/async).
 5. **Model registry serving** — load the trained artifacts in `model_registry/` with versioning and rollback.
@@ -260,6 +275,7 @@ Toward production:
 
 ## ⚠️ Notes & Honest Scope
 
-- **Persistence** — assessments are durably stored server-side (SQLite by default, Postgres via `PULSELEDGER_DATABASE_URL`) and survive restarts; the assessment detail page falls back to the server when a record isn't in the browser's local history. In-process `/metrics` counters remain memory-only.
+- **Persistence** — users and assessments are durably stored server-side (SQLite by default, Postgres via `PULSELEDGER_DATABASE_URL`) and survive restarts; the assessment detail page falls back to the server when a record isn't in the browser's local history. In-process `/metrics` counters remain memory-only.
+- **Auth hardening** — the demo password is intentionally public and the default `PULSELEDGER_JWT_SECRET` is insecure. Set a real secret (and change or disable the demo account) before exposing the app publicly.
 - **Illustrative content** — the landing page's headline stats and the "trusted by" row are marketing placeholders; the NAS table on Sustainability is a clearly-labelled **preview**. Everything in the app workspace (scoring, explanations, federated, fairness) is computed for real.
 - **Model** — inference uses a lightweight, transparent runtime model so the system is fully runnable without a training pipeline; swap in `model_registry/` artifacts for production.

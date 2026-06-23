@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ClipboardList,
   LayoutDashboard,
   Leaf,
+  LogOut,
   Menu,
   Network,
   Plus,
@@ -18,7 +19,9 @@ import {
 
 import { probeBackends } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/use-auth-store";
 import { usePulseStore } from "@/store/use-pulse-store";
+import type { AuthUser } from "@/lib/types";
 
 const navGroups = [
   {
@@ -75,10 +78,14 @@ function Wordmark() {
 function SidebarContent({
   pathname,
   status,
+  user,
+  onLogout,
   onNavigate,
 }: {
   pathname: string;
   status: string;
+  user: AuthUser | null;
+  onLogout: () => void;
   onNavigate?: () => void;
 }) {
   const isActive = (href: string) =>
@@ -165,6 +172,31 @@ function SidebarContent({
           <Settings className="h-[18px] w-[18px]" />
           Settings
         </Link>
+
+        {user ? (
+          <div className="mt-1 flex items-center gap-2.5 rounded-[3px] border border-border bg-bg-elevated/60 px-2.5 py-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent font-mono text-xs font-medium uppercase text-bg-surface">
+              {(user.full_name || user.email).slice(0, 1)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-text-primary">
+                {user.full_name || user.email}
+              </p>
+              <p className="truncate text-[11px] text-text-muted">
+                {user.email}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="focus-ring rounded-[3px] p-1 text-text-muted transition-colors hover:text-text-primary"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -172,10 +204,29 @@ function SidebarContent({
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const backendConfig = usePulseStore((state) => state.backendConfig);
   const backendStatus = usePulseStore((state) => state.backendStatus);
   const setBackendStatus = usePulseStore((state) => state.setBackendStatus);
+  const setBackendConfig = usePulseStore((state) => state.setBackendConfig);
+  const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  // Gate the app behind login (the landing + /login live outside this shell).
+  useEffect(() => {
+    if (mounted && !token) router.replace("/login");
+  }, [mounted, token, router]);
+
+  const logout = () => {
+    clearAuth();
+    setBackendConfig({ ...backendConfig, apiKey: "" });
+    router.replace("/login");
+  };
 
   useEffect(() => {
     let active = true;
@@ -211,11 +262,21 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   const overall = backendStatus.overall.state;
   const title = titleForPath(pathname);
 
+  // Avoid an SSR/CSR flash and redirect unauthenticated users to /login.
+  if (!mounted || !token) {
+    return <div className="min-h-screen bg-bg-primary" />;
+  }
+
   return (
     <div className="min-h-screen">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] border-r border-border bg-bg-surface lg:block">
-        <SidebarContent pathname={pathname} status={overall} />
+        <SidebarContent
+          pathname={pathname}
+          status={overall}
+          user={user}
+          onLogout={logout}
+        />
       </aside>
 
       {/* Mobile drawer */}
@@ -239,6 +300,8 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               <SidebarContent
                 pathname={pathname}
                 status={overall}
+                user={user}
+                onLogout={logout}
                 onNavigate={() => setMobileOpen(false)}
               />
             </motion.div>

@@ -1,5 +1,6 @@
 import { defaultBackendConfig, samplePredictionRequest } from "@/lib/constants";
 import type {
+  AuthResponse,
   BackendConfig,
   BackendStatus,
   CreditApplication,
@@ -297,6 +298,36 @@ export async function fetchAssessment(
     },
     sustainability_metrics: data.sustainability_metrics ?? undefined,
   };
+}
+
+/** Register a new user; returns a session token + the public user record. */
+export async function registerUser(
+  config: BackendConfig,
+  payload: { email: string; password: string; full_name?: string },
+): Promise<AuthResponse> {
+  return fetchJson<AuthResponse>(
+    `${trimSlash(config.inferenceUrl)}/auth/register`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ full_name: "", ...payload }),
+    },
+  );
+}
+
+/** Log in with email + password; returns a session token + user record. */
+export async function loginUser(
+  config: BackendConfig,
+  payload: { email: string; password: string },
+): Promise<AuthResponse> {
+  return fetchJson<AuthResponse>(
+    `${trimSlash(config.inferenceUrl)}/auth/login`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export function buildCurlCommand(config: BackendConfig) {

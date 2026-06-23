@@ -352,6 +352,38 @@ class BatchPredictionResponse(BaseModel):
     sustainability_metrics: Optional[Dict[str, Any]] = None
 
 
+@dataclass
+class Principal:
+    """The authenticated caller: a logged-in user or a service API key."""
+
+    kind: str  # "user" | "service" | "anonymous"
+    identifier: str
+    user_id: Optional[int] = None
+
+
+class RegisterRequest(BaseModel):
+    """New-user registration payload."""
+
+    email: str = Field(..., description="Email address")
+    password: str = Field(..., min_length=8, description="Password (8+ chars)")
+    full_name: str = Field("", description="Display name")
+
+
+class LoginRequest(BaseModel):
+    """Login payload."""
+
+    email: str
+    password: str
+
+
+class AuthResponse(BaseModel):
+    """Issued bearer token plus the public user record."""
+
+    access_token: str
+    token_type: str = "bearer"
+    user: Dict[str, Any]
+
+
 class APIConfig:
     """Configuration for the inference API."""
 
@@ -502,6 +534,7 @@ class InferenceService:
             if not repository.is_configured():
                 repository.configure()
             self.db_available = True
+            self._seed_demo_user()
         except Exception as exc:  # pragma: no cover - optional dependency
             logger.warning(
                 f"Persistence unavailable, using memory only: {exc}"
@@ -646,11 +679,11 @@ class InferenceService:
             request: Request,
             payload: PredictionRequest,
             background_tasks: BackgroundTasks,
-            api_key: str = Depends(self._verify_api_key),
+            principal: "Principal" = Depends(self._authenticate),
         ):
             """Make a single credit risk prediction."""
             return await self._make_prediction(
-                payload, background_tasks, api_key
+                payload, background_tasks, principal
             )
 
         # Batch prediction endpoint (tighter limit; each call fans out)
@@ -664,11 +697,11 @@ class InferenceService:
             request: Request,
             payload: BatchPredictionRequest,
             background_tasks: BackgroundTasks,
-            api_key: str = Depends(self._verify_api_key),
+            principal: "Principal" = Depends(self._authenticate),
         ):
             """Make batch credit risk predictions."""
             return await self._make_batch_prediction(
-                payload, background_tasks, api_key
+                payload, background_tasks, principal.identifier
             )
 
         # Recent prediction history (durable when a database is configured;
@@ -676,10 +709,15 @@ class InferenceService:
         @self.app.get("/predict/history")
         async def prediction_history(
             limit: int = 25,
-            api_key: str = Depends(self._verify_api_key),
+            principal: "Principal" = Depends(self._authenticate),
         ):
-            """Return recent predictions, newest first."""
+            """Return recent predictions, newest first.
+
+            A logged-in user sees only their own assessments; a service key
+            sees all of them.
+            """
             limit = max(1, min(limit, 200))
+            scope = principal.user_id if principal.kind == "user" else None
             if self.db_available:
                 try:
                     from fastapi.concurrency import run_in_threadpool
@@ -687,10 +725,10 @@ class InferenceService:
                     from app.db import repository
 
                     items = await run_in_threadpool(
-                        repository.list_predictions, limit
+                        repository.list_predictions, limit, scope
                     )
                     total = await run_in_threadpool(
-                        repository.count_predictions
+                        repository.count_predictions, scope
                     )
                     return {
                         "count": len(items),
@@ -712,16 +750,17 @@ class InferenceService:
         @self.app.get("/predict/{prediction_id}")
         async def get_one_prediction(
             prediction_id: str,
-            api_key: str = Depends(self._verify_api_key),
+            principal: "Principal" = Depends(self._authenticate),
         ):
-            """Fetch one persisted assessment, including its explanation."""
+            """Fetch one persisted assessment a user owns (or any, for keys)."""
             if self.db_available:
                 from fastapi.concurrency import run_in_threadpool
 
                 from app.db import repository
 
+                scope = principal.user_id if principal.kind == "user" else None
                 record = await run_in_threadpool(
-                    repository.get_prediction, prediction_id
+                    repository.get_prediction, prediction_id, scope
                 )
                 if record:
                     return {"status": "ok", "data": record}
@@ -742,10 +781,16 @@ class InferenceService:
         # API key info endpoint
         @self.app.get("/api-key/info")
         async def api_key_info(api_key: str = Depends(self._verify_api_key)):
-            """Get API key information."""
+            """Get API key information (service keys only)."""
             key_info = self.api_key_manager.get_key_info(api_key)
+            if not key_info:
+                return {
+                    "key_name": "session",
+                    "permissions": ["predict", "batch_predict"],
+                    "requests_made": 0,
+                    "last_used": "Never",
+                }
             usage_info = self.api_key_manager.key_usage.get(api_key, {})
-
             return {
                 "key_name": key_info.get("name", "Unknown"),
                 "permissions": key_info.get("permissions", []),
@@ -756,6 +801,32 @@ class InferenceService:
                     else "Never"
                 ),
             }
+
+        # ── Authentication ──────────────────────────────────────────────
+        @self.app.post("/auth/register", response_model=AuthResponse)
+        async def register(payload: RegisterRequest):
+            return await self._register_user(payload)
+
+        @self.app.post("/auth/login", response_model=AuthResponse)
+        async def login(payload: LoginRequest):
+            return await self._login_user(payload)
+
+        @self.app.get("/auth/me")
+        async def me(principal: "Principal" = Depends(self._authenticate)):
+            if principal.kind != "user" or principal.user_id is None:
+                raise HTTPException(
+                    status_code=401, detail="Not a user session"
+                )
+            from fastapi.concurrency import run_in_threadpool
+
+            from app.db import repository
+
+            user = await run_in_threadpool(
+                repository.get_user_by_id, principal.user_id
+            )
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            return {"status": "ok", "data": user}
 
     def _load_model(self):
         """Load the lightweight runtime model."""
@@ -787,27 +858,125 @@ class InferenceService:
         except Exception as e:
             logger.error(f"Failed to load services: {e}")
 
+    def _seed_demo_user(self) -> None:
+        """Create the demo analyst account if it doesn't exist yet."""
+        try:
+            from app.core.security import hash_password
+            from app.db import repository
+
+            email = os.getenv("PULSELEDGER_DEMO_EMAIL", "demo@pulseledger.app")
+            password = os.getenv("PULSELEDGER_DEMO_PASSWORD", "demo12345")
+            repository.ensure_user(
+                email, hash_password(password), full_name="Demo Analyst"
+            )
+        except Exception as exc:
+            logger.warning(f"Demo user seed skipped: {exc}")
+
+    def _principal_from_token(self, token: str) -> "Principal":
+        """Resolve a bearer token to a Principal.
+
+        Accepts a user-session JWT first, then a legacy service API key.
+        """
+        from app.core.security import decode_access_token
+
+        payload = decode_access_token(token)
+        if payload and payload.get("sub"):
+            try:
+                user_id = int(payload["sub"])
+            except (TypeError, ValueError):
+                user_id = None
+            if user_id is not None:
+                email = payload.get("email") or f"user:{user_id}"
+                return Principal(
+                    kind="user", identifier=email, user_id=user_id
+                )
+
+        if self.api_key_manager.validate_key(token):
+            return Principal(kind="service", identifier=token[:10] + "...")
+
+        self.metrics["auth_failures_total"] += 1
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    async def _authenticate(
+        self, credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())
+    ) -> "Principal":
+        """FastAPI dependency yielding the authenticated Principal."""
+        if not self.config.enable_authentication:
+            return Principal(kind="anonymous", identifier="no-auth")
+        return self._principal_from_token(credentials.credentials)
+
     async def _verify_api_key(
         self, credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())
-    ):
-        """Verify API key authentication."""
-
+    ) -> str:
+        """Backwards-compatible dependency returning the principal's id."""
         if not self.config.enable_authentication:
             return "no-auth"
+        return self._principal_from_token(credentials.credentials).identifier
 
-        api_key = credentials.credentials
+    async def _register_user(
+        self, payload: "RegisterRequest"
+    ) -> "AuthResponse":
+        from fastapi.concurrency import run_in_threadpool
 
-        if not self.api_key_manager.validate_key(api_key):
+        from app.core.security import create_access_token, hash_password
+        from app.db import repository
+
+        if not self.db_available:
+            raise HTTPException(
+                status_code=503, detail="Auth requires a database"
+            )
+        email = payload.email.lower().strip()
+        if "@" not in email or "." not in email:
+            raise HTTPException(status_code=422, detail="Invalid email")
+        existing = await run_in_threadpool(repository.get_user_by_email, email)
+        if existing:
+            raise HTTPException(
+                status_code=409, detail="Email already registered"
+            )
+        user = await run_in_threadpool(
+            repository.create_user,
+            email,
+            hash_password(payload.password),
+            payload.full_name,
+        )
+        token = create_access_token(
+            user["id"], email=user["email"], role=user["role"]
+        )
+        return AuthResponse(access_token=token, user=user)
+
+    async def _login_user(self, payload: "LoginRequest") -> "AuthResponse":
+        from fastapi.concurrency import run_in_threadpool
+
+        from app.core.security import create_access_token, verify_password
+        from app.db import repository
+
+        if not self.db_available:
+            raise HTTPException(
+                status_code=503, detail="Auth requires a database"
+            )
+        record = await run_in_threadpool(
+            repository.get_user_by_email, payload.email.lower().strip()
+        )
+        if not record or not verify_password(
+            payload.password, record["hashed_password"]
+        ):
             self.metrics["auth_failures_total"] += 1
-            raise HTTPException(status_code=401, detail="Invalid API key")
-
-        return api_key
+            raise HTTPException(
+                status_code=401, detail="Invalid email or password"
+            )
+        public = {
+            key: record[key] for key in ("id", "email", "full_name", "role")
+        }
+        token = create_access_token(
+            record["id"], email=record["email"], role=record["role"]
+        )
+        return AuthResponse(access_token=token, user=public)
 
     async def _make_prediction(
         self,
         request: PredictionRequest,
         background_tasks: BackgroundTasks,
-        api_key: str,
+        principal: "Principal",
     ) -> PredictionResponse:
         """Make a single prediction."""
 
@@ -826,7 +995,7 @@ class InferenceService:
                     exp_id,
                     {
                         "type": "single_prediction",
-                        "api_key": api_key[:10] + "...",
+                        "api_key": principal.identifier,
                         "timestamp": datetime.now().isoformat(),
                     },
                 )
@@ -901,12 +1070,12 @@ class InferenceService:
             # Log prediction
             if self.config.log_predictions:
                 background_tasks.add_task(
-                    self._log_prediction, request, response, api_key
+                    self._log_prediction, request, response, principal
                 )
 
             # Audit log
             audit_logger.log_model_operation(
-                user_id=api_key[:10] + "...",
+                user_id=principal.identifier,
                 model_id="credit_risk_api",
                 operation="single_prediction",
                 success=True,
@@ -1163,14 +1332,14 @@ class InferenceService:
         self,
         request: PredictionRequest,
         response: PredictionResponse,
-        api_key: str,
+        principal: "Principal",
     ):
         """Log prediction for audit and monitoring."""
 
         log_data = {
             "timestamp": datetime.now().isoformat(),
             "prediction_id": response.prediction_id,
-            "api_key": api_key[:10] + "...",
+            "principal": principal.identifier,
             "risk_score": response.risk_score,
             "risk_level": response.risk_level.value,
             "confidence": response.confidence,
@@ -1195,12 +1364,13 @@ class InferenceService:
 
                 record = {
                     "prediction_id": response.prediction_id,
+                    "user_id": principal.user_id,
                     "risk_score": float(response.risk_score),
                     "risk_level": response.risk_level.value,
                     "confidence": float(response.confidence),
                     "processing_time_ms": float(response.processing_time_ms),
                     "model_version": response.model_version,
-                    "api_key_prefix": api_key[:10],
+                    "api_key_prefix": principal.identifier[:20],
                     "application": request.application.model_dump(),
                     "explanation": response.explanation,
                     "sustainability": response.sustainability_metrics,

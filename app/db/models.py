@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from sqlalchemy import JSON, DateTime, Float, Integer, String
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -13,6 +13,31 @@ from app.db.base import Base
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+class User(Base):
+    """An application user (analyst). Owns the assessments they score."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    full_name: Mapped[str] = mapped_column(String(120), default="")
+    role: Mapped[str] = mapped_column(String(32), default="analyst")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow
+    )
+
+    def to_public(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "email": self.email,
+            "full_name": self.full_name,
+            "role": self.role,
+        }
 
 
 class Prediction(Base):
@@ -25,6 +50,9 @@ class Prediction(Base):
     )
     prediction_id: Mapped[str] = mapped_column(
         String(64), unique=True, index=True
+    )
+    user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id"), index=True, nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, index=True

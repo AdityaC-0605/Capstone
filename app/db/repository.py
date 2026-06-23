@@ -15,7 +15,7 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.base import Base
-from app.db.models import Prediction
+from app.db.models import Prediction, User
 
 _engine = None
 _SessionLocal: Optional[sessionmaker] = None
@@ -83,24 +83,88 @@ def save_prediction(record: Dict[str, Any]) -> None:
         session.add(Prediction(**record))
 
 
-def list_predictions(limit: int = 25) -> List[Dict[str, Any]]:
+def list_predictions(
+    limit: int = 25, user_id: Optional[int] = None
+) -> List[Dict[str, Any]]:
     with _session_scope() as session:
+        query = select(Prediction)
+        if user_id is not None:
+            query = query.where(Prediction.user_id == user_id)
         rows = session.scalars(
-            select(Prediction)
-            .order_by(Prediction.created_at.desc(), Prediction.id.desc())
-            .limit(limit)
+            query.order_by(
+                Prediction.created_at.desc(), Prediction.id.desc()
+            ).limit(limit)
         ).all()
         return [row.to_summary() for row in rows]
 
 
-def get_prediction(prediction_id: str) -> Optional[Dict[str, Any]]:
+def get_prediction(
+    prediction_id: str, user_id: Optional[int] = None
+) -> Optional[Dict[str, Any]]:
     with _session_scope() as session:
-        row = session.scalar(
-            select(Prediction).where(Prediction.prediction_id == prediction_id)
+        query = select(Prediction).where(
+            Prediction.prediction_id == prediction_id
         )
+        if user_id is not None:
+            query = query.where(Prediction.user_id == user_id)
+        row = session.scalar(query)
         return row.to_full() if row else None
 
 
-def count_predictions() -> int:
+def count_predictions(user_id: Optional[int] = None) -> int:
     with _session_scope() as session:
-        return session.scalar(select(func.count(Prediction.id))) or 0
+        query = select(func.count(Prediction.id))
+        if user_id is not None:
+            query = query.where(Prediction.user_id == user_id)
+        return session.scalar(query) or 0
+
+
+# ── Users ────────────────────────────────────────────────────────────────
+
+
+def create_user(
+    email: str,
+    hashed_password: str,
+    full_name: str = "",
+    role: str = "analyst",
+) -> Dict[str, Any]:
+    with _session_scope() as session:
+        user = User(
+            email=email.lower().strip(),
+            hashed_password=hashed_password,
+            full_name=full_name,
+            role=role,
+        )
+        session.add(user)
+        session.flush()
+        return user.to_public()
+
+
+def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    """Return the full record (incl. hash) for login verification."""
+    with _session_scope() as session:
+        user = session.scalar(
+            select(User).where(User.email == email.lower().strip())
+        )
+        if not user:
+            return None
+        record = user.to_public()
+        record["hashed_password"] = user.hashed_password
+        return record
+
+
+def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
+    with _session_scope() as session:
+        user = session.get(User, user_id)
+        return user.to_public() if user else None
+
+
+def ensure_user(
+    email: str,
+    hashed_password: str,
+    full_name: str = "",
+    role: str = "analyst",
+) -> None:
+    """Create a user only if the email isn't already registered."""
+    if get_user_by_email(email) is None:
+        create_user(email, hashed_password, full_name, role)
