@@ -1,159 +1,105 @@
-# PulseLedger — Sustainable Credit Risk AI
+# PulseLedger — Explainable Credit-Risk Intelligence
 
-A complete, full-stack application providing carbon-aware, federated, and explainable credit risk intelligence.
+A full-stack platform for credit-risk scoring that ships **a defensible reason with every number** — SHAP explanations, federated learning, fairness auditing, and carbon-aware telemetry, behind a polished marketing site and a real application workspace.
+
+- **Backend** — two FastAPI services (platform + inference) with real ML: SHAP explanations, FedAvg federated learning, and a bias detector.
+- **Frontend** — a Next.js 14 app in a custom **"Ledger"** design system: an animated landing page plus a sidebar-driven workspace.
+
+---
 
 ## 🌟 Core Capabilities
 
-- **Explainable Credit Risk Inference** — SHAP-powered explanations featuring actionable recommendations, counterfactual suggestions, feature risk grouping, confidence scoring, and dynamic analyst-style narrative summaries. The Studio now visualizes raw SHAP attributions as a signed horizontal bar chart.
-- **Federated Learning (live)** — A real multi-client FedAvg simulation runs on the backend and returns genuine round-by-round validation loss **and** accuracy. The frontend renders the real convergence curve (no more client-side `Math.random()` placeholders).
-- **Fairness Auditing (live)** — Demographic-parity, equal-opportunity, equalized-odds, calibration and treatment-equality metrics computed by the real bias detector, with severity grading and remediation recommendations.
-- **Sustainability Operations** — Carbon-aware AI telemetry, tracking the carbon footprint and energy consumption of live operational AI models.
-- **"Mercury Noir" Command Center** — A premium, unified React/Next.js frontend engineered with a custom warm-industrial design system indicating live operational intelligence. Accessible by default (honors `prefers-reduced-motion`, dialog semantics, toast notifications).
+- **Explainable inference** — Every score returns SHAP feature attributions, a written analyst narrative, counterfactuals to a lower risk band, risk-group breakdowns, and confidence context. The UI renders signed SHAP attributions as a horizontal bar chart.
+- **Federated learning (live)** — A real multi-client FedAvg simulation runs on the backend and returns genuine round-by-round validation loss **and** accuracy; the UI plots the real convergence curve.
+- **Fairness auditing (live)** — Demographic parity, equal opportunity, equalized odds, calibration and treatment equality across protected groups, with severity grading and remediation recommendations, on its own dashboard.
+- **Carbon-aware operations** — Energy, emissions, and latency are tracked alongside predictions and aggregated into a session footprint with an eco-score verdict.
+- **"The Ledger" experience** — A light, editorial, institutional design (bone paper + evergreen ink, Fraunces / IBM Plex) — accessible by default (honors `prefers-reduced-motion`, dialog semantics, keyboard focus, toasts).
 
-## ✨ What's New in v1.1
+---
 
-| Area | Change |
-|------|--------|
-| **Federated learning** | Now genuinely computed on the backend (`POST /api/v1/federated/run`) and wired into the UI — real FedAvg, ~0.4s for a small run. |
-| **Fairness audit** | New real bias-detection endpoint (`GET /api/v1/fairness/audit`). |
-| **API key** | **Persists across restarts** (env → file → generated). Previously a new key was minted on every boot, silently invalidating the token saved in the UI. |
-| **Rate limiting** | Actually enforced on `/predict` and `/predict/batch` (it was wired but never applied). |
-| **Pydantic** | Validators migrated from deprecated v1 `@validator` to v2 `@field_validator`. |
-| **Observability** | `GET /predict/history` (server-side rolling history) and `GET /metrics` (Prometheus) on both services. |
-| **Frontend UX** | Toast notifications, SHAP attribution chart, reduced-motion + dialog a11y, friendlier network-error messages, removed dead code. |
-| **CORS** | Configurable via `PULSELEDGER_ALLOWED_ORIGINS` (defaults to `*` for local dev). |
-| **Tests** | Added `tests/test_new_capabilities.py` covering every new endpoint and the hardening behavior. |
+## 🏗️ Architecture
+
+```text
+┌─────────────────────────────┐        ┌──────────────────────────────────────┐
+│  Next.js frontend (:3000)   │        │  FastAPI backend                       │
+│                             │        │                                        │
+│  /            Landing       │──────► │  Platform API (:8000)                  │
+│  /dashboard   Workspace     │  HTTP  │   /health  /ready  /api/v1/status      │
+│  /assessments New / List /  │ ─────► │   POST /api/v1/federated/run  (FedAvg) │
+│               Detail        │        │   GET  /api/v1/fairness/audit (bias)   │
+│  /federated   FedAvg        │        │   /metrics                             │
+│  /fairness    Bias audit    │        │                                        │
+│  /sustainability  Carbon    │──────► │  Inference API (:8001)                 │
+│  /settings    Connect       │  HTTP  │   POST /predict        (SHAP, rate-ltd)│
+│                             │ ─────► │   POST /predict/batch                  │
+│  Zustand store + localStorage│       │   GET  /predict/history  /metrics      │
+└─────────────────────────────┘        └──────────────────────────────────────┘
+```
+
+The platform API lazy-imports its heavy ML dependencies (torch / numpy) **inside** the endpoints, so health checks and startup stay instant and the service degrades gracefully if an optional dependency is missing.
 
 ---
 
 ## 🚀 Quick Start
 
-The project consists of a Python FastAPI backend and a Next.js frontend. You will need two terminal windows to run both simultaneously.
+Two services back the UI; the helper script launches both.
 
-### 1. Start the Backend
+### 1. Backend
 
 ```bash
-# In the root 'MJ/' directory
-source venv/bin/activate
+# from the repo root
+source venv/bin/activate          # or: python -m venv venv && pip install -r requirements.txt
 ./start_backend.sh
 ```
 
-This starts:
-- **Main Engine API:** `http://localhost:8000`
-- **Inference Engine API:** `http://localhost:8001`
-*(Note: Keep track of the `sk-test-...` API key printed in the console for inference)*
+This starts the **Platform API** on `http://localhost:8000` and the **Inference API** on `http://localhost:8001`, and prints the inference bearer key (`sk-test-…`). The key now **persists** to `keys/api_key.txt`, so it stays stable across restarts.
 
-### 2. Start the Frontend
+### 2. Frontend
 
 ```bash
-# In a new terminal window
 cd frontend
 npm install
-npm run dev
+npm run dev            # http://localhost:3000  (or: npm run build && npm start)
 ```
 
-Open your browser to:
-[http://localhost:3000](http://localhost:3000)
+### 3. Connect
 
-*Within the PulseLedger Studio UI, navigate to Settings (gear icon) and submit the `sk-test-...` bearer key to begin live polling.*
+Open **http://localhost:3000** → **Launch app** → **Settings** (left sidebar) → paste the `sk-test-…` key and save. Live scoring, history, and carbon telemetry then light up across the workspace.
+
+> Federated learning and the fairness audit call the platform API directly and need **no** API key.
 
 ---
 
-## 🛠️ Project Structure
+## 🎨 Frontend — "The Ledger"
 
-```text
-PulseLedger/
-├── app/                  # FastAPI Backend Services
-│   ├── api/              # Core endpoints
-│   ├── explainability/   # SHAP explainer & narrative generator
-│   ├── federated/        # FL simulation orchestration
-│   ├── models/           # Lightweight credit models
-│   └── sustainability/   # Carbon-aware NAS and tracking
-├── frontend/             # Next.js Application
-│   ├── app/              # Next App Router (Dashboard, Studio, Federated, Sustainability)
-│   ├── components/       # Mercury Noir UI component library
-│   ├── lib/              # Formatting, Types, API Connectors
-│   └── store/            # Zustand global state (usePulseStore)
-├── tests/                # Backend smoke/unit tests
-├── main.py               # Main API launchbed
-├── start_backend.sh      # Launch script
-└── pyproject.toml / package.json
-```
+A deliberate, institutional design rather than a template — the front door of a serious risk instrument.
 
----
+| Element | Choice |
+|---------|--------|
+| **Palette** | Bone paper `#F4F1E8` · warm ink `#1A1714` · deep evergreen `#1C4634`, with ochre `#B07A2C` and oxblood `#A3392A` as a functional risk scale |
+| **Type** | **Fraunces** (serif display) · **IBM Plex Sans** (body) · **IBM Plex Mono** (every number) |
+| **Motion** | Scroll-reveals, an animated node-network hero canvas, count-up metrics — all gated on `prefers-reduced-motion` |
 
-## 📊 Developer Commands
+**Information architecture** — the marketing site and the app are split via a Next.js route group so each has its own chrome:
 
-### Backend Verification
-System bootstrap & smoke tests:
-```bash
-python main.py
-python -m pytest -q tests/
-```
+- `/` — **Landing**: sticky nav, animated hero with a live assessment specimen, capability sections, workflow, metrics, CTA.
+- `/dashboard` — **Workspace** (sidebar shell): KPIs, recent assessments, system health, quick actions.
+- `/assessments` · `/assessments/new` · `/assessments/[id]` — the credit-scoring flow: queue → focused form → full explained result.
+- `/federated` — run a live FedAvg round; watch the convergence curve + round-history ledger.
+- `/fairness` — run a live bias audit; per-metric table, protected-group breakdown, recommendations.
+- `/sustainability` — **Telemetry / Experiments** tabs (session footprint, eco-score, NAS preview).
+- `/settings` — connect to the backend and paste the bearer key.
 
-Manual Explainability Terminal Test:
-```bash
-python -m pytest -q tests/test_explainability_runtime.py
-```
-
-### Checking API Health
-```bash
-curl -s http://localhost:8000/health
-curl -s http://localhost:8001/health
-```
-
-### CLI Inference Example
-Submit a manual trace directly to the Inference Engine (Requires valid API key):
-```bash
-curl -s http://localhost:8001/predict \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "application": {
-      "age": 35,
-      "income": 65000,
-      "employment_length": 5,
-      "debt_to_income_ratio": 0.30,
-      "credit_score": 720,
-      "loan_amount": 25000,
-      "loan_purpose": "debt_consolidation",
-      "home_ownership": "rent",
-      "verification_status": "verified"
-    },
-    "include_explanation": true,
-    "track_sustainability": true,
-    "explanation_type": "shap"
-  }'
-```
-
-### Run Backend Simulations
-Trigger the automated Federated simulation pipeline locally:
-```bash
-python - <<'PY'
-from app.federated.utils import run_federated_simulation
-from app.federated.config import FLConfig
-
-result = run_federated_simulation(
-    FLConfig(number_of_clients=3, aggregation_rounds=3, local_epochs=2)
-)
-print("Best Validation Loss:", result["best_val_loss"])
-PY
-```
-
-Trigger Neural Architecture Search (NAS) tuning:
-```bash
-python -m app.sustainability.run_nas
-python -m app.sustainability.run_nas_german
-```
+State lives in a Zustand store persisted to `localStorage` (assessment history survives reloads within a session).
 
 ---
 
-## 🌐 Platform API (v1.1)
+## 🌐 API Reference
 
-Beyond inference (port 8001), the **main API on port 8000** now exposes real ML capabilities:
+### Platform API — `:8000` (no key required)
 
 ```bash
-# Real multi-client FedAvg simulation (no API key required)
+# Real multi-client FedAvg simulation
 curl -s -X POST http://localhost:8000/api/v1/federated/run \
   -H "Content-Type: application/json" \
   -d '{"number_of_clients": 4, "aggregation_rounds": 4, "local_epochs": 2}'
@@ -161,63 +107,145 @@ curl -s -X POST http://localhost:8000/api/v1/federated/run \
 
 # Real fairness / bias audit over a deterministic synthetic cohort
 curl -s "http://localhost:8000/api/v1/fairness/audit?samples=1000&bias_strength=1.5"
-# -> demographic parity, equalized odds, calibration metrics + recommendations
+# -> demographic parity, equalized odds, calibration + recommendations
 
-# Prometheus metrics (both services)
+# Prometheus-style metrics
 curl -s http://localhost:8000/metrics
+```
+
+### Inference API — `:8001` (bearer key required)
+
+```bash
+# Single prediction with full SHAP explanation
+curl -s http://localhost:8001/predict \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "application": {
+      "age": 35, "income": 65000, "employment_length": 5,
+      "debt_to_income_ratio": 0.30, "credit_score": 720,
+      "loan_amount": 25000, "loan_purpose": "debt_consolidation",
+      "home_ownership": "rent", "verification_status": "verified"
+    },
+    "include_explanation": true,
+    "track_sustainability": true,
+    "explanation_type": "shap"
+  }'
+
+# Server-side rolling prediction history
+curl -s "http://localhost:8001/predict/history?limit=25" -H "Authorization: Bearer YOUR_API_KEY"
+
+# Batch scoring (up to 100 applications) and metrics
+curl -s -X POST http://localhost:8001/predict/batch -H "Authorization: Bearer YOUR_API_KEY" -H "Content-Type: application/json" -d '{"applications": [ ... ]}'
 curl -s http://localhost:8001/metrics
 ```
 
-On the inference engine (port 8001):
+Interactive docs: `http://localhost:8000/docs` and `http://localhost:8001/docs`.
 
-```bash
-# Server-side rolling prediction history
-curl -s "http://localhost:8001/predict/history?limit=25" \
-  -H "Authorization: Bearer YOUR_API_KEY"
-```
-
-### Environment Configuration
+### Environment configuration
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `PULSELEDGER_API_KEY` | Pin the inference bearer key (highest precedence) | _generated_ |
 | `PULSELEDGER_API_KEY_FILE` | Where the key is persisted/loaded | `keys/api_key.txt` |
-| `PULSELEDGER_ALLOWED_ORIGINS` | Comma-separated CORS allow-list for the main API | `*` |
+| `PULSELEDGER_ALLOWED_ORIGINS` | Comma-separated CORS allow-list for the platform API | `*` |
 | `ENVIRONMENT` | `development` enables hot reload | `development` |
 
-> The inference API key now **persists across restarts**, so the bearer token you save in the Studio UI keeps working. The key file is git-ignored.
+The frontend's backend URLs and bearer key are configured in **Settings** and persisted client-side; no `.env` is required for the UI.
 
 ---
 
-## 🗺️ Feature Roadmap — toward a complete product
+## 🧪 Testing, Linting & CI
 
-High-impact features to take PulseLedger from an excellent demo to a production platform:
+```bash
+# Backend tests (13 tests covering both APIs + hardening)
+source venv/bin/activate
+python -m pytest -q tests/
 
-1. **Persistence layer** — wire the configured PostgreSQL (`DatabaseConfig` already exists) + SQLAlchemy/Alembic so predictions, audit logs and API keys survive beyond memory. Add a queryable `/predictions/{id}` history.
-2. **Fairness dashboard** — a dedicated frontend page on the live `/api/v1/fairness/audit` endpoint (the backend is ready) with a bias heatmap and "before/after mitigation" comparison.
-3. **Batch / CSV scoring** — a Studio "bulk" mode that uploads a CSV and fans out to the existing `/predict/batch` endpoint with a downloadable results table.
-4. **Real-time telemetry** — WebSocket/SSE stream of live predictions + carbon so the dashboard updates without polling.
-5. **Real NAS runs** — replace the simulated NAS table on the Sustainability page with the existing `app.sustainability.run_nas` pipeline (bounded/async).
-6. **Auth & multi-tenancy** — the JWT/RBAC framework in `app/core/auth.py` is built but unused; gate the UI behind login and scope keys per user.
-7. **Model registry integration** — load/serve the trained artifacts in `model_registry/` instead of the lightweight formula model, with versioning and rollback.
-8. **CI quality gates** — run the test suite + `next build` + `tsc` on every push; add Playwright E2E and an axe accessibility audit.
+# Match the GitHub Actions lint gates exactly
+black --check app/ tests/        # line-length 79
+isort --check-only app/ tests/   # profile = black
+flake8 app/ tests/
+
+# Frontend
+cd frontend
+npx tsc --noEmit                 # type check
+npm run build                    # production build (all routes)
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) runs Black, isort, flake8, pytest (mypy and bandit are advisory). Tooling versions are pinned in `.pre-commit-config.yaml` — pin them in CI too to avoid style drift from unpinned installs.
 
 ---
 
-## 🧠 Explainability Subsystem Output Schema
+## 🗂️ Project Structure
 
-The `explanation` payload returned by the inference runtime is consumed by the PulseLedger frontend to hydrate visual widgets. Its structural map includes:
+```text
+PulseLedger/
+├── app/                       # FastAPI backend
+│   ├── api/
+│   │   ├── main.py            # Platform API (:8000) — federated, fairness, status, metrics
+│   │   └── inference_service.py  # Inference API (:8001) — predict, history, auth, metrics
+│   ├── explainability/        # SHAP explainer + analyst-narrative generator
+│   ├── federated/             # FedAvg client/server/utils
+│   ├── services/              # bias_detector (live) + compliance/ingestion modules
+│   ├── sustainability/        # carbon tracking + carbon-aware NAS research
+│   ├── models/                # lightweight runtime credit model
+│   └── core/                  # config, logging, auth, encryption, GDPR scaffolding
+├── frontend/
+│   ├── app/
+│   │   ├── page.tsx           # Landing (/)
+│   │   ├── layout.tsx, globals.css
+│   │   └── (app)/             # App route group (sidebar shell)
+│   │       ├── dashboard/  assessments/{,(new),[id]}/
+│   │       ├── federated/  fairness/  sustainability/  settings/
+│   ├── components/            # Ledger design-system components
+│   ├── lib/                   # api client, types, formatters, utils
+│   └── store/                 # Zustand stores (pulse + toast)
+├── tests/                     # backend pytest suite
+├── start_backend.sh           # launches both APIs
+├── main.py                    # platform API launcher
+└── pyproject.toml · requirements.txt
+```
 
-| Return Field | Type | Function |
+---
+
+## 🧠 Explanation Payload Schema
+
+The `explanation` object returned by `/predict` drives the UI's explainability widgets:
+
+| Field | Type | Description |
 |-------|------|-------------|
-| `prediction` | `float` | Base inferred risk score (0.0 to 1.0) |
-| `risk_level` | `string` | Categorization boundary (`low` \| `medium` \| `high` \| `very_high`) |
+| `prediction` | `float` | Risk score, 0.0–1.0 |
+| `risk_level` | `string` | `low` \| `medium` \| `high` \| `very_high` |
 | `risk_threshold_context` | `string` | Plain-text threshold narrative |
-| `feature_importance` | `object` | Key-value mapping of feature impacts |
-| `top_factors` | `array` | Top 5 risk-affecting factors spanning description, directional magnitude, and benchmark context |
-| `recommendations` | `array` | Computed actions required by analyst or user (`action_needed` / `preserve`) |
-| `counterfactual` | `object` | Target perturbations calculated to demote the risk to a lower band |
-| `risk_groups` | `object` | Thematic aggregation (Financial Strength, Debt Burden, Stability, Loan Profile) |
-| `confidence` | `object` | Scoring mechanism on the viability of the specific explainability branch |
-| `methodology` | `object` | Baseline profile metadata defining standard SHAP vs perturbation origins |
-| `summary` | `string` | NLP-stylized auto-generated narrative summary synthesizing the inference context |
+| `feature_importance` | `object` | Feature → SHAP value mapping |
+| `top_factors` | `array` | Leading factors with direction, magnitude, and benchmark context |
+| `recommendations` | `array` | Suggested actions (`action_needed` / `preserve`) |
+| `counterfactual` | `object` | Minimal changes to reach a lower band |
+| `risk_groups` | `object` | Thematic aggregation (debt burden, stability, loan profile, …) |
+| `confidence` | `object` | Level, score, and reasoning |
+| `methodology` | `object` | Baseline profile + method metadata |
+| `summary` | `string` | Auto-generated analyst narrative |
+
+---
+
+## 🗺️ Roadmap
+
+Done since v1.0: ✅ real federated endpoint · ✅ live fairness **dashboard** · ✅ persistent API key · ✅ enforced rate limiting · ✅ Pydantic v2 · ✅ `/metrics` + `/predict/history` · ✅ landing site + app workspace.
+
+Toward production:
+
+1. **Persistence layer** — wire the configured PostgreSQL + SQLAlchemy/Alembic so assessments, audit logs, and keys outlive memory/`localStorage`.
+2. **Authentication & multi-tenancy** — the JWT/RBAC scaffold in `app/core/auth.py` is built but unused; gate the app behind login and scope keys per user.
+3. **Batch / CSV scoring UI** — a bulk mode over the existing `/predict/batch` endpoint with a downloadable results table.
+4. **Real NAS runs** — replace the simulated NAS preview with the `app.sustainability.run_nas` pipeline (bounded/async).
+5. **Model registry serving** — load the trained artifacts in `model_registry/` with versioning and rollback.
+6. **Real-time telemetry** — WebSocket/SSE stream so the dashboard updates without polling.
+
+---
+
+## ⚠️ Notes & Honest Scope
+
+- **Session-scoped data** — assessment history is held in the browser (`localStorage`) and server-side metrics/history are in-memory; both reset on restart until the persistence layer lands.
+- **Illustrative content** — the landing page's headline stats and the "trusted by" row are marketing placeholders; the NAS table on Sustainability is a clearly-labelled **preview**. Everything in the app workspace (scoring, explanations, federated, fairness) is computed for real.
+- **Model** — inference uses a lightweight, transparent runtime model so the system is fully runnable without a training pipeline; swap in `model_registry/` artifacts for production.
