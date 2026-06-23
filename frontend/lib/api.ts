@@ -2,12 +2,17 @@ import { defaultBackendConfig, samplePredictionRequest } from "@/lib/constants";
 import type {
   BackendConfig,
   BackendStatus,
+  CreditApplication,
+  ExplanationPayload,
   FairnessAuditResult,
   FederatedRunParams,
   FederatedRunResult,
   PredictionHistoryItem,
+  PredictionRecord,
   PredictionRequest,
   PredictionResponse,
+  RiskLevel,
+  SustainabilityMetrics,
 } from "@/lib/types";
 
 const DEFAULT_TIMEOUT_MS = 6000;
@@ -245,6 +250,53 @@ export async function fetchPredictionHistory(
       headers: { Authorization: `Bearer ${config.apiKey.trim()}` },
     },
   );
+}
+
+/**
+ * Fetch one durably-persisted assessment by id and map it to the
+ * PredictionRecord shape the UI uses. Powers the detail page's fallback when
+ * the record isn't in this browser's session history.
+ */
+export async function fetchAssessment(
+  config: BackendConfig,
+  id: string,
+): Promise<PredictionRecord> {
+  if (!config.apiKey.trim()) {
+    throw new Error("Missing bearer API key.");
+  }
+  const data = await fetchEnvelope<{
+    prediction_id: string;
+    timestamp: string;
+    risk_score: number;
+    risk_level: RiskLevel;
+    confidence: number;
+    processing_time_ms: number;
+    model_version: string;
+    application: CreditApplication;
+    explanation?: ExplanationPayload | null;
+    sustainability_metrics?: SustainabilityMetrics | null;
+  }>(`${trimSlash(config.inferenceUrl)}/predict/${encodeURIComponent(id)}`, {
+    headers: { Authorization: `Bearer ${config.apiKey.trim()}` },
+  });
+
+  return {
+    timestamp: data.timestamp,
+    input: data.application,
+    result: {
+      prediction_id: data.prediction_id,
+      risk_score: data.risk_score,
+      risk_level: data.risk_level,
+      confidence: data.confidence,
+      model_version: data.model_version,
+      prediction_timestamp: data.timestamp,
+      processing_time_ms: data.processing_time_ms,
+      explanation: data.explanation ?? undefined,
+      sustainability_metrics: data.sustainability_metrics ?? undefined,
+      status: "success",
+      message: "",
+    },
+    sustainability_metrics: data.sustainability_metrics ?? undefined,
+  };
 }
 
 export function buildCurlCommand(config: BackendConfig) {

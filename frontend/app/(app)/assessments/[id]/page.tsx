@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { FactorFlipCard } from "@/components/factor-flip-card";
@@ -10,6 +10,7 @@ import { RiskGauge } from "@/components/risk-gauge";
 import { ShapBarChart } from "@/components/shap-bar-chart";
 import { StateCard } from "@/components/state-card";
 import { TerminalPanel } from "@/components/terminal-panel";
+import { fetchAssessment } from "@/lib/api";
 import {
   formatCarbon,
   formatCurrency,
@@ -23,7 +24,7 @@ import {
   riskColorClasses,
   sentimentColorClasses,
 } from "@/lib/format";
-import type { Recommendation } from "@/lib/types";
+import type { PredictionRecord, Recommendation } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { usePulseStore } from "@/store/use-pulse-store";
 
@@ -34,12 +35,41 @@ export default function AssessmentDetailPage() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const history = usePulseStore((state) => state.predictionHistory);
+  const backendConfig = usePulseStore((state) => state.backendConfig);
   const [activeTab, setActiveTab] = useState<Tab>("Factors");
+  const [remote, setRemote] = useState<PredictionRecord | null>(null);
+  const [lookup, setLookup] = useState<"idle" | "loading" | "missing">("idle");
 
-  const entry = useMemo(
+  const localEntry = useMemo(
     () => history.find((item) => item.result.prediction_id === id),
     [history, id],
   );
+
+  // Fall back to durable server storage when the assessment isn't in this
+  // browser's session history (e.g. opened on another device or after a wipe).
+  useEffect(() => {
+    if (localEntry || !id) return;
+    if (!backendConfig.apiKey.trim()) {
+      setLookup("missing");
+      return;
+    }
+    let active = true;
+    setLookup("loading");
+    fetchAssessment(backendConfig, id)
+      .then((record) => {
+        if (!active) return;
+        setRemote(record);
+        setLookup("idle");
+      })
+      .catch(() => {
+        if (active) setLookup("missing");
+      });
+    return () => {
+      active = false;
+    };
+  }, [localEntry, id, backendConfig]);
+
+  const entry = localEntry ?? remote;
 
   const recommendationMap = useMemo(() => {
     const map = new Map<string, Recommendation>();
@@ -59,14 +89,22 @@ export default function AssessmentDetailPage() {
           <ArrowLeft className="h-4 w-4" />
           Assessments
         </Link>
-        <StateCard
-          title="Assessment not found"
-          message="This assessment isn't in your session history. It may have been cleared, or the link is from another device."
-          actionLabel="Run a new assessment"
-          onAction={() => {
-            window.location.href = "/assessments/new";
-          }}
-        />
+        {lookup === "loading" ? (
+          <StateCard
+            tone="loading"
+            title="Loading assessment"
+            message="Fetching this assessment from durable storage…"
+          />
+        ) : (
+          <StateCard
+            title="Assessment not found"
+            message="This assessment isn't in your history or on the server. It may have been cleared, or you need to set your API key in Settings."
+            actionLabel="Run a new assessment"
+            onAction={() => {
+              window.location.href = "/assessments/new";
+            }}
+          />
+        )}
       </div>
     );
   }

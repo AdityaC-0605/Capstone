@@ -484,6 +484,7 @@ class InferenceService:
         self.sustainability_monitor = None
 
         # In-memory rolling prediction history + counters (surfaced via API).
+        # The deque is a fast fallback; durable history lives in the database.
         self.prediction_history: Deque[Dict[str, Any]] = deque(maxlen=200)
         self.metrics = {
             "predictions_total": 0,
@@ -491,6 +492,20 @@ class InferenceService:
             "prediction_errors_total": 0,
             "auth_failures_total": 0,
         }
+
+        # Durable persistence (SQLite by default; Postgres via
+        # PULSELEDGER_DATABASE_URL). Degrades to memory-only if unavailable.
+        self.db_available = False
+        try:
+            from app.db import repository
+
+            if not repository.is_configured():
+                repository.configure()
+            self.db_available = True
+        except Exception as exc:  # pragma: no cover - optional dependency
+            logger.warning(
+                f"Persistence unavailable, using memory only: {exc}"
+            )
 
         # Initialize FastAPI app
         self.app = FastAPI(
@@ -656,20 +671,61 @@ class InferenceService:
                 payload, background_tasks, api_key
             )
 
-        # Recent prediction history (server-side, in-memory rolling window)
+        # Recent prediction history (durable when a database is configured;
+        # falls back to the in-memory rolling window otherwise).
         @self.app.get("/predict/history")
         async def prediction_history(
             limit: int = 25,
             api_key: str = Depends(self._verify_api_key),
         ):
-            """Return the most recent predictions served by this instance."""
-            limit = max(1, min(limit, self.prediction_history.maxlen or 200))
+            """Return recent predictions, newest first."""
+            limit = max(1, min(limit, 200))
+            if self.db_available:
+                try:
+                    from fastapi.concurrency import run_in_threadpool
+
+                    from app.db import repository
+
+                    items = await run_in_threadpool(
+                        repository.list_predictions, limit
+                    )
+                    total = await run_in_threadpool(
+                        repository.count_predictions
+                    )
+                    return {
+                        "count": len(items),
+                        "total_served": total,
+                        "items": items,
+                    }
+                except Exception as exc:
+                    logger.error(f"History DB read failed: {exc}")
+
             items = list(self.prediction_history)[-limit:][::-1]
             return {
                 "count": len(items),
                 "total_served": self.metrics["predictions_total"],
                 "items": items,
             }
+
+        # A single persisted assessment by id (full record for detail views).
+        # Declared after /predict/history so the literal path wins.
+        @self.app.get("/predict/{prediction_id}")
+        async def get_one_prediction(
+            prediction_id: str,
+            api_key: str = Depends(self._verify_api_key),
+        ):
+            """Fetch one persisted assessment, including its explanation."""
+            if self.db_available:
+                from fastapi.concurrency import run_in_threadpool
+
+                from app.db import repository
+
+                record = await run_in_threadpool(
+                    repository.get_prediction, prediction_id
+                )
+                if record:
+                    return {"status": "ok", "data": record}
+            raise HTTPException(status_code=404, detail="Prediction not found")
 
         # Prometheus-style metrics exposition
         @self.app.get("/metrics")
@@ -1129,6 +1185,29 @@ class InferenceService:
         }
 
         logger.info(f"Prediction logged: {json.dumps(log_data)}")
+
+        # Durably persist the assessment (off the response path).
+        if self.db_available:
+            try:
+                from fastapi.concurrency import run_in_threadpool
+
+                from app.db import repository
+
+                record = {
+                    "prediction_id": response.prediction_id,
+                    "risk_score": float(response.risk_score),
+                    "risk_level": response.risk_level.value,
+                    "confidence": float(response.confidence),
+                    "processing_time_ms": float(response.processing_time_ms),
+                    "model_version": response.model_version,
+                    "api_key_prefix": api_key[:10],
+                    "application": request.application.model_dump(),
+                    "explanation": response.explanation,
+                    "sustainability": response.sustainability_metrics,
+                }
+                await run_in_threadpool(repository.save_prediction, record)
+            except Exception as exc:
+                logger.error(f"Failed to persist prediction: {exc}")
 
     async def _log_batch_prediction(
         self,

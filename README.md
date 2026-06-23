@@ -132,8 +132,11 @@ curl -s http://localhost:8001/predict \
     "explanation_type": "shap"
   }'
 
-# Server-side rolling prediction history
+# Durable prediction history (persists across restarts)
 curl -s "http://localhost:8001/predict/history?limit=25" -H "Authorization: Bearer YOUR_API_KEY"
+
+# A single persisted assessment by id (full record incl. explanation)
+curl -s "http://localhost:8001/predict/pred_abc123" -H "Authorization: Bearer YOUR_API_KEY"
 
 # Batch scoring (up to 100 applications) and metrics
 curl -s -X POST http://localhost:8001/predict/batch -H "Authorization: Bearer YOUR_API_KEY" -H "Content-Type: application/json" -d '{"applications": [ ... ]}'
@@ -148,6 +151,7 @@ Interactive docs: `http://localhost:8000/docs` and `http://localhost:8001/docs`.
 |----------|---------|---------|
 | `PULSELEDGER_API_KEY` | Pin the inference bearer key (highest precedence) | _generated_ |
 | `PULSELEDGER_API_KEY_FILE` | Where the key is persisted/loaded | `keys/api_key.txt` |
+| `PULSELEDGER_DATABASE_URL` | SQLAlchemy DB URL — assessments persist here | `sqlite:///./pulseledger.db` |
 | `PULSELEDGER_ALLOWED_ORIGINS` | Comma-separated CORS allow-list for the platform API | `*` |
 | `ENVIRONMENT` | `development` enables hot reload | `development` |
 
@@ -173,6 +177,14 @@ npx tsc --noEmit                 # type check
 npm run build                    # production build (all routes)
 ```
 
+The app bootstraps its tables automatically on startup (idempotent
+`create_all`). For managed schema changes, Alembic is configured:
+
+```bash
+alembic upgrade head             # apply migrations (uses PULSELEDGER_DATABASE_URL)
+alembic revision --autogenerate -m "describe change"
+```
+
 GitHub Actions (`.github/workflows/ci.yml`) runs Black, isort, flake8, pytest (mypy and bandit are advisory). Tooling versions are pinned in `.pre-commit-config.yaml` — pin them in CI too to avoid style drift from unpinned installs.
 
 ---
@@ -190,6 +202,7 @@ PulseLedger/
 │   ├── services/              # bias_detector (live) + compliance/ingestion modules
 │   ├── sustainability/        # carbon tracking + carbon-aware NAS research
 │   ├── models/                # lightweight runtime credit model
+│   ├── db/                    # SQLAlchemy base, ORM models, repository
 │   └── core/                  # config, logging, auth, encryption, GDPR scaffolding
 ├── frontend/
 │   ├── app/
@@ -201,9 +214,10 @@ PulseLedger/
 │   ├── components/            # Ledger design-system components
 │   ├── lib/                   # api client, types, formatters, utils
 │   └── store/                 # Zustand stores (pulse + toast)
-├── tests/                     # backend pytest suite
+├── migrations/                # Alembic migration environment + versions
+├── tests/                     # backend pytest suite (+ conftest isolated DB)
 ├── start_backend.sh           # launches both APIs
-├── main.py                    # platform API launcher
+├── alembic.ini · main.py      # migration config · platform API launcher
 └── pyproject.toml · requirements.txt
 ```
 
@@ -231,11 +245,11 @@ The `explanation` object returned by `/predict` drives the UI's explainability w
 
 ## 🗺️ Roadmap
 
-Done since v1.0: ✅ real federated endpoint · ✅ live fairness **dashboard** · ✅ persistent API key · ✅ enforced rate limiting · ✅ Pydantic v2 · ✅ `/metrics` + `/predict/history` · ✅ landing site + app workspace.
+Done since v1.0: ✅ real federated endpoint · ✅ live fairness **dashboard** · ✅ persistent API key · ✅ enforced rate limiting · ✅ Pydantic v2 · ✅ `/metrics` + `/predict/history` · ✅ landing site + app workspace · ✅ **durable persistence** (SQLite/Postgres + Alembic).
 
 Toward production:
 
-1. **Persistence layer** — wire the configured PostgreSQL + SQLAlchemy/Alembic so assessments, audit logs, and keys outlive memory/`localStorage`.
+1. **Extend persistence** — assessments are now durably stored; next, persist the audit log and API keys in the DB and add per-user scoping.
 2. **Authentication & multi-tenancy** — the JWT/RBAC scaffold in `app/core/auth.py` is built but unused; gate the app behind login and scope keys per user.
 3. **Batch / CSV scoring UI** — a bulk mode over the existing `/predict/batch` endpoint with a downloadable results table.
 4. **Real NAS runs** — replace the simulated NAS preview with the `app.sustainability.run_nas` pipeline (bounded/async).
@@ -246,6 +260,6 @@ Toward production:
 
 ## ⚠️ Notes & Honest Scope
 
-- **Session-scoped data** — assessment history is held in the browser (`localStorage`) and server-side metrics/history are in-memory; both reset on restart until the persistence layer lands.
+- **Persistence** — assessments are durably stored server-side (SQLite by default, Postgres via `PULSELEDGER_DATABASE_URL`) and survive restarts; the assessment detail page falls back to the server when a record isn't in the browser's local history. In-process `/metrics` counters remain memory-only.
 - **Illustrative content** — the landing page's headline stats and the "trusted by" row are marketing placeholders; the NAS table on Sustainability is a clearly-labelled **preview**. Everything in the app workspace (scoring, explanations, federated, fairness) is computed for real.
 - **Model** — inference uses a lightweight, transparent runtime model so the system is fully runnable without a training pipeline; swap in `model_registry/` artifacts for production.

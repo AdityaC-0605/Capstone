@@ -34,6 +34,11 @@ keys/*.p12
 keys/*.jks
 keys/api_key.txt
 
+# Local database (SQLite dev default; Postgres uses a real server)
+*.db
+*.sqlite3
+pulseledger.db
+
 # Build / packaging
 build/
 dist/
