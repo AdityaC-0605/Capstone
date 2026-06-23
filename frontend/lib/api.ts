@@ -3,6 +3,7 @@ import type {
   AuthResponse,
   BackendConfig,
   BackendStatus,
+  BatchPredictionResponse,
   CreditApplication,
   ExplanationPayload,
   FairnessAuditResult,
@@ -193,6 +194,33 @@ export async function runPrediction(
 
 export async function runSamplePrediction(config: BackendConfig) {
   return runPrediction(config, samplePredictionRequest);
+}
+
+/** Score up to 100 applications in one batch request. */
+export async function runBatch(
+  config: BackendConfig,
+  applications: CreditApplication[],
+): Promise<BatchPredictionResponse> {
+  if (!config.apiKey.trim()) {
+    throw new Error("Sign in before scoring applications.");
+  }
+  return fetchJson<BatchPredictionResponse>(
+    `${trimSlash(config.inferenceUrl)}/predict/batch`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.apiKey.trim()}`,
+      },
+      body: JSON.stringify({
+        applications,
+        include_explanation: false,
+        track_sustainability: false,
+        explanation_type: "shap",
+      }),
+    },
+    30000,
+  );
 }
 
 /**

@@ -52,6 +52,7 @@ const titleForPath = (path: string): string => {
   if (path === "/dashboard") return "Dashboard";
   if (path === "/assessments") return "Assessments";
   if (path === "/assessments/new") return "New Assessment";
+  if (path === "/assessments/batch") return "Bulk Scoring";
   if (path.startsWith("/assessments/")) return "Assessment";
   if (path.startsWith("/federated")) return "Federated Learning";
   if (path.startsWith("/fairness")) return "Fairness Audit";

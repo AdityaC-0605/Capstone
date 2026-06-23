@@ -24,10 +24,15 @@ export default function AssessmentsPage() {
           Every application you have scored this session, most recent first.
           Open any row for its full explanation.
         </p>
-        <Link href="/assessments/new" className="button-primary shrink-0">
-          <Plus className="h-4 w-4" />
-          New assessment
-        </Link>
+        <div className="flex shrink-0 gap-2">
+          <Link href="/assessments/batch" className="button-ghost">
+            Bulk score
+          </Link>
+          <Link href="/assessments/new" className="button-primary">
+            <Plus className="h-4 w-4" />
+            New assessment
+          </Link>
+        </div>
       </div>
 
       {history.length > 0 ? (

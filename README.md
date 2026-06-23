@@ -224,7 +224,7 @@ PulseLedger/
 │   │   ├── login/page.tsx     # Auth — sign in / register (/login)
 │   │   ├── layout.tsx, globals.css
 │   │   └── (app)/             # App route group (sidebar shell, login-gated)
-│   │       ├── dashboard/  assessments/{,(new),[id]}/
+│   │       ├── dashboard/  assessments/{,new,batch,[id]}/
 │   │       ├── federated/  fairness/  sustainability/  settings/
 │   ├── components/            # Ledger design-system components
 │   ├── lib/                   # api client, types, formatters, utils
@@ -260,13 +260,13 @@ The `explanation` object returned by `/predict` drives the UI's explainability w
 
 ## 🗺️ Roadmap
 
-Done since v1.0: ✅ real federated endpoint · ✅ live fairness **dashboard** · ✅ persistent API key · ✅ enforced rate limiting · ✅ Pydantic v2 · ✅ `/metrics` + `/predict/history` · ✅ landing site + app workspace · ✅ **durable persistence** (SQLite/Postgres + Alembic) · ✅ **accounts & multi-tenancy** (JWT auth, per-user scoping).
+Done since v1.0: ✅ real federated endpoint · ✅ live fairness **dashboard** · ✅ persistent API key · ✅ enforced rate limiting · ✅ Pydantic v2 · ✅ `/metrics` + `/predict/history` · ✅ landing site + app workspace · ✅ **durable persistence** (SQLite/Postgres + Alembic) · ✅ **accounts & multi-tenancy** (JWT auth, per-user scoping) · ✅ **bulk CSV scoring**.
 
 Toward production:
 
 1. **Extend persistence** — predictions and users are durably stored; next, persist the audit log and rotate the JWT secret via a secrets manager.
 2. **RBAC, admin & SSO** — accounts and per-user scoping exist; add role-based admin views and SSO/OAuth providers.
-3. **Batch / CSV scoring UI** — a bulk mode over the existing `/predict/batch` endpoint with a downloadable results table.
+3. **Live deployment** — Docker + compose + a Postgres URL behind a public host for a shareable demo link.
 4. **Real NAS runs** — replace the simulated NAS preview with the `app.sustainability.run_nas` pipeline (bounded/async).
 5. **Model registry serving** — load the trained artifacts in `model_registry/` with versioning and rollback.
 6. **Real-time telemetry** — WebSocket/SSE stream so the dashboard updates without polling.

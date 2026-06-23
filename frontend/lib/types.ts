@@ -124,6 +124,22 @@ export interface PredictionResponse {
   message: string;
 }
 
+export interface BatchSummary {
+  total_applications: number;
+  successful_predictions: number;
+  failed_predictions: number;
+  average_risk_score: number;
+  risk_distribution: Record<string, number>;
+}
+
+export interface BatchPredictionResponse {
+  batch_id: string;
+  predictions: PredictionResponse[];
+  batch_summary: BatchSummary;
+  processing_time_ms: number;
+  sustainability_metrics?: SustainabilityMetrics | null;
+}
+
 export interface BackendConfig {
   mainUrl: string;
   inferenceUrl: string;
