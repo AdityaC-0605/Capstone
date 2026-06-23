@@ -45,5 +45,23 @@
       "stage": "None",
       "metadata": {}
     }
-  ]
+  ],
+  "credit_risk_model": {
+    "artifact": "credit_risk_model.joblib",
+    "type": "GradientBoostingClassifier",
+    "features": [
+      "age",
+      "income",
+      "employment_length",
+      "debt_to_income_ratio",
+      "credit_score",
+      "loan_amount",
+      "loan_purpose",
+      "home_ownership",
+      "verification_status"
+    ],
+    "holdout_roc_auc": 0.8458,
+    "trained_at": "2026-06-23T18:46:10.161096+00:00",
+    "framework": "scikit-learn"
+  }
 }

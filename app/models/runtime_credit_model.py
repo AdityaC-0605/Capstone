@@ -1,10 +1,44 @@
-"""Shared runtime credit risk model used by backend inference services."""
+"""Shared runtime credit risk model used by backend inference services.
+
+Serves a trained scikit-learn classifier from the model registry when present
+(``model_registry/credit_risk_model.joblib`` — see ``train_model.py``), and
+falls back to a transparent formula otherwise. Both expose the same
+``predict``/``predict_proba`` interface, so the SHAP explainer is agnostic to
+which is in use.
+"""
 
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping
+import os
+from functools import lru_cache
+from pathlib import Path
+from typing import Any, Dict, Mapping, Optional
 
 import numpy as np
+
+from app.explainability.utils import encode_feature_dict
+
+_DEFAULT_MODEL_PATH = "model_registry/credit_risk_model.joblib"
+
+
+@lru_cache(maxsize=1)
+def _load_trained_model() -> Optional[Any]:
+    """Load the trained classifier once; return None to use the formula.
+
+    Disabled by setting ``PULSELEDGER_USE_TRAINED_MODEL=0``.
+    """
+    if os.getenv("PULSELEDGER_USE_TRAINED_MODEL", "1") == "0":
+        return None
+    path = Path(os.getenv("PULSELEDGER_MODEL_PATH", _DEFAULT_MODEL_PATH))
+    if not path.exists():
+        return None
+    try:
+        import joblib
+
+        bundle = joblib.load(path)
+        return bundle.get("model")
+    except Exception:
+        return None
 
 
 def _normalized_text(value: Any, default: str) -> str:
@@ -101,11 +135,30 @@ def compute_prediction_confidence(score: float) -> float:
 
 
 class LightweightCreditRiskModel:
-    """Applicant-sensitive runtime model for inference and explainability."""
+    """Applicant-sensitive runtime model for inference and explainability.
+
+    Uses the trained registry model when available, otherwise the formula.
+    """
+
+    def __init__(self) -> None:
+        self._trained = _load_trained_model()
+        self.model_source = (
+            "trained" if self._trained is not None else "formula"
+        )
+
+    def _score(self, normalized: Mapping[str, Any]) -> float:
+        if self._trained is not None:
+            try:
+                vector = encode_feature_dict(normalized).reshape(1, -1)
+                score = float(self._trained.predict_proba(vector)[0, 1])
+                return float(np.clip(score, 0.02, 0.98))
+            except Exception:
+                pass
+        return compute_credit_risk_score(normalized)
 
     def predict(self, data: Mapping[str, Any]) -> Dict[str, float]:
         normalized = normalize_credit_application(data)
-        score = compute_credit_risk_score(normalized)
+        score = self._score(normalized)
         return {
             "prediction": score,
             "confidence": compute_prediction_confidence(score),

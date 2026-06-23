@@ -668,9 +668,11 @@ class InferenceService:
         @self.app.get("/model/info")
         async def model_info(api_key: str = Depends(self._verify_api_key)):
             """Get model information."""
+            model_source = getattr(self.model, "model_source", "unavailable")
             return {
                 "model_version": self.config.model_version,
                 "model_type": "runtime_credit_risk",
+                "model_source": model_source,
                 "features_supported": [
                     "age",
                     "income",
