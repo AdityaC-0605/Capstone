@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import secrets
+import threading
 import time
 import warnings
 from collections import deque
@@ -548,6 +549,15 @@ class InferenceService:
             "auth_failures_total": 0,
         }
 
+        # Holder for the most recent carbon-aware NAS run (single job at a
+        # time; a background thread fills this in). Guarded by a lock.
+        self._nas_lock = threading.Lock()
+        self._nas_job: Dict[str, Any] = {
+            "state": "idle",
+            "result": None,
+            "started_at": None,
+        }
+
         # Durable persistence (SQLite by default; Postgres via
         # PULSELEDGER_DATABASE_URL). Degrades to memory-only if unavailable.
         self.db_available = False
@@ -824,6 +834,80 @@ class InferenceService:
                 if record:
                     return {"status": "ok", "data": record}
             raise HTTPException(status_code=404, detail="Prediction not found")
+
+        @self.app.get("/sustainability/summary")
+        async def sustainability_summary(
+            principal: "Principal" = Depends(self._authenticate),
+        ):
+            """Account-wide energy/carbon totals from persisted history.
+
+            Survives reloads and aggregates every assessment the principal has
+            scored — not just the current browser session.
+            """
+            scope = principal.user_id if principal.kind == "user" else None
+            if self.db_available:
+                try:
+                    from fastapi.concurrency import run_in_threadpool
+
+                    from app.db import repository
+
+                    totals = await run_in_threadpool(
+                        repository.sustainability_totals, scope
+                    )
+                    return {"status": "ok", "data": totals}
+                except Exception as exc:
+                    logger.error(f"Sustainability summary failed: {exc}")
+            return {
+                "status": "ok",
+                "data": {
+                    "count": 0,
+                    "total_energy_kwh": 0.0,
+                    "total_carbon_kg": 0.0,
+                    "total_duration_seconds": 0.0,
+                    "method": None,
+                    "region": None,
+                },
+            }
+
+        @self.app.post("/sustainability/nas")
+        async def start_nas_run(
+            principal: "Principal" = Depends(self._authenticate),
+        ):
+            """Kick off a real (bounded) carbon-aware NAS run in the
+            background. Returns immediately; poll /sustainability/nas/status.
+            """
+            with self._nas_lock:
+                if self._nas_job["state"] == "running":
+                    return {"status": "running", "message": "already running"}
+                self._nas_job = {
+                    "state": "running",
+                    "result": None,
+                    "started_at": datetime.now().isoformat(),
+                }
+
+            def _worker():
+                from app.sustainability.nas_runner import _safe_run_quick_nas
+
+                outcome = _safe_run_quick_nas()
+                with self._nas_lock:
+                    self._nas_job["state"] = (
+                        "error" if outcome.get("status") == "error" else "done"
+                    )
+                    self._nas_job["result"] = outcome
+
+            threading.Thread(target=_worker, daemon=True).start()
+            return {"status": "running", "message": "NAS run started"}
+
+        @self.app.get("/sustainability/nas/status")
+        async def nas_status(
+            principal: "Principal" = Depends(self._authenticate),
+        ):
+            with self._nas_lock:
+                return {
+                    "state": self._nas_job["state"],
+                    "started_at": self._nas_job["started_at"],
+                    "result": self._nas_job["result"],
+                }
 
         # Prometheus-style metrics exposition
         @self.app.get("/metrics")

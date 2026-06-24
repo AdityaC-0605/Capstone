@@ -123,6 +123,50 @@ def count_predictions(user_id: Optional[int] = None) -> int:
         return session.scalar(query) or 0
 
 
+def sustainability_totals(
+    user_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Aggregate persisted energy/carbon/duration across a user's history.
+
+    The metrics live in a JSON column, so we sum in Python rather than rely on
+    backend-specific JSON SQL. Returns the latest measurement method/region so
+    the dashboard can show how the figures were derived.
+    """
+    with _session_scope() as session:
+        query = select(Prediction.sustainability).where(
+            Prediction.sustainability.is_not(None)
+        )
+        if user_id is not None:
+            query = query.where(Prediction.user_id == user_id)
+        query = query.order_by(
+            Prediction.created_at.desc(), Prediction.id.desc()
+        )
+        rows = session.scalars(query).all()
+
+    total_energy = total_carbon = total_duration = 0.0
+    count = 0
+    method = region = None
+    for metrics in rows:
+        if not isinstance(metrics, dict):
+            continue
+        count += 1
+        total_energy += float(metrics.get("energy_kwh") or 0.0)
+        total_carbon += float(metrics.get("carbon_emissions") or 0.0)
+        total_duration += float(metrics.get("duration_seconds") or 0.0)
+        if method is None:  # first row is the most recent
+            method = metrics.get("method")
+            region = metrics.get("region")
+
+    return {
+        "count": count,
+        "total_energy_kwh": total_energy,
+        "total_carbon_kg": total_carbon,
+        "total_duration_seconds": total_duration,
+        "method": method,
+        "region": region,
+    }
+
+
 # ── Users ────────────────────────────────────────────────────────────────
 
 

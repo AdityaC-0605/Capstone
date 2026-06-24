@@ -10,12 +10,14 @@ import type {
   FederatedRunParams,
   FederatedRunResult,
   ModelInfo,
+  NasStatus,
   PredictionHistoryItem,
   PredictionRecord,
   PredictionRequest,
   PredictionResponse,
   RiskLevel,
   SustainabilityMetrics,
+  SustainabilitySummary,
 } from "@/lib/types";
 
 const DEFAULT_TIMEOUT_MS = 6000;
@@ -395,6 +397,45 @@ export async function fetchModelInfo(
   }
   return fetchJson<ModelInfo>(
     `${trimSlash(config.inferenceUrl)}/model/info`,
+    { headers: { Authorization: `Bearer ${config.apiKey.trim()}` } },
+  );
+}
+
+/** Account-wide energy/carbon totals from persisted history. */
+export async function fetchSustainabilitySummary(
+  config: BackendConfig,
+): Promise<SustainabilitySummary> {
+  if (!config.apiKey.trim()) {
+    throw new Error("Missing bearer API key.");
+  }
+  return fetchEnvelope<SustainabilitySummary>(
+    `${trimSlash(config.inferenceUrl)}/sustainability/summary`,
+    { headers: { Authorization: `Bearer ${config.apiKey.trim()}` } },
+  );
+}
+
+/** Start a real (bounded) carbon-aware NAS run on the server. */
+export async function startNasRun(
+  config: BackendConfig,
+): Promise<{ status: string; message?: string }> {
+  if (!config.apiKey.trim()) {
+    throw new Error("Missing bearer API key.");
+  }
+  return fetchJson(`${trimSlash(config.inferenceUrl)}/sustainability/nas`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${config.apiKey.trim()}` },
+  });
+}
+
+/** Poll the latest NAS run's state + results. */
+export async function fetchNasStatus(
+  config: BackendConfig,
+): Promise<NasStatus> {
+  if (!config.apiKey.trim()) {
+    throw new Error("Missing bearer API key.");
+  }
+  return fetchJson<NasStatus>(
+    `${trimSlash(config.inferenceUrl)}/sustainability/nas/status`,
     { headers: { Authorization: `Bearer ${config.apiKey.trim()}` } },
   );
 }

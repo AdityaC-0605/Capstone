@@ -309,3 +309,45 @@ export interface NasExperiment {
   carbonUsed: number;
   status: "queued" | "running" | "complete" | "simulated";
 }
+
+export interface NasCandidate {
+  architecture: string;
+  hidden_scale: number;
+  exit_level: number;
+  precision: string;
+  auc: number;
+  ks: number;
+  brier: number;
+  val_loss: number;
+  carbon_cost: number;
+  passes: boolean;
+}
+
+export interface NasRunResult {
+  status: "done" | "error";
+  error?: string;
+  dataset?: string;
+  configs_tested?: number;
+  passed_constraints?: number;
+  fallback?: boolean;
+  reference?: { auc: number; ks: number; brier: number };
+  epochs?: number;
+  train_samples?: number;
+  candidates?: NasCandidate[];
+  elapsed_seconds?: number;
+}
+
+export interface NasStatus {
+  state: "idle" | "running" | "done" | "error";
+  started_at: string | null;
+  result: NasRunResult | null;
+}
+
+export interface SustainabilitySummary {
+  count: number;
+  total_energy_kwh: number;
+  total_carbon_kg: number;
+  total_duration_seconds: number;
+  method: string | null;
+  region: string | null;
+}

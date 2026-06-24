@@ -59,20 +59,29 @@ def carbon_aware_nas(
     fallback_top_k=15,
     verbose=False,
     dropout=0.3,
+    search_space=None,
+    exit_levels=None,
+    precision_modes=None,
 ):
+
+    # Default to the full grid; callers (e.g. the interactive API runner) may
+    # pass reduced sets to bound wall-clock time without changing behaviour.
+    search_space = search_space or SEARCH_SPACE
+    exit_levels = exit_levels or EXIT_LEVELS
+    precision_modes = precision_modes or PRECISION_MODES
 
     pareto_candidates = []
     all_candidates = []
 
-    total_configs = len(SEARCH_SPACE) * len(EXIT_LEVELS) * len(PRECISION_MODES)
+    total_configs = len(search_space) * len(exit_levels) * len(precision_modes)
     current = 0
 
-    for arch in SEARCH_SPACE:
+    for arch in search_space:
 
         hidden_scale = arch["hidden_scale"]
 
-        for exit_level in EXIT_LEVELS:
-            for precision in PRECISION_MODES:
+        for exit_level in exit_levels:
+            for precision in precision_modes:
                 current += 1
                 if verbose:
                     logger.info(
