@@ -216,14 +216,14 @@ export default function AssessmentDetailPage() {
 
         {/* Explanation */}
         <div className="leaf p-6">
-          <div className="flex gap-1 border-b border-border pb-3">
+          <div className="scrollbar-hide flex gap-1 overflow-x-auto border-b border-border pb-3">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "focus-ring rounded-[3px] px-3 py-1.5 text-sm font-medium transition-colors",
+                  "focus-ring shrink-0 rounded-[3px] px-3 py-1.5 text-sm font-medium transition-colors",
                   activeTab === tab
                     ? "bg-bg-elevated text-text-primary"
                     : "text-text-muted hover:text-text-primary",

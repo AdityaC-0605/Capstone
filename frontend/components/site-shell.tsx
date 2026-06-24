@@ -344,7 +344,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1">
-          <div className="mx-auto w-full max-w-[1200px] px-4 py-7 md:px-8 md:py-10">
+          <div className="mx-auto w-full max-w-[1200px] overflow-x-hidden px-4 py-7 md:px-8 md:py-10 lg:overflow-x-visible">
             {children}
           </div>
         </main>
