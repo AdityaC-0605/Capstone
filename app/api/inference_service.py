@@ -718,6 +718,26 @@ class InferenceService:
                 payload, background_tasks, principal
             )
 
+        # Lightweight live preview: score only, no explanation, no
+        # persistence, no metrics — safe to call on every input change.
+        @self.app.post("/predict/preview")
+        async def predict_preview(
+            payload: PredictionRequest,
+            principal: "Principal" = Depends(self._authenticate),
+        ):
+            if self.model is None:
+                raise HTTPException(
+                    status_code=503, detail="Model not available"
+                )
+            input_data = self._prepare_input_data(payload.application)
+            result = self.model.predict(input_data)
+            score = float(result.get("prediction", 0.5))
+            return {
+                "risk_score": score,
+                "risk_level": self._determine_risk_level(score).value,
+                "confidence": float(result.get("confidence", 0.8)),
+            }
+
         # Batch prediction endpoint (tighter limit; each call fans out)
         @self.app.post(
             "/predict/batch", response_model=BatchPredictionResponse

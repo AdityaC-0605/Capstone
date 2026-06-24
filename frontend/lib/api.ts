@@ -197,6 +197,33 @@ export async function runSamplePrediction(config: BackendConfig) {
   return runPrediction(config, samplePredictionRequest);
 }
 
+/** Lightweight live score (no explanation, no persistence). */
+export async function previewPrediction(
+  config: BackendConfig,
+  application: CreditApplication,
+): Promise<{ risk_score: number; risk_level: RiskLevel; confidence: number }> {
+  if (!config.apiKey.trim()) {
+    throw new Error("Missing bearer API key.");
+  }
+  return fetchJson(
+    `${trimSlash(config.inferenceUrl)}/predict/preview`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.apiKey.trim()}`,
+      },
+      body: JSON.stringify({
+        application,
+        include_explanation: false,
+        track_sustainability: false,
+        explanation_type: "shap",
+      }),
+    },
+    8000,
+  );
+}
+
 /** Score up to 100 applications in one batch request. */
 export async function runBatch(
   config: BackendConfig,

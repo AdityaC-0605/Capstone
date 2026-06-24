@@ -141,6 +141,11 @@ curl -s http://localhost:8001/predict \
     "explanation_type": "shap"
   }'
 
+# Lightweight live preview — score only, no explanation/persistence (powers the
+# new-assessment form's real-time estimate as you adjust inputs)
+curl -s -X POST http://localhost:8001/predict/preview -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" -d '{"application": { ... }, "explanation_type": "shap"}'
+
 # Durable prediction history (persists across restarts)
 curl -s "http://localhost:8001/predict/history?limit=25" -H "Authorization: Bearer YOUR_API_KEY"
 

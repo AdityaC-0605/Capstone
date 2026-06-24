@@ -2,21 +2,27 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 import { RangeField } from "@/components/range-field";
 import { SegmentedControl } from "@/components/segmented-control";
 import { ToggleSwitch } from "@/components/toggle-switch";
-import { runPrediction } from "@/lib/api";
+import { previewPrediction, runPrediction } from "@/lib/api";
 import {
   defaultApplication,
   homeOwnershipOptions,
   loanPurposeOptions,
   verificationOptions,
 } from "@/lib/constants";
-import { formatCurrency, formatPercent } from "@/lib/format";
-import type { CreditApplication } from "@/lib/types";
+import {
+  formatCurrency,
+  formatPercent,
+  formatRiskLabel,
+  gaugeColor,
+  riskColorClasses,
+} from "@/lib/format";
+import type { CreditApplication, RiskLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { usePulseStore } from "@/store/use-pulse-store";
 import { toast } from "@/store/use-toast-store";
@@ -47,10 +53,33 @@ export default function NewAssessmentPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [preview, setPreview] = useState<{
+    risk_score: number;
+    risk_level: RiskLevel;
+    confidence: number;
+  } | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+
   const update = (patch: Partial<CreditApplication>) =>
     setApplication((current) => ({ ...current, ...patch }));
 
   const hasKey = backendConfig.apiKey.trim().length > 0;
+
+  // Debounced live estimate that updates as the analyst adjusts inputs.
+  useEffect(() => {
+    if (!hasKey) return;
+    setPreviewing(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        setPreview(await previewPrediction(backendConfig, application));
+      } catch {
+        // best-effort preview; ignore transient errors
+      } finally {
+        setPreviewing(false);
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [application, hasKey, backendConfig]);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -227,7 +256,66 @@ export default function NewAssessmentPage() {
         </div>
 
         {/* Summary rail */}
-        <aside className="lg:sticky lg:top-[84px]">
+        <aside className="space-y-4 lg:sticky lg:top-[84px]">
+          {/* Live estimate */}
+          <div className="leaf p-6">
+            <div className="flex items-center justify-between">
+              <p className="section-kicker">Live Estimate</p>
+              <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-text-muted">
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    previewing ? "animate-pulse bg-warning" : "bg-success",
+                  )}
+                />
+                {previewing ? "updating" : "live"}
+              </span>
+            </div>
+            {preview ? (
+              <>
+                <div className="mt-3 flex items-end gap-3">
+                  <span
+                    className="font-display text-5xl font-medium leading-none tabular transition-colors"
+                    style={{ color: gaugeColor(preview.risk_score) }}
+                  >
+                    {preview.risk_score.toFixed(2)}
+                  </span>
+                  <span
+                    className={cn(
+                      "mb-1.5 rounded-[3px] border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider",
+                      riskColorClasses(preview.risk_level),
+                    )}
+                  >
+                    {formatRiskLabel(preview.risk_level)}
+                  </span>
+                </div>
+                <div className="relative mt-4">
+                  <div className="flex h-1.5 overflow-hidden rounded-[2px]">
+                    <span className="flex-1" style={{ background: "rgb(var(--color-success) / 0.32)" }} />
+                    <span className="flex-1" style={{ background: "rgb(var(--color-warning) / 0.32)" }} />
+                    <span className="flex-1" style={{ background: "rgb(var(--color-destructive) / 0.28)" }} />
+                    <span className="flex-1" style={{ background: "rgb(var(--color-destructive) / 0.5)" }} />
+                  </div>
+                  <span
+                    className="absolute -top-1 h-3.5 w-0.5 -translate-x-1/2 bg-text-primary transition-all duration-300"
+                    style={{ left: `${Math.min(99, preview.risk_score * 100)}%` }}
+                  />
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-text-muted">
+                  {Math.round(preview.confidence * 100)}% confidence · updates as
+                  you adjust inputs. Score to save the full explanation.
+                </p>
+              </>
+            ) : (
+              <p className="mt-3 text-sm text-text-muted">
+                {hasKey
+                  ? "Estimating…"
+                  : "Sign in to see a live estimate."}
+              </p>
+            )}
+          </div>
+
+          {/* Review & submit */}
           <div className="leaf p-6">
             <p className="section-kicker">Review &amp; Submit</p>
             <dl className="mt-4 divide-y divide-border border-y border-border">
