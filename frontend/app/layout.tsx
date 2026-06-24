@@ -44,7 +44,16 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${fraunces.variable} ${plexSans.variable} ${plexMono.variable}`}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          // Apply the saved/system theme before paint to avoid a flash.
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('pulseledger-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="bg-bg-primary font-sans text-text-primary antialiased">
         <Providers>{children}</Providers>
       </body>

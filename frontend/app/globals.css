@@ -30,6 +30,12 @@
   --color-warning: 176 122 44;       /* #B07A2C ochre */
   --color-destructive: 163 57 42;    /* #A3392A oxblood */
 
+  /* Text colour to sit on the accent (buttons) */
+  --color-on-accent: 248 246 240;    /* cream */
+
+  /* Modal scrim (kept dark in both themes) */
+  --color-scrim: 12 11 9;
+
   /* Layout */
   --masthead-h: 60px;
   --content-max: 1180px;
@@ -37,6 +43,31 @@
   /* Motion */
   --transition-fast: 110ms cubic-bezier(0.22, 1, 0.36, 1);
   --transition-base: 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ─── "Ledger Noir" — dark theme (token swap) ─── */
+html.dark {
+  --color-bg-primary: 20 19 16;        /* #141310 warm near-black */
+  --color-bg-surface: 28 26 22;        /* #1C1A16 raised leaf */
+  --color-bg-elevated: 38 35 30;       /* #262320 inset / control */
+
+  --color-border: 56 52 45;            /* #38342D hairline */
+  --color-border-strong: 84 78 68;     /* #544E44 prominent rule */
+
+  --color-text-primary: 240 236 227;   /* #F0ECE3 */
+  --color-text-secondary: 183 176 164; /* #B7B0A4 */
+  --color-text-muted: 138 130 117;     /* #8A8275 */
+
+  --color-accent: 122 178 145;         /* #7AB291 lighter evergreen */
+  --color-accent-hover: 146 196 167;   /* #92C4A7 */
+
+  --color-success: 110 188 150;        /* #6EBC96 */
+  --color-warning: 214 160 80;         /* #D6A050 */
+  --color-destructive: 214 110 92;     /* #D66E5C */
+
+  --color-on-accent: 17 20 15;         /* dark ink on light-green button */
+  --color-scrim: 0 0 0;
+  color-scheme: dark;
 }
 
 * {
@@ -179,7 +210,7 @@ h1, h2, h3, h4 {
   font-family: var(--font-body);
   font-weight: 500;
   font-size: 0.875rem;
-  color: rgb(248 246 240);
+  color: rgb(var(--color-on-accent));
   background: rgb(var(--color-accent));
   border: 1px solid rgb(var(--color-accent));
   border-radius: 3px;
@@ -216,8 +247,8 @@ h1, h2, h3, h4 {
   width: 14px;
   height: 14px;
   border-radius: 9999px;
-  border: 2px solid rgb(248 246 240 / 0.35);
-  border-top-color: rgb(248 246 240);
+  border: 2px solid rgb(var(--color-on-accent) / 0.35);
+  border-top-color: rgb(var(--color-on-accent));
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }

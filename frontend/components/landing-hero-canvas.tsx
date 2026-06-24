@@ -18,6 +18,16 @@ export function LandingHeroCanvas({ className }: { className?: string }) {
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Read the accent colour from the theme tokens (comma-joined for rgba()).
+    let accent = "28, 70, 52";
+    const readAccent = () => {
+      const v = getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-accent")
+        .trim();
+      if (v) accent = v.replace(/\s+/g, ", ");
+    };
+    readAccent();
+    window.addEventListener("pulse-theme", readAccent);
     let raf = 0;
     let w = 0;
     let h = 0;
@@ -63,7 +73,7 @@ export function LandingHeroCanvas({ className }: { className?: string }) {
           const dist = Math.hypot(a.x - b.x, a.y - b.y);
           if (dist < LINK) {
             const opacity = (1 - dist / LINK) * 0.1;
-            ctx.strokeStyle = `rgba(28,70,52,${opacity})`;
+            ctx.strokeStyle = `rgba(${accent}, ${opacity})`;
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
@@ -73,7 +83,7 @@ export function LandingHeroCanvas({ className }: { className?: string }) {
         }
       }
       for (const node of nodes) {
-        ctx.fillStyle = "rgba(28,70,52,0.3)";
+        ctx.fillStyle = `rgba(${accent}, 0.3)`;
         ctx.beginPath();
         ctx.arc(node.x, node.y, 1.5, 0, Math.PI * 2);
         ctx.fill();
@@ -94,6 +104,7 @@ export function LandingHeroCanvas({ className }: { className?: string }) {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("pulse-theme", readAccent);
     };
   }, []);
 

@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 
+import { ThemeToggle } from "@/components/theme-toggle";
 import { probeBackends } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/use-auth-store";
@@ -287,7 +288,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-text-primary/30 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-50 bg-[rgb(var(--color-scrim)/0.5)] backdrop-blur-sm lg:hidden"
             onClick={() => setMobileOpen(false)}
           >
             <motion.div
@@ -326,21 +327,24 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               {title}
             </h1>
           </div>
-          <Link
-            href="/settings"
-            className="focus-ring flex items-center gap-2 rounded-[3px] border border-border px-2.5 py-1.5 text-xs text-text-secondary transition-colors hover:border-border-strong hover:text-text-primary"
-          >
-            <span className={cn("status-dot", statusDot[overall])} />
-            <span className="font-mono uppercase tracking-wider">
-              {overall === "healthy"
-                ? "Live"
-                : overall === "partial"
-                  ? "Partial"
-                  : overall === "checking"
-                    ? "Probing"
-                    : "Offline"}
-            </span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link
+              href="/settings"
+              className="focus-ring flex items-center gap-2 rounded-[3px] border border-border px-2.5 py-1.5 text-xs text-text-secondary transition-colors hover:border-border-strong hover:text-text-primary"
+            >
+              <span className={cn("status-dot", statusDot[overall])} />
+              <span className="font-mono uppercase tracking-wider">
+                {overall === "healthy"
+                  ? "Live"
+                  : overall === "partial"
+                    ? "Partial"
+                    : overall === "checking"
+                      ? "Probing"
+                      : "Offline"}
+              </span>
+            </Link>
+          </div>
         </header>
 
         <main className="flex-1">
