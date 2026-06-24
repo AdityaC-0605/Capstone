@@ -17,6 +17,7 @@ import { StateCard } from "@/components/state-card";
 import {
   formatCarbon,
   formatEnergy,
+  formatMethodLabel,
   formatSeconds,
   getContrastVerdict,
 } from "@/lib/format";
@@ -88,10 +89,27 @@ export default function SustainabilityPage() {
     session.totalCarbon > 0 ? session.totalCarbon / (21 / (365 * 24 * 60)) : 0;
   const ecoScore = Math.min(100, Math.max(0, 100 - session.totalCarbon * 10000));
 
+  // The most recent tracked prediction tells us how figures were derived.
+  const latestMetrics = predictionHistory.find(
+    (item) => item.sustainability_metrics,
+  )?.sustainability_metrics;
+  const method = latestMetrics?.method;
+  const region = latestMetrics?.region ?? "US";
+  const gridFactor = latestMetrics?.emissions_factor_kg_per_kwh ?? 0.385;
+
+  // Two significant figures so genuinely-small measured values stay legible
+  // (e.g. "0.0021 meters") instead of collapsing to a misleading "0.0".
+  const sig = (value: number) =>
+    value === 0
+      ? "0"
+      : value >= 1
+        ? value.toFixed(1)
+        : value.toPrecision(2).replace(/\.?0+$/, "");
+
   const comparisons = [
-    { label: `Keeping an LED lit for ${ledSeconds.toFixed(1)} seconds`, width: `${clamp(ledSeconds / 120, 0.08, 1) * 100}%` },
-    { label: `Driving ${carMeters.toFixed(1)} meters in a car`, width: `${clamp(carMeters / 250, 0.08, 1) * 100}%` },
-    { label: `A tree's carbon uptake over ${treeMinutes.toFixed(1)} minutes`, width: `${clamp(treeMinutes / 240, 0.08, 1) * 100}%` },
+    { label: `Keeping an LED lit for ${sig(ledSeconds)} seconds`, width: `${clamp(ledSeconds / 120, 0.08, 1) * 100}%` },
+    { label: `Driving ${sig(carMeters)} meters in a car`, width: `${clamp(carMeters / 250, 0.08, 1) * 100}%` },
+    { label: `A tree's carbon uptake over ${sig(treeMinutes)} minutes`, width: `${clamp(treeMinutes / 240, 0.08, 1) * 100}%` },
   ];
 
   const exportSessionReport = () => {
@@ -246,6 +264,69 @@ export default function SustainabilityPage() {
               </div>
             </section>
           </div>
+
+          <section className="leaf p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="section-kicker">Methodology</p>
+                <h2 className="mt-1 font-display text-xl font-medium text-text-primary">
+                  How these figures are measured
+                </h2>
+              </div>
+              <span
+                className="rounded-[3px] border border-border bg-bg-elevated px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-text-secondary"
+                title="Measurement method for the most recent tracked prediction"
+              >
+                {formatMethodLabel(method)}
+              </span>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-[3px] border border-border bg-bg-elevated/50 p-4">
+                <p className="section-kicker">Energy</p>
+                <p className="mt-2 text-sm text-text-secondary">
+                  Process CPU-time integrated against an effective per-core
+                  power draw, plus a platform baseline — or hardware power via
+                  CodeCarbon when enabled.
+                </p>
+              </div>
+              <div className="rounded-[3px] border border-border bg-bg-elevated/50 p-4">
+                <p className="section-kicker">Carbon</p>
+                <p className="mt-2 text-sm text-text-secondary">
+                  Energy × grid intensity for{" "}
+                  <span className="font-mono text-text-primary">{region}</span>{" "}
+                  (
+                  <span className="font-mono text-text-primary">
+                    {gridFactor.toFixed(3)}
+                  </span>{" "}
+                  kg CO₂/kWh).
+                </p>
+              </div>
+              <div className="rounded-[3px] border border-border bg-bg-elevated/50 p-4">
+                <p className="section-kicker">Scope</p>
+                <p className="mt-2 text-sm text-text-secondary">
+                  A single scoring call is near-negligible; the material
+                  footprint of ML is in training — see the Experiments tab.
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs leading-relaxed text-text-muted">
+              Measurement falls back gracefully: CodeCarbon (opt-in, reads
+              CPU/GPU/RAM power) → CPU-time estimate (default) → wall-clock
+              estimate. The badge above shows which method produced the current
+              figures. CPU-time is a defensible estimate, not a certified
+              meter; calibrate via{" "}
+              <span className="font-mono text-text-secondary">
+                PULSELEDGER_CPU_CORE_WATTS
+              </span>{" "}
+              and{" "}
+              <span className="font-mono text-text-secondary">
+                PULSELEDGER_GRID_REGION
+              </span>
+              .
+            </p>
+          </section>
         </div>
       ) : null}
 

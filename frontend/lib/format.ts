@@ -28,9 +28,34 @@ export const formatFeatureLabel = (value: string) =>
 export const formatSeconds = (value: number) =>
   value >= 1 ? `${value.toFixed(2)} s` : `${(value * 1000).toFixed(0)} ms`;
 
-export const formatEnergy = (value: number) => `${value.toFixed(4)} kWh`;
+// Measured per-inference energy/carbon are genuinely tiny, so scale the unit
+// to keep small figures legible instead of rendering "0.0000".
+export const formatEnergy = (value: number) => {
+  if (value >= 1) return `${value.toFixed(3)} kWh`;
+  if (value >= 1e-3) return `${(value * 1e3).toFixed(2)} Wh`;
+  return `${(value * 1e6).toFixed(2)} mWh`;
+};
 
-export const formatCarbon = (value: number) => `${value.toFixed(4)} kg CO2`;
+export const formatCarbon = (value: number) => {
+  if (value >= 1) return `${value.toFixed(3)} kg CO2`;
+  if (value >= 1e-3) return `${(value * 1e3).toFixed(2)} g CO2`;
+  return `${(value * 1e6).toFixed(2)} mg CO2`;
+};
+
+export const formatMethodLabel = (method?: string) => {
+  switch (method) {
+    case "codecarbon":
+      return "Measured · CodeCarbon";
+    case "cpu-time":
+      return "Measured · CPU-time";
+    case "wall-clock":
+      return "Estimated · wall-clock";
+    case "mock":
+      return "Mock data";
+    default:
+      return "Unavailable";
+  }
+};
 
 export const riskColorClasses = (risk?: RiskLevel) => {
   switch (risk) {

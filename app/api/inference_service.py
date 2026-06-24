@@ -167,7 +167,14 @@ class MockSustainabilityMonitor:
         return exp_id
 
     def stop_experiment_tracking(self, exp_id):
-        return {"carbon_emissions": 0.001, "energy_kwh": 0.002}
+        return {
+            "carbon_emissions": 0.001,
+            "energy_kwh": 0.002,
+            "duration_seconds": 0.0,
+            "method": "mock",
+            "region": "US",
+            "emissions_factor_kg_per_kwh": 0.385,
+        }
 
 
 logger = get_logger(__name__)

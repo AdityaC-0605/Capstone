@@ -33,6 +33,7 @@ ctgan>=0.7.4,<1.0.0
 
 # Sustainability and Carbon Tracking
 codecarbon>=2.3.0,<3.0.0
+psutil>=5.9.0,<6.0.0  # measured CPU-time energy estimate (codecarbon fallback)
 
 # Experiment Tracking
 mlflow>=2.8.0,<3.0.0

@@ -108,6 +108,9 @@ export interface SustainabilityMetrics {
   energy_kwh: number;
   carbon_emissions: number;
   duration_seconds: number;
+  method?: string;
+  region?: string;
+  emissions_factor_kg_per_kwh?: number;
 }
 
 export interface PredictionResponse {
