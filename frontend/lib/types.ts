@@ -146,6 +146,15 @@ export interface BackendConfig {
   apiKey: string;
 }
 
+export interface ModelInfo {
+  model_version: string;
+  model_type: string;
+  model_source: string;
+  algorithm?: string | null;
+  roc_auc?: number | null;
+  trained_at?: string | null;
+}
+
 export interface AuthUser {
   id: number;
   email: string;

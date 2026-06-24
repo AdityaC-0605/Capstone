@@ -667,12 +667,26 @@ class InferenceService:
         # Model info endpoint
         @self.app.get("/model/info")
         async def model_info(api_key: str = Depends(self._verify_api_key)):
-            """Get model information."""
+            """Get model information (incl. trained-registry metadata)."""
             model_source = getattr(self.model, "model_source", "unavailable")
+            registry: Dict[str, Any] = {}
+            try:
+                from pathlib import Path
+
+                meta_path = Path("model_registry/registry.json")
+                if meta_path.exists():
+                    registry = json.loads(meta_path.read_text()).get(
+                        "credit_risk_model", {}
+                    )
+            except Exception:
+                registry = {}
             return {
                 "model_version": self.config.model_version,
                 "model_type": "runtime_credit_risk",
                 "model_source": model_source,
+                "algorithm": registry.get("type"),
+                "roc_auc": registry.get("holdout_roc_auc"),
+                "trained_at": registry.get("trained_at"),
                 "features_supported": [
                     "age",
                     "income",

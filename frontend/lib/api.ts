@@ -9,6 +9,7 @@ import type {
   FairnessAuditResult,
   FederatedRunParams,
   FederatedRunResult,
+  ModelInfo,
   PredictionHistoryItem,
   PredictionRecord,
   PredictionRequest,
@@ -355,6 +356,19 @@ export async function loginUser(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     },
+  );
+}
+
+/** Fetch served-model metadata (source, algorithm, ROC-AUC). */
+export async function fetchModelInfo(
+  config: BackendConfig,
+): Promise<ModelInfo> {
+  if (!config.apiKey.trim()) {
+    throw new Error("Missing bearer API key.");
+  }
+  return fetchJson<ModelInfo>(
+    `${trimSlash(config.inferenceUrl)}/model/info`,
+    { headers: { Authorization: `Bearer ${config.apiKey.trim()}` } },
   );
 }
 
