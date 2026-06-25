@@ -56,6 +56,9 @@ models/**/*.pt
 models/**/*.onnx
 batch_results/
 app/sustainability_backup_*/
+# Regenerated on every federated round (see app/federated/config.py); the
+# other model_registry/ artifacts stay tracked on purpose.
+model_registry/federated_best.pt
 
 # Notebook checkpoints
 .ipynb_checkpoints/
