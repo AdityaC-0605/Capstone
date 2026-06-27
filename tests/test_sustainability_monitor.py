@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from app.sustainability.sustainability_monitor import SustainabilityMonitor
+from app.sustainability.sustainability_monitor import (
+    SustainabilityMonitor,
+    hardware_power_available,
+    resolve_codecarbon_mode,
+)
 
 
 def _required_keys(report: dict) -> None:
@@ -59,3 +63,23 @@ def test_unknown_experiment_is_labelled_not_guessed():
     assert report["method"] == "unavailable"
     assert report["energy_kwh"] == 0.0
     assert report["carbon_emissions"] == 0.0
+
+
+def test_hardware_detection_returns_bool():
+    # Must never raise on any platform; just reports availability.
+    assert isinstance(hardware_power_available(), bool)
+
+
+def test_codecarbon_mode_honours_explicit_override(monkeypatch):
+    monkeypatch.setenv("PULSELEDGER_USE_CODECARBON", "1")
+    assert resolve_codecarbon_mode() is True
+    monkeypatch.setenv("PULSELEDGER_USE_CODECARBON", "off")
+    assert resolve_codecarbon_mode() is False
+
+
+def test_codecarbon_mode_auto_follows_hardware(monkeypatch):
+    monkeypatch.delenv("PULSELEDGER_USE_CODECARBON", raising=False)
+    # In 'auto' the decision must equal hardware availability.
+    assert resolve_codecarbon_mode() == hardware_power_available()
+    monkeypatch.setenv("PULSELEDGER_USE_CODECARBON", "auto")
+    assert resolve_codecarbon_mode() == hardware_power_available()

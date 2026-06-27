@@ -353,9 +353,9 @@ export default function SustainabilityPage() {
               <div className="rounded-[3px] border border-border bg-bg-elevated/50 p-4">
                 <p className="section-kicker">Energy</p>
                 <p className="mt-2 text-sm text-text-secondary">
-                  Process CPU-time integrated against an effective per-core
-                  power draw, plus a platform baseline — or hardware power via
-                  CodeCarbon when enabled.
+                  Real hardware power via CodeCarbon (Intel RAPL / NVIDIA NVML)
+                  where the host exposes it; otherwise process CPU-time against
+                  an effective per-core draw plus a platform baseline.
                 </p>
               </div>
               <div className="rounded-[3px] border border-border bg-bg-elevated/50 p-4">
@@ -380,15 +380,19 @@ export default function SustainabilityPage() {
             </div>
 
             <p className="mt-4 text-xs leading-relaxed text-text-muted">
-              Measurement falls back gracefully: CodeCarbon (opt-in, reads
-              CPU/GPU/RAM power) → CPU-time estimate (default) → wall-clock
-              estimate. The badge above shows which method produced the current
-              figures. CPU-time is a defensible estimate, not a certified
-              meter; calibrate via{" "}
+              Measurement falls back gracefully: CodeCarbon hardware power
+              (auto-enabled when RAPL/NVML is present) → CPU-time estimate →
+              wall-clock estimate. The badge above shows which method produced
+              the current figures. CPU-time is a defensible estimate, not a
+              certified meter; force the engine with{" "}
+              <span className="font-mono text-text-secondary">
+                PULSELEDGER_USE_CODECARBON
+              </span>{" "}
+              and calibrate via{" "}
               <span className="font-mono text-text-secondary">
                 PULSELEDGER_CPU_CORE_WATTS
               </span>{" "}
-              and{" "}
+              /{" "}
               <span className="font-mono text-text-secondary">
                 PULSELEDGER_GRID_REGION
               </span>

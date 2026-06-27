@@ -4,15 +4,20 @@ Sustainability monitoring with measured energy where possible.
 Measurement strategy, in priority order (the first that succeeds wins, and
 the report records which one produced the figures so they stay auditable):
 
-  1. ``codecarbon`` — opt-in via ``PULSELEDGER_USE_CODECARBON=1``. Uses an
-     ``OfflineEmissionsTracker`` (no network) that reads CPU/GPU/RAM power
-     and applies a regional grid-intensity factor. Best for long-running
-     work (training, NAS, batch) where its overhead is negligible.
-  2. ``cpu-time`` — the always-on default. Integrates the process's *actual*
-     CPU time (user+system) over the tracked interval against an effective
-     per-core power draw, adds a small platform/RAM baseline for the elapsed
-     wall-clock, then applies the regional grid factor. Scales with real work
-     done, not merely with elapsed time.
+  1. ``codecarbon`` — uses an ``OfflineEmissionsTracker`` (no network) that
+     reads real hardware power (Intel RAPL for the CPU/package, NVML for
+     NVIDIA GPUs, plus a RAM model) and applies a regional grid factor.
+     Enabled automatically when the host exposes power telemetry (the
+     ``auto`` default); can be forced on/off with ``PULSELEDGER_USE_CODECARBON``
+     (``1``/``0``/``auto``). On platforms without RAPL/NVML (e.g. macOS,
+     most containers) codecarbon would only fall back to a constant-TDP
+     guess, so we skip its overhead and use the cpu-time estimate instead.
+  2. ``cpu-time`` — the default when no hardware telemetry is present.
+     Integrates the process's *actual* CPU time (user+system) over the
+     tracked interval against an effective per-core power draw, adds a small
+     platform/RAM baseline for the elapsed wall-clock, then applies the
+     regional grid factor. Scales with real work done, not merely elapsed
+     time.
   3. ``wall-clock`` — last-resort synthetic estimate proportional to elapsed
      time (the original compatibility behaviour), used only when ``psutil``
      is unavailable.
@@ -26,6 +31,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from functools import wraps
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 # Approximate grid carbon intensity (kg CO2eq per kWh) by region. These are
@@ -61,13 +67,53 @@ def _grid_factor(region: str) -> float:
     )
 
 
-def _codecarbon_enabled() -> bool:
-    return os.getenv("PULSELEDGER_USE_CODECARBON", "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+def hardware_power_available() -> bool:
+    """True when the host exposes real power telemetry codecarbon can read.
+
+    Checks Intel RAPL (``/sys/class/powercap/intel-rapl``, Linux) and NVIDIA
+    NVML (a CUDA GPU). Anywhere else, codecarbon would only model a constant
+    CPU TDP — no better than our cpu-time estimate — so it isn't worth its
+    per-call overhead.
+    """
+    # Intel RAPL: at least one readable energy counter.
+    try:
+        rapl = Path("/sys/class/powercap")
+        if rapl.is_dir():
+            for entry in rapl.glob("intel-rapl:*"):
+                if (entry / "energy_uj").exists():
+                    return True
+    except Exception:  # pragma: no cover - platform dependent
+        pass
+
+    # NVIDIA NVML: a visible GPU.
+    try:
+        import pynvml
+
+        pynvml.nvmlInit()
+        try:
+            if pynvml.nvmlDeviceGetCount() > 0:
+                return True
+        finally:
+            pynvml.nvmlShutdown()
+    except Exception:  # pragma: no cover - platform dependent
+        pass
+
+    return False
+
+
+def resolve_codecarbon_mode() -> bool:
+    """Decide whether to drive codecarbon, honouring an explicit override.
+
+    ``PULSELEDGER_USE_CODECARBON`` accepts ``1``/``true``/``on`` (force on),
+    ``0``/``false``/``off`` (force off), or ``auto``/unset (use codecarbon
+    only when real hardware power telemetry is present).
+    """
+    raw = os.getenv("PULSELEDGER_USE_CODECARBON", "").strip().lower()
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"0", "false", "no", "off"}:
+        return False
+    return hardware_power_available()
 
 
 @dataclass
@@ -101,7 +147,7 @@ class SustainabilityMonitor:
         except Exception:  # pragma: no cover - environment dependent
             self._psutil = None
 
-        self._use_codecarbon = _codecarbon_enabled()
+        self._use_codecarbon = resolve_codecarbon_mode()
 
     # -- lifecycle ---------------------------------------------------------
 
