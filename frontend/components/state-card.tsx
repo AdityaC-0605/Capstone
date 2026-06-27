@@ -7,7 +7,7 @@ interface StateCardProps {
   message: string;
   actionLabel?: string;
   onAction?: () => void;
-  tone?: "default" | "loading" | "error";
+  tone?: "default" | "loading" | "error" | "warning";
 }
 
 export function StateCard({
@@ -23,9 +23,11 @@ export function StateCard({
         "rounded-md border p-4 shadow-sm",
         tone === "error"
           ? "border-destructive/30 bg-destructive/10"
-          : tone === "loading"
-            ? "border-accent/30 bg-accent/10"
-            : "border-border bg-bg-surface",
+          : tone === "warning"
+            ? "border-warning/30 bg-warning/10"
+            : tone === "loading"
+              ? "border-accent/30 bg-accent/10"
+              : "border-border bg-bg-surface",
       )}
     >
       <p
@@ -33,9 +35,11 @@ export function StateCard({
           "text-xs font-bold uppercase tracking-wider",
           tone === "error"
             ? "text-destructive"
-            : tone === "loading"
-              ? "text-accent"
-              : "text-text-muted",
+            : tone === "warning"
+              ? "text-warning"
+              : tone === "loading"
+                ? "text-accent"
+                : "text-text-muted",
         )}
       >
         {title}

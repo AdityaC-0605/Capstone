@@ -9,6 +9,7 @@ import type {
   FairnessAuditResult,
   FederatedRunParams,
   FederatedRunResult,
+  LiveFairnessAudit,
   ModelInfo,
   NasStatus,
   PredictionHistoryItem,
@@ -270,6 +271,20 @@ export async function runFederated(
       body: JSON.stringify(params),
     },
     30000,
+  );
+}
+
+/** Audit the deployed model's real decisions (persisted predictions). */
+export async function fetchLiveFairnessAudit(
+  config: BackendConfig,
+): Promise<LiveFairnessAudit> {
+  if (!config.apiKey.trim()) {
+    throw new Error("Missing bearer API key.");
+  }
+  return fetchEnvelope<LiveFairnessAudit>(
+    `${trimSlash(config.inferenceUrl)}/fairness/audit/live`,
+    { headers: { Authorization: `Bearer ${config.apiKey.trim()}` } },
+    20000,
   );
 }
 

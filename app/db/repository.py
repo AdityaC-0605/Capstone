@@ -169,6 +169,37 @@ def sustainability_totals(
     }
 
 
+def predictions_for_fairness(
+    user_id: Optional[int] = None, limit: int = 5000
+) -> List[Dict[str, Any]]:
+    """Return persisted decisions for a real-model fairness audit.
+
+    Each row carries the model's decision (risk score/band) and the submitted
+    application (which holds age and the optional gender/race attributes).
+    """
+    with _session_scope() as session:
+        query = select(
+            Prediction.risk_score,
+            Prediction.risk_level,
+            Prediction.application,
+        )
+        if user_id is not None:
+            query = query.where(Prediction.user_id == user_id)
+        query = query.order_by(
+            Prediction.created_at.desc(), Prediction.id.desc()
+        ).limit(limit)
+        rows = session.execute(query).all()
+
+    return [
+        {
+            "risk_score": float(risk_score),
+            "risk_level": risk_level,
+            "application": application or {},
+        }
+        for risk_score, risk_level, application in rows
+    ]
+
+
 # ── Users ────────────────────────────────────────────────────────────────
 
 

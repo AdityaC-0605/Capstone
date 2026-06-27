@@ -911,6 +911,35 @@ class InferenceService:
                     "result": self._nas_job["result"],
                 }
 
+        @self.app.get("/fairness/audit/live")
+        async def fairness_audit_live(
+            principal: "Principal" = Depends(self._authenticate),
+        ):
+            """Audit the deployed model's *actual* decisions for bias.
+
+            Reads the caller's persisted predictions, groups them by protected
+            attributes (age band always; gender/race when submitted) and runs
+            demographic-parity bias detection on the real approve/deny calls.
+            Label-dependent metrics (equalized odds, etc.) need realized
+            outcomes we don't have, so they're reported as unavailable. Returns
+            mode='insufficient' when there isn't enough scored history yet.
+            """
+            scope = principal.user_id if principal.kind == "user" else None
+            if not self.db_available:
+                return {
+                    "status": "ok",
+                    "data": {"mode": "insufficient", "reason": "no database"},
+                }
+            from fastapi.concurrency import run_in_threadpool
+
+            from app.db import repository
+
+            rows = await run_in_threadpool(
+                repository.predictions_for_fairness, scope, 5000
+            )
+            data = await run_in_threadpool(self._run_live_fairness_audit, rows)
+            return {"status": "ok", "data": data}
+
         # Prometheus-style metrics exposition
         @self.app.get("/metrics")
         async def metrics():
@@ -1439,6 +1468,138 @@ class InferenceService:
             "loan_purpose": application.loan_purpose,
             "home_ownership": application.home_ownership,
             "verification_status": application.verification_status,
+        }
+
+    @staticmethod
+    def _age_band(age: Any) -> Optional[str]:
+        try:
+            a = float(age)
+        except (TypeError, ValueError):
+            return None
+        if a < 25:
+            return "under 25"
+        if a < 40:
+            return "25-39"
+        if a < 60:
+            return "40-59"
+        return "60 plus"
+
+    def _run_live_fairness_audit(
+        self, rows: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Build protected-group arrays from real decisions and run the
+        demographic-parity bias detector. Returns a report matching the
+        synthetic audit's shape, or mode='insufficient' when too sparse."""
+        MIN_DECISIONS = 25
+        MIN_PER_GROUP = 5
+
+        try:
+            import numpy as np
+
+            from app.services.bias_detector import (
+                FairnessMetric,
+                create_bias_detector,
+            )
+        except Exception as exc:  # pragma: no cover - optional dependency
+            return {"mode": "insufficient", "reason": f"unavailable: {exc}"}
+
+        n = len(rows)
+        if n < MIN_DECISIONS:
+            return {
+                "mode": "insufficient",
+                "reason": "not enough scored applications yet",
+                "n_decisions": n,
+                "needed": MIN_DECISIONS,
+            }
+
+        # Favourable decision = approve = predicted low/medium risk band.
+        approved, scores = [], []
+        ages, genders, races = [], [], []
+        for r in rows:
+            app = r.get("application") or {}
+            level = str(r.get("risk_level", "")).lower()
+            approved.append(1 if level in {"low", "medium"} else 0)
+            scores.append(float(r.get("risk_score", 0.5)))
+            ages.append(self._age_band(app.get("age")))
+            genders.append(
+                str(app.get("gender")).lower() if app.get("gender") else None
+            )
+            races.append(
+                str(app.get("race")).lower() if app.get("race") else None
+            )
+
+        y_pred = np.array(approved)
+        y_prob = np.array(scores)
+
+        detector = create_bias_detector()
+        results = []
+        audited_attrs = []
+        for name, values in (
+            ("age", ages),
+            ("gender", genders),
+            ("race", races),
+        ):
+            # Mask rows that actually carry this attribute, then require
+            # >=2 groups each with enough samples to be meaningful.
+            mask = np.array([bool(v) for v in values], dtype=bool)
+            if int(mask.sum()) < MIN_DECISIONS:
+                continue
+            attr = np.array([v for v in values if v])
+            sub_pred = y_pred[mask]
+            counts = {g: int((attr == g).sum()) for g in np.unique(attr)}
+            big = [g for g, c in counts.items() if c >= MIN_PER_GROUP]
+            if len(big) < 2:
+                continue
+
+            groups = {
+                str(g): {
+                    "n": counts[g],
+                    "approval_rate": round(
+                        float(sub_pred[attr == g].mean()), 4
+                    ),
+                }
+                for g in sorted(counts)
+            }
+            rates = [v["approval_rate"] for v in groups.values()]
+            audited_attrs.append(
+                {
+                    "attribute": name,
+                    "groups": groups,
+                    "approval_disparity": round(max(rates) - min(rates), 4),
+                }
+            )
+            # No realized outcomes; demographic parity is label-free.
+            results.extend(
+                detector.detect_bias(
+                    np.zeros(int(mask.sum())),
+                    sub_pred,
+                    {name: attr},
+                    y_prob[mask],
+                    metrics=[FairnessMetric.DEMOGRAPHIC_PARITY],
+                )
+            )
+
+        if not audited_attrs:
+            return {
+                "mode": "insufficient",
+                "reason": "no protected attribute has two well-sized groups",
+                "n_decisions": n,
+            }
+
+        report = detector.generate_bias_report(results)
+
+        return {
+            "mode": "live",
+            "report": report,
+            "audited": {
+                "n_decisions": n,
+                "approval_rule": "approve = predicted low or medium risk band",
+                "attributes": audited_attrs,
+                "label_dependent_metrics": (
+                    "unavailable — equalized odds / calibration require "
+                    "realized repayment outcomes, which are not yet observed"
+                ),
+            },
         }
 
     def _determine_risk_level(self, risk_score: float) -> RiskLevel:

@@ -290,6 +290,26 @@ export interface FairnessAuditResult {
   report: FairnessReport;
 }
 
+export interface FairnessAuditedAttribute {
+  attribute: string;
+  groups: Record<string, { n: number; approval_rate: number }>;
+  approval_disparity: number;
+}
+
+export interface LiveFairnessAudit {
+  mode: "live" | "insufficient";
+  report?: FairnessReport;
+  audited?: {
+    n_decisions: number;
+    approval_rule: string;
+    attributes: FairnessAuditedAttribute[];
+    label_dependent_metrics: string;
+  };
+  reason?: string;
+  n_decisions?: number;
+  needed?: number;
+}
+
 export interface PredictionHistoryItem {
   prediction_id: string;
   timestamp: string;
