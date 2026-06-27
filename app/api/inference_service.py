@@ -175,6 +175,7 @@ class MockSustainabilityMonitor:
             "method": "mock",
             "region": "US",
             "emissions_factor_kg_per_kwh": 0.385,
+            "grid_source": "static:US",
         }
 
 
@@ -866,6 +867,7 @@ class InferenceService:
                     "total_duration_seconds": 0.0,
                     "method": None,
                     "region": None,
+                    "grid_source": None,
                 },
             }
 

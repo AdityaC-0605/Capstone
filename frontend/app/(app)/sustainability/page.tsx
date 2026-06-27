@@ -138,6 +138,8 @@ export default function SustainabilityPage() {
   const method = summary?.method ?? latestMetrics?.method;
   const region = summary?.region ?? latestMetrics?.region ?? "US";
   const gridFactor = latestMetrics?.emissions_factor_kg_per_kwh ?? 0.385;
+  const gridSource = summary?.grid_source ?? latestMetrics?.grid_source;
+  const gridIsLive = !!gridSource && !gridSource.startsWith("static");
 
   // Two significant figures so genuinely-small measured values stay legible
   // (e.g. "0.0021 meters") instead of collapsing to a misleading "0.0".
@@ -359,7 +361,20 @@ export default function SustainabilityPage() {
                 </p>
               </div>
               <div className="rounded-[3px] border border-border bg-bg-elevated/50 p-4">
-                <p className="section-kicker">Carbon</p>
+                <div className="flex items-center gap-2">
+                  <p className="section-kicker">Carbon</p>
+                  <span
+                    className={cn(
+                      "rounded-[3px] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider",
+                      gridIsLive
+                        ? "bg-success/10 text-success"
+                        : "bg-bg-elevated text-text-muted",
+                    )}
+                    title={gridSource || "static regional average"}
+                  >
+                    {gridIsLive ? "Live grid" : "Static"}
+                  </span>
+                </div>
                 <p className="mt-2 text-sm text-text-secondary">
                   Energy × grid intensity for{" "}
                   <span className="font-mono text-text-primary">{region}</span>{" "}
@@ -367,7 +382,7 @@ export default function SustainabilityPage() {
                   <span className="font-mono text-text-primary">
                     {gridFactor.toFixed(3)}
                   </span>{" "}
-                  kg CO₂/kWh).
+                  kg CO₂/kWh){gridIsLive ? ", fetched live" : ""}.
                 </p>
               </div>
               <div className="rounded-[3px] border border-border bg-bg-elevated/50 p-4">
@@ -384,7 +399,13 @@ export default function SustainabilityPage() {
               (auto-enabled when RAPL/NVML is present) → CPU-time estimate →
               wall-clock estimate. The badge above shows which method produced
               the current figures. CPU-time is a defensible estimate, not a
-              certified meter; force the engine with{" "}
+              certified meter. Carbon intensity is a static regional average
+              by default; set{" "}
+              <span className="font-mono text-text-secondary">
+                PULSELEDGER_GRID_PROVIDER
+              </span>{" "}
+              (electricitymaps / uk) for live intensity. Force the energy
+              engine with{" "}
               <span className="font-mono text-text-secondary">
                 PULSELEDGER_USE_CODECARBON
               </span>{" "}

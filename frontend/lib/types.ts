@@ -111,6 +111,7 @@ export interface SustainabilityMetrics {
   method?: string;
   region?: string;
   emissions_factor_kg_per_kwh?: number;
+  grid_source?: string;
 }
 
 export interface PredictionResponse {
@@ -350,4 +351,5 @@ export interface SustainabilitySummary {
   total_duration_seconds: number;
   method: string | null;
   region: string | null;
+  grid_source?: string | null;
 }

@@ -34,19 +34,11 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
-# Approximate grid carbon intensity (kg CO2eq per kWh) by region. These are
-# coarse public averages; override the active region with
-# PULSELEDGER_GRID_REGION. For codecarbon's offline model the country is set
-# separately via PULSELEDGER_COUNTRY_ISO.
-GRID_INTENSITY_KG_PER_KWH: Dict[str, float] = {
-    "US": 0.385,
-    "EU": 0.255,
-    "GB": 0.225,
-    "IN": 0.708,
-    "CA": 0.130,
-    "AU": 0.510,
-    "WORLD": 0.475,
-}
+from .grid_intensity import (  # noqa: F401  (re-exported for callers/tests)
+    GRID_INTENSITY_KG_PER_KWH,
+    GridIntensityProvider,
+    static_factor,
+)
 
 # Effective per-CPU-second active power (W) and a platform/RAM baseline (W)
 # attributed across the wall-clock interval. Both override-able so an operator
@@ -59,12 +51,6 @@ _JOULES_PER_KWH = 3_600_000.0
 
 def _region() -> str:
     return os.getenv("PULSELEDGER_GRID_REGION", "US").strip().upper()
-
-
-def _grid_factor(region: str) -> float:
-    return GRID_INTENSITY_KG_PER_KWH.get(
-        region, GRID_INTENSITY_KG_PER_KWH["US"]
-    )
 
 
 def hardware_power_available() -> bool:
@@ -126,6 +112,7 @@ class SustainabilityReport:
     method: str
     region: str
     emissions_factor_kg_per_kwh: float
+    grid_source: str
 
 
 class SustainabilityMonitor:
@@ -134,7 +121,8 @@ class SustainabilityMonitor:
     def __init__(self) -> None:
         self._active: Dict[str, Dict[str, Any]] = {}
         self._region = _region()
-        self._grid_factor = _grid_factor(self._region)
+        self._grid_factor = static_factor(self._region)
+        self._grid_provider = GridIntensityProvider()
         self._country_iso = (
             os.getenv("PULSELEDGER_COUNTRY_ISO", "USA").strip().upper()
         )
@@ -194,7 +182,11 @@ class SustainabilityMonitor:
                     "codecarbon",
                     region=self._country_iso,
                     factor=factor,
+                    grid_source="codecarbon",
                 )
+
+        # Live (or static) grid factor for the energy->carbon conversion.
+        factor, grid_source = self._grid_provider.get(self._region)
 
         # 2) cpu-time measurement via psutil.
         cpu_before = entry.get("cpu_seconds")
@@ -203,16 +195,28 @@ class SustainabilityMonitor:
             cpu_delta = max(0.0, cpu_now - cpu_before)
             joules = cpu_delta * _CORE_POWER_W + duration * _BASELINE_POWER_W
             energy_kwh = joules / _JOULES_PER_KWH
-            emissions_kg = energy_kwh * self._grid_factor
+            emissions_kg = energy_kwh * factor
             return self._report(
-                experiment_id, energy_kwh, emissions_kg, duration, "cpu-time"
+                experiment_id,
+                energy_kwh,
+                emissions_kg,
+                duration,
+                "cpu-time",
+                factor=factor,
+                grid_source=grid_source,
             )
 
         # 3) wall-clock fallback (no psutil available).
         energy_kwh = max(0.0, duration * 0.00003)
-        emissions_kg = energy_kwh * self._grid_factor
+        emissions_kg = energy_kwh * factor
         return self._report(
-            experiment_id, energy_kwh, emissions_kg, duration, "wall-clock"
+            experiment_id,
+            energy_kwh,
+            emissions_kg,
+            duration,
+            "wall-clock",
+            factor=factor,
+            grid_source=grid_source,
         )
 
     # -- helpers -----------------------------------------------------------
@@ -262,6 +266,7 @@ class SustainabilityMonitor:
         method: str,
         region: Optional[str] = None,
         factor: Optional[float] = None,
+        grid_source: Optional[str] = None,
     ) -> Dict[str, Any]:
         return {
             "experiment_id": experiment_id,
@@ -273,6 +278,7 @@ class SustainabilityMonitor:
             "emissions_factor_kg_per_kwh": (
                 factor if factor is not None else self._grid_factor
             ),
+            "grid_source": grid_source or f"static:{self._region}",
             "timestamp": datetime.now().isoformat(),
         }
 

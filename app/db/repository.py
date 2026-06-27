@@ -145,7 +145,7 @@ def sustainability_totals(
 
     total_energy = total_carbon = total_duration = 0.0
     count = 0
-    method = region = None
+    method = region = grid_source = None
     for metrics in rows:
         if not isinstance(metrics, dict):
             continue
@@ -156,6 +156,7 @@ def sustainability_totals(
         if method is None:  # first row is the most recent
             method = metrics.get("method")
             region = metrics.get("region")
+            grid_source = metrics.get("grid_source")
 
     return {
         "count": count,
@@ -164,6 +165,7 @@ def sustainability_totals(
         "total_duration_seconds": total_duration,
         "method": method,
         "region": region,
+        "grid_source": grid_source,
     }
 
 
