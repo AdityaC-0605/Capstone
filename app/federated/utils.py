@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import logging
+import os
 from dataclasses import asdict
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -14,6 +16,16 @@ from torch.utils.data import DataLoader, TensorDataset
 from .client import FederatedClient
 from .config import FLConfig
 from .server import FederatedServer
+
+logger = logging.getLogger(__name__)
+
+# The shared real dataset, partitioned across clients for a realistic
+# (non-IID) federated run. Lives alongside the sustainability NAS data.
+_BANK_DATA = (
+    Path(__file__).resolve().parent.parent / "sustainability" / "Bank_data.csv"
+)
+# Cap total training rows so an interactive run stays in the seconds range.
+_REAL_DATA_CAP = 6000
 
 
 class DefaultFLModel(nn.Module):
@@ -84,6 +96,95 @@ def create_client_loaders(
     return loaders
 
 
+def create_real_client_loaders(
+    config: FLConfig,
+) -> Tuple[List[tuple], int]:
+    """Partition the real Bank credit dataset across clients (non-IID).
+
+    Clients are sharded along the numeric feature most correlated with the
+    target, so each holds a different slice of the population — the realistic
+    federated setting where institutions serve distinct cohorts. Returns the
+    per-client (train, val) loaders and the preprocessed feature dimension.
+    """
+    from app.sustainability.preprocessing import load_and_preprocess
+
+    if not _BANK_DATA.exists():
+        raise FileNotFoundError(f"Federated dataset missing: {_BANK_DATA}")
+
+    X_train, _X_test, y_train, _y_test, pre = load_and_preprocess(
+        str(_BANK_DATA)
+    )
+    if len(X_train) > _REAL_DATA_CAP:
+        X_train = X_train.iloc[:_REAL_DATA_CAP]
+        y_train = y_train.iloc[:_REAL_DATA_CAP]
+
+    pre.fit(X_train)
+    x = pre.transform(X_train)
+    if hasattr(x, "toarray"):
+        x = x.toarray()
+    x = x.astype(np.float32)
+    y = y_train.values.astype(np.float32)
+
+    # Pick the numeric feature most correlated with default to shard along,
+    # so the partition is genuinely non-IID (not just random quantity skew).
+    sort_col, best_corr = None, 0.0
+    for col in X_train.select_dtypes(include="number").columns:
+        series = X_train[col].astype(float)
+        if series.std() == 0:
+            continue
+        filled = series.fillna(series.median())
+        corr = abs(np.corrcoef(filled, y_train)[0, 1])
+        if not np.isnan(corr) and corr > best_corr:
+            best_corr, sort_col = corr, col
+    if sort_col is not None:
+        filled = X_train[sort_col].astype(float)
+        order = np.argsort(filled.fillna(filled.median()).values)
+        x, y = x[order], y[order]
+
+    rng = np.random.default_rng(config.random_seed)
+    loaders: List[tuple] = []
+    for shard in np.array_split(np.arange(len(y)), config.number_of_clients):
+        idx = shard.copy()
+        rng.shuffle(idx)
+        split = int(len(idx) * (1.0 - config.validation_split))
+        split = max(1, min(split, len(idx) - 1)) if len(idx) > 1 else len(idx)
+        tr, val = idx[:split], idx[split:]
+
+        train_ds = TensorDataset(
+            torch.from_numpy(x[tr]), torch.from_numpy(y[tr])
+        )
+        train_loader = DataLoader(
+            train_ds, batch_size=config.batch_size, shuffle=True
+        )
+        val_loader = None
+        if len(val) > 0:
+            val_ds = TensorDataset(
+                torch.from_numpy(x[val]), torch.from_numpy(y[val])
+            )
+            val_loader = DataLoader(
+                val_ds, batch_size=config.batch_size, shuffle=False
+            )
+        loaders.append((train_loader, val_loader))
+
+    return loaders, int(x.shape[1])
+
+
+def _build_loaders(config: FLConfig) -> Tuple[List[tuple], str, str]:
+    """Prefer the real dataset; fall back to synthetic. Returns (loaders,
+    data_source, dataset_label) and updates config.input_size for real data."""
+    mode = os.getenv("PULSELEDGER_FEDERATED_DATA", "auto").strip().lower()
+    if mode != "synthetic":
+        try:
+            loaders, input_dim = create_real_client_loaders(config)
+            config.input_size = input_dim
+            return loaders, "bank_credit", "Bank credit (non-IID)"
+        except Exception as exc:
+            logger.warning(
+                "Real federated data unavailable, using synthetic: %s", exc
+            )
+    return create_client_loaders(config), "synthetic", "Synthetic"
+
+
 def run_federated_simulation(
     config: Optional[FLConfig] = None,
     model_builder: Optional[Callable[[], nn.Module]] = None,
@@ -91,11 +192,13 @@ def run_federated_simulation(
     """Run a minimal FedAvg simulation across multiple clients."""
     config = config or FLConfig()
 
+    # Choose data first so the model is sized to the real feature dimension.
+    loaders, data_source, dataset_label = _build_loaders(config)
+
     if model_builder is None:
         model_builder = default_model_builder(config)
 
     server = FederatedServer(model_builder=model_builder)
-    loaders = create_client_loaders(config)
 
     clients = [
         FederatedClient(
@@ -159,6 +262,8 @@ def run_federated_simulation(
         "best_val_loss": float(best_val_loss),
         "stopped_early": stopped_early,
         "best_model_path": str(best_model_path),
+        "data_source": data_source,
+        "dataset": dataset_label,
     }
 
 

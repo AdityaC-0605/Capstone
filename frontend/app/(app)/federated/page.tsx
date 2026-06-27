@@ -33,6 +33,7 @@ export default function FederatedPage() {
   const [phase, setPhase] = useState<"idle" | "upload" | "broadcast">("idle");
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [datasetLabel, setDatasetLabel] = useState<string | null>(null);
   const animTimer = useRef<number | null>(null);
 
   const stopAmbientAnimation = () => {
@@ -85,6 +86,7 @@ export default function FederatedPage() {
       });
 
       stopAmbientAnimation();
+      setDatasetLabel(result.dataset ?? null);
 
       const history = result.round_metrics.map((metric, index) => ({
         round: index + 1,
@@ -135,9 +137,16 @@ export default function FederatedPage() {
           reports genuine validation loss and accuracy — computed on the backend,
           never by pooling the underlying data.
         </p>
-        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[3px] border border-success/40 bg-success/8 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider text-success">
-          <span className="status-dot status-online" /> Live FedAvg
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          {datasetLabel ? (
+            <span className="inline-flex items-center rounded-[3px] border border-border bg-bg-elevated px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider text-text-secondary">
+              {datasetLabel}
+            </span>
+          ) : null}
+          <span className="inline-flex items-center gap-1.5 rounded-[3px] border border-success/40 bg-success/8 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider text-success">
+            <span className="status-dot status-online" /> Live FedAvg
+          </span>
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">

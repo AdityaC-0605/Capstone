@@ -240,6 +240,8 @@ export interface FederatedRunResult {
   stopped_early: boolean;
   best_model_path: string;
   wall_time_seconds: number;
+  data_source?: string;
+  dataset?: string;
 }
 
 export interface FederatedRunParams {
